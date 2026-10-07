@@ -238,8 +238,7 @@ Sistem memisahkan hak akses operasional harian (Kasir & Barista) dari fungsi pen
 
 ### Entity Relationship Diagram
 
-<!-- Ganti path berikut dengan lokasi gambar ERD pada repository -->
-![ERD Quick Brew](docs/erd.png)
+![ERD Quick Brew](docs/ERD.png)
 
 ---
 
@@ -267,11 +266,10 @@ Rancangan awal berupa sketsa *wireframe*; detail visual (warna, tipografi, ikono
 | Email receipt | PHPMailer (pengiriman struk pesanan otomatis ke email pelanggan) |
 | Akses meja | QR Code berbasis token unik per meja |
 | Pembayaran | QRIS statis / bayar di kasir (tanpa payment gateway) |
-| Backend / Framework | _TODO: isi sesuai stack tim_ |
-| Frontend | _TODO: isi sesuai stack tim_ |
-| Desain | _TODO: isi (mis. tautan Figma)_ |
+| Backend | _PHP Native_ |
+| Frontend | _PHP Native_ |
+| Desain | (Figma) https://bit.ly/3TOH4sS |
 
----
 
 ## 🚀 Instalasi
 
@@ -281,13 +279,6 @@ Rancangan awal berupa sketsa *wireframe*; detail visual (warna, tipografi, ikono
 # 1. Clone repository
 git clone https://github.com/<username>/<nama-repo>.git
 cd <nama-repo>
-
-# 2. Konfigurasi environment
-#    (salin file contoh konfigurasi lalu isi kredensial database)
-
-# 3. Import skema database
-
-# 4. Jalankan aplikasi
 ```
 
 ### Akun Uji (Data Dummy)
