@@ -1,22 +1,21 @@
-CREATE DATABASE QuickBrew;
+-- ========================================================
+-- SKEMA DATABASE RESTORAN QUICKBREW (PostgreSQL)
+-- ========================================================
 
--- Perintah wajib untuk pindah/konek ke database QuickBrew
-\c "QuickBrew";
-
--- 1. Membuat Tabel Kategori (Tabel Master)
+-- 1. Tabel Kategori (Tabel Master)
 CREATE TABLE kategori (
 id SERIAL PRIMARY KEY,
 nama_kategori VARCHAR(20) NOT NULL
 );
 
--- 2. Membuat Tabel Meja (Tabel Master)
+-- 2. Tabel Meja (Tabel Master)
 CREATE TABLE meja (
 id SERIAL PRIMARY KEY,
 no_meja VARCHAR(10) NOT NULL,
 kode_qr VARCHAR(255)
 );
 
--- 3. Membuat Tabel Pengguna (Tabel Master)
+-- 3. Tabel Pengguna (Tabel Master)
 CREATE TABLE pengguna (
 id SERIAL PRIMARY KEY,
 nama VARCHAR(100) NOT NULL,
@@ -25,7 +24,7 @@ password VARCHAR(255) NOT NULL,
 role VARCHAR(255) NOT NULL
 );
 
--- 4. Membuat Tabel Menu (Bergantung pada tabel Kategori)
+-- 4. Tabel Menu (Bergantung pada Kategori)
 CREATE TABLE menu (
 id SERIAL PRIMARY KEY,
 kategori_id INT REFERENCES kategori(id),
@@ -36,7 +35,7 @@ deskripsi VARCHAR(150),
 stok INT NOT NULL
 );
 
--- 5. Membuat Tabel Pemesanan (Bergantung pada tabel Meja & Pengguna)
+-- 5. Tabel Pemesanan (Bergantung pada Meja & Pengguna)
 CREATE TABLE pemesanan (
 id SERIAL PRIMARY KEY,
 meja_id INT REFERENCES meja(id),
@@ -48,7 +47,7 @@ status_pemesanan VARCHAR(50),
 waktu_pemesanan TIMESTAMP
 );
 
--- 6. Membuat Tabel Detail Pemesanan (Bergantung pada tabel Menu & Pemesanan)
+-- 6. Tabel Detail Pemesanan (Bergantung pada Menu & Pemesanan)
 CREATE TABLE detail_pemesanan (
 id SERIAL PRIMARY KEY,
 menu_id INT REFERENCES menu(id),
@@ -59,7 +58,7 @@ subtotal DECIMAL(19, 0) NOT NULL,
 catatan VARCHAR(255)
 );
 
--- 7. Membuat Tabel Pembayaran (Bergantung pada tabel Pemesanan & Pengguna)
+-- 7. Tabel Pembayaran (Bergantung pada Pemesanan & Pengguna)
 CREATE TABLE pembayaran (
 id SERIAL PRIMARY KEY,
 pemesanan_id INT REFERENCES pemesanan(id),
@@ -70,18 +69,19 @@ metode_pembayaran VARCHAR(100),
 total_bayar DECIMAL(19, 0) NOT NULL
 );
 
--- 1. Insert Data Kategori
--- Catatan: Asumsi tabel masih kosong, sehingga ID akan berurutan 1, 2, 3
+-- ========================================================
+-- INSERT DATA INITIAL
+-- ========================================================
+
+-- Insert Data Kategori
 INSERT INTO kategori (nama_kategori) VALUES
 ('Minuman'),
 ('Makanan'),
 ('Dessert');
 
--- 2. Insert Data Menu
--- kategori_id 1 = Minuman, kategori_id 2 = Makanan
+-- Insert Data Menu
 INSERT INTO menu (kategori_id, nama_menu, harga, gambar, deskripsi, stok) VALUES
-
--- --- KATEGORI MINUMAN ---
+-- KATEGORI MINUMAN (kategori_id = 1)
 (1, 'Americano', 20000, NULL, 'Espresso dengan air dan es, memiliki rasa kopi yang ringan dan menyegarkan.', 50),
 (1, 'Espresso', 25000, NULL, 'Shot espresso dengan rasa kopi yang kuat, pekat, dan aroma yang khas.', 50),
 (1, 'Cappuccino', 26000, NULL, 'Perpaduan espresso, susu steamed, dan foam lembut dengan rasa creamy.', 50),
@@ -97,7 +97,7 @@ INSERT INTO menu (kategori_id, nama_menu, harga, gambar, deskripsi, stok) VALUES
 (1, 'Strawberry Milk', 24000, NULL, 'Susu creamy dengan perpaduan rasa strawberry yang manis dan fruity.', 50),
 (1, 'Cookies & Cream', 28000, NULL, 'Minuman creamy dengan rasa cookies dan crumble yang renyah.', 50),
 
--- --- KATEGORI MAKANAN ---
+-- KATEGORI MAKANAN (kategori_id = 2)
 (2, 'Croissant Butter', 22000, NULL, 'Croissant renyah di luar dengan tekstur lembut dan buttery di dalam.', 50),
 (2, 'Chicken Sandwich', 32000, NULL, 'Roti lembut berisi ayam gurih, sayuran segar, dan saus creamy.', 50),
 (2, 'Beef Toast', 35000, NULL, 'Roti panggang dengan irisan daging sapi gurih dan saus khas.', 50),
