@@ -85,4 +85,44 @@ Kamu dapat memastikan tabel dan data berhasil masuk melalui **Terminal Laragon**
 
 ---
 
+# 🚀 Panduan Eksekusi Database QuickBrew di DBeaver
+
+Dokumen ini berisi panduan untuk membuat database PostgreSQL dan mengeksekusi script SQL (`QuickBrew.sql`) menggunakan fitur bawaan DBeaver.
+
+---
+
+
+## 🛠️ Langkah 1: Buat Database `QuickBrew`
+
+1. Buka aplikasi **DBeaver**.
+2. Pada panel **Database Navigator** di sebelah kiri, rentangkan koneksi PostgreSQL kamu.
+3. Klik kanan pada folder **Databases**, lalu pilih **Create New Database**.
+4. Pada kolom **Database name**, ketik: `QuickBrew`
+5. Biarkan pengaturan lainnya secara *default*, lalu klik **OK**.
+
+---
+
+## 💻 Langkah 2: Jalankan Script SQL via Execute Script
+
+Berbeda dengan cara manual (copy-paste), kita akan langsung memuat file SQL menggunakan fitur bawaan DBeaver:
+
+1. Di panel **Database Navigator**, pastikan database `QuickBrew` sudah muncul.
+2. Klik kanan tepat pada database **`QuickBrew`**.
+3. Pilih menu **Tools** ➔ **Execute script**.
+4. Pada jendela *Execute script* yang muncul, klik ikon folder/browse di sebelah kolom **Input file** (atau **Script**).
+5. Cari dan pilih file `QuickBrew.sql` yang sudah kamu simpan sebelumnya, lalu klik **Open**.
+6. Klik tombol **Start** di bagian bawah untuk memulai proses eksekusi.
+7. Tunggu hingga proses selesai. Jika berhasil, kamu akan melihat status penyelesaian atau pop-up notifikasi berhasil tanpa *error*.
+
+---
+
+## 🔍 Langkah 3: Verifikasi Hasil Eksekusi
+
+1. Di panel **Database Navigator**, rentangkan jalur berikut:
+   `QuickBrew` ➔ `Schemas` ➔ `public` ➔ `Tables`
+2. *(Catatan: Jika tabel belum muncul, klik kanan pada folder `Tables` dan pilih **Refresh** atau tekan `F5`).*
+3. Pastikan tabel-tabel seperti `kategori`, `menu`, `meja`, `pemesanan`, dan lainnya sudah terdaftar.
+4. Klik ganda pada salah satu tabel (misalnya `menu`).
+5. Pilih tab **Data** di jendela tengah (di sebelah tab *Properties*) untuk memastikan seluruh baris data (termasuk menu minuman, makanan, dan dessert) telah berhasil disuntikkan.
+
 ✨ **Selesai!** Seluruh struktur skema dan data awal database `QuickBrew` kamu sudah siap digunakan.
