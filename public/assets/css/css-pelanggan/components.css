@@ -1,0 +1,230 @@
+/* ==========================================================================
+   Komponen bersama (dipakai lebih dari satu halaman)
+   ========================================================================== */
+
+/* ===== Button utama (pill, warna merek) ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-width);
+  max-width: 100%;
+  height: var(--button-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-button-bg);
+  color: var(--color-white);
+  font-family: inherit;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.btn--outline {
+  border: var(--border-option);
+  background: var(--color-white);
+  color: var(--color-brand-dark);
+}
+
+/* ===== Label nomor meja (header) ===== */
+.table-badge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 77px;
+  height: 30px;
+  padding-left: 8px;
+  background: url("../icons/table-badge-bg.svg") center / 100% 100% no-repeat;
+  color: var(--color-brand-dark);
+}
+
+.table-badge__icon { width: 18px; height: 18px; }
+
+.table-badge__text {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+/* ===== Panel utama: garis tipis di tepi atas (Figma: panel putih mulai y=76) ===== */
+.main-panel {
+  position: relative;
+}
+
+.main-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--color-divider);
+}
+
+/* ===== Notifikasi (toast) =====
+   [Asumsi] tidak ada di Figma: memakai token warna merek, hijau sukses, dan radius panel. */
+.toast-region {
+  position: fixed;
+  right: 0;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  z-index: 200;
+  width: 100%;
+  max-width: var(--page-max-width);
+  padding: 0 var(--space-page);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border-radius: var(--radius-panel);
+  background: var(--color-brand-dark);
+  box-shadow: var(--shadow-sheet);
+  color: var(--color-white);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1.4;
+  animation: toast-in 200ms ease-out;
+}
+
+.toast__text {
+  text-wrap: pretty; /* hindari satu kata tunggal di baris terakhir */
+}
+
+.toast--leaving {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 200ms ease-in, transform 200ms ease-in;
+}
+
+.toast__icon {
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.toast__icon::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 5.5px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--color-white);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+  .toast--leaving { transition: none; }
+}
+
+/* ===== Dialog konfirmasi ===== */
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-page);
+}
+
+.confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--color-overlay-modal);
+}
+
+.confirm__panel {
+  position: relative;
+  width: 100%;
+  max-width: 326px;
+  padding: 24px 20px 20px;
+  border-radius: var(--radius-panel);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+.confirm__title {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-bold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
+}
+
+.confirm__text {
+  margin-top: 8px;
+  font-size: var(--fs-caption);
+  line-height: 18px;
+  color: var(--color-text-dark);
+}
+
+.confirm__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* ===== Chip status ===== */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 20px;
+  border-radius: 99px;
+  color: var(--color-white);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+}
+
+.chip--available { background: var(--color-success); }
+.chip--soldout { background: var(--color-error); }
+
+.chip--small {
+  width: 40px;
+  height: 14px;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-regular);
+}
+
+/* ===== Tombol tambah ===== */
+.btn-add {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--add-button-size);
+  height: var(--add-button-size);
+  padding: 0;
+  border: 0;
+  background: url("../icons/btn-add-bg.svg") center / 100% 100% no-repeat;
+  cursor: pointer;
+}
+
+.btn-add img { width: 20px; height: 20px; }
