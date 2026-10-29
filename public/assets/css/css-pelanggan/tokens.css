@@ -1,0 +1,109 @@
+/* ==========================================================================
+   Design tokens - sumber: Figma "Quick Brew - Wireframe (Copy)"
+   Frame: Landing Page - HiFi (node 90:862)
+   Token bertanda [Figma] diambil langsung dari Figma.
+   Token bertanda [Asumsi] belum ada di Figma dan perlu dikonfirmasi.
+   ========================================================================== */
+:root {
+  /* Warna */
+  --color-primary: #6f4e37;        /* [Figma] Primary/Brown */
+  --color-brand-dark: #593e2c;     /* [Figma] warna judul & logo teks (nilai dari kode Figma) */
+  --color-text-dark: #2e1f1a;      /* [Figma] Text/Dark */
+  --color-white: #ffffff;          /* [Figma] */
+  --color-black: #000000;          /* [Figma] */
+  --color-placeholder: #b2b2b2;    /* [Figma] kartu Menu Favorit (placeholder) */
+  --color-button-bg: var(--color-brand-dark); /* [Asumsi] warna tombol dibaca dari screenshot, aset SVG belum terunduh */
+
+  /* Tipografi */
+  --font-family: "Poppins", sans-serif; /* [Figma] */
+  --fw-regular: 400;               /* [Figma] Caption */
+  --fw-medium: 500;                /* [Figma] label Subtotal/Tax di keranjang */
+  --fw-semibold: 600;              /* [Figma] Button/Text */
+  --fw-bold: 700;                  /* [Figma] "Menu Favorit" */
+  --fw-extrabold: 800;             /* [Figma] brand & headline */
+  --fs-caption: 12px;              /* [Figma] */
+  --fs-section-title: 16px;        /* [Figma] */
+  --fs-title: 20px;                /* [Figma] */
+  --lh-normal: normal;             /* [Figma] headline & judul */
+  --lh-body: 15px;                 /* [Figma] subjudul hero */
+
+  /* Spacing */
+  --space-page: 16px;              /* [Figma] margin kiri halaman */
+  --space-hero-inset: 31px;        /* [Figma] teks hero mulai di x=31 */
+  --space-hero-top: 36px;          /* [Referensi baru] jarak atas konten hero */
+  --space-hero-bottom: 37px;       /* [Referensi baru] jarak bawah (tombol CTA) */
+  --space-card-gap: 16px;          /* [Figma] jarak antar kartu menu */
+
+  /* Dimensi */
+  --page-max-width: 480px;         /* [Asumsi] desain hanya mobile 390px; layar lebar dipusatkan */
+  --logo-width: 32px;              /* [Figma] */
+  --logo-height: 34px;             /* [Figma] */
+  --hero-height: 240px;            /* [Referensi baru] sebelumnya 281px (Figma) */
+  --hero-image-opacity: 0.4;       /* [Figma] */
+  --button-width: 234px;           /* [Figma] */
+  --button-height: 33px;           /* [Figma] */
+  --card-width: 171px;             /* [Figma] */
+  --card-height: 130px;            /* [Figma] */
+  --bottom-bar-height: 61px;       /* [Figma] */
+
+  /* Radius & border */
+  --radius-card: 15px;             /* [Figma] */
+  --radius-button: 999px;          /* [Asumsi] tampak pill di screenshot (33px tinggi) */
+  --border-hairline: 0.3px solid var(--color-black); /* [Figma] bottom bar */
+
+  /* ===== Tambahan halaman Menu (Katalog Menu - HiFi) ===== */
+  --color-disabled: #9ca3af;       /* [Figma] Netral/Disabled (border input, placeholder) */
+  --color-success: #22c55e;        /* [Figma] Success/Available */
+  --color-error: #ef4444;          /* [Figma] Error/Not Available */
+  --color-overlay-modal: rgba(0, 0, 0, 0.4);    /* [Figma] overlay modal pencarian (hitam 40%) */
+  --color-overlay-dropdown: rgba(0, 0, 0, 0.2); /* [Asumsi] overlay dropdown; nilai SVG Figma belum terbaca */
+  --color-image-dim: rgba(0, 0, 0, 0.2);        /* [Figma] overlay pada foto Beef Toast */
+
+  --fs-micro: 6px;                 /* [Figma] teks chip di hasil pencarian */
+  --fs-small: 8px;                 /* [Figma] deskripsi menu */
+  --fs-search-result: 13px;        /* [Figma] nama menu & input di modal pencarian */
+  --fs-empty: 14px;                /* [Figma] teks state kosong pencarian */
+
+  --radius-panel: 16px;            /* [Figma] kartu menu, modal */
+  --radius-input: 25px;            /* [Figma] kolom cari & dropdown */
+  --radius-dropdown-panel: 10px;   /* [Figma] panel kategori */
+  --border-input: 0.5px solid var(--color-disabled); /* [Figma] */
+  --color-divider: rgba(0, 0, 0, 0.2);             /* [Asumsi] garis 0,2px hitam di Figma; dipakai 1px 20% agar tidak menggeser layout */
+
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1);      /* [Figma] */
+  --shadow-card-soft: 0 1px 25px rgba(0, 0, 0, 0.05);/* [Figma] hasil pencarian */
+
+  --menu-image-size: 110px;        /* [Figma] foto di kartu menu */
+  --menu-card-gap: 19.2px;         /* [Figma] pitch kartu 154,2px (tinggi 135px) */
+  --add-button-size: 30px;         /* [Figma] */
+
+  /* ===== Tambahan pop-up Customization ===== */
+  --radius-sheet: 25px;            /* [Figma] sudut atas bottom sheet */
+  --shadow-sheet: 0 8px 30px rgba(0, 0, 0, 0.15); /* [Figma] */
+  --option-height: 23px;           /* [Figma] tinggi pill pilihan */
+  --border-option: 0.5px solid var(--color-brand-dark); /* [Figma] */
+  --stepper-width: 109px;          /* [Figma] */
+  --stepper-height: 33px;          /* [Figma] */
+  --sheet-top: 81px;               /* [Figma] sheet mulai di y=81 */
+
+  /* ===== Tambahan halaman Keranjang (Cart - HiFi) ===== */
+  --color-summary-bg: rgba(217, 217, 217, 0.4); /* [Figma] kartu ringkasan pembayaran */
+  --cart-footer-height: 222px;     /* [Figma] panel bawah y=622..844 */
+  --cart-thumb-size: 90px;         /* [Figma] foto item keranjang */
+  --cart-action-size: 30px;        /* [Figma] tombol ubah/hapus */
+  --fs-summary: 13px;              /* [Figma] label Subtotal/Tax */
+  --fs-summary-value: 14px;        /* [Figma] nilai Subtotal/Tax */
+
+  --fs-badge: 10px;                /* [Asumsi] angka badge keranjang */
+
+  /* ===== Landing page baru (referensi gambar) - nilai diperkirakan dari gambar beresolusi kecil ===== */
+  --color-icon-bg: #f1e5d8;        /* [Asumsi] lingkaran ikon kartu fitur */
+  --fs-subtitle: 10px;             /* [Asumsi] subjudul "Kenapa pilih QuickBrew?" */
+  --fs-card-desc: 7px;             /* [Asumsi] deskripsi kartu menu favorit */
+  --fs-footer: 9px;                /* [Asumsi] teks hak cipta footer */
+
+  /* ===== Stepper jumlah di daftar menu (referensi screenshot) & jarak section ===== */
+  --qty-stepper-height: 30px;      /* [Asumsi] disesuaikan dengan tombol tambah 30px */
+  --qty-stepper-button: 26px;      /* [Asumsi] lingkaran tombol + di dalam stepper */
+  --menu-section-gap: 24px;        /* [Asumsi] jarak tambahan antar section kategori */
+}

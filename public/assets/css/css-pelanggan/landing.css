@@ -1,0 +1,348 @@
+/* ==========================================================================
+   Landing page - sumber: gambar referensi baru (menggantikan frame Figma "Landing Page - HiFi").
+   Ukuran diperkirakan dari gambar beresolusi kecil; ditandai [Asumsi] di tokens.css.
+   ========================================================================== */
+
+.page--landing { padding-bottom: 0; }
+
+/* ===== Header ===== */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 40px var(--space-page) 0; /* logo mulai y=40 */
+}
+
+.site-header .btn {
+  width: auto;
+  height: 30px;
+  padding: 0 21px;
+}
+
+.brand {
+  display: flex; /* bukan inline: hindari tinggi line-box ekstra */
+  width: max-content;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand__logo {
+  position: relative;
+  width: var(--logo-width);
+  height: var(--logo-height);
+  overflow: hidden;
+}
+
+/* Logo = ekspor node Figma 212:30 (sudah terpotong sesuai frame 32x34) */
+.brand__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.brand__name {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-extrabold);
+  color: var(--color-brand-dark);
+}
+
+/* ===== Hero ===== */
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: var(--hero-height);
+  margin-top: 8px;
+  padding: var(--space-hero-top) var(--space-hero-inset) var(--space-hero-bottom);
+  overflow: hidden;
+}
+
+.hero__image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  opacity: var(--hero-image-opacity);
+}
+
+/* Foto memudar ke putih di tepi bawah */
+.hero::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  height: 70px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--color-white));
+}
+
+.hero__title,
+.hero__text,
+.hero__cta {
+  position: relative;
+  z-index: 1;
+}
+
+.hero__title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-normal);
+  color: var(--color-brand-dark);
+}
+
+.hero__text {
+  margin-top: 12px;
+  font-size: var(--fs-caption);
+  line-height: var(--lh-body);
+  color: var(--color-brand-dark);
+}
+
+.hero__cta {
+  margin-top: auto;
+}
+
+/* Tombol CTA dengan panah di kanan */
+.btn--cta {
+  justify-content: space-between;
+  padding: 0 38px 0 42px;
+}
+
+.btn--cta svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== Kenapa pilih QuickBrew ===== */
+.features {
+  margin: 12px var(--space-page) 0;
+  padding: 16px 6px 14px; /* kartu fitur hampir menyentuh tepi, seperti referensi */
+  border-radius: var(--radius-panel);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.features__title {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-bold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
+}
+
+.features__subtitle {
+  margin-top: 2px;
+  font-size: var(--fs-subtitle);
+  line-height: 15px;
+  color: var(--color-disabled);
+}
+
+.features__list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.feature {
+  padding: 10px 3px 12px;
+  border-radius: 12px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+.feature__icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--color-icon-bg);
+  color: var(--color-brand-dark);
+}
+
+.feature__icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.feature__title {
+  margin-top: 6px;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  line-height: 12px;
+  color: var(--color-brand-dark);
+}
+
+.feature__desc {
+  margin-top: 3px;
+  font-size: var(--fs-micro);
+  line-height: 9px;
+  color: var(--color-disabled);
+}
+
+/* ===== Menu Favorit ===== */
+.favorites {
+  margin-top: 28px;
+}
+
+.favorites__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-page);
+}
+
+.favorites__title {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-bold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
+}
+
+.favorites__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-caption);
+  line-height: 18px;
+  color: var(--color-disabled);
+}
+
+.favorites__all svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Carousel: geser ke samping, berhenti pas di awal kartu. Padding atas/bawah memberi ruang
+   bagi bayangan kartu (overflow-x membuat sumbu y ikut terpotong); margin negatif menjaga jarak asli. */
+.favorites__list {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 -28px;
+  padding: 8px var(--space-page) 28px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--space-page);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.favorites__list::-webkit-scrollbar { display: none; }
+
+.fav-card {
+  position: relative;
+  display: flex;
+  flex: 0 0 calc((100% - 16px) / 2); /* dua kartu terlihat per layar */
+  flex-direction: column;
+  min-height: 234px;
+  padding: 24px 11px 14px;
+  border-radius: var(--radius-panel);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  scroll-snap-align: start;
+}
+
+.fav-card .chip {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  width: auto;
+  height: 16px;
+  padding: 0 10px;
+  font-size: var(--fs-small);
+}
+
+.fav-card__media {
+  height: 112px;
+  overflow: hidden;
+}
+
+/* Ukuran eksplisit: max-height:100% tidak berlaku pada anak grid dengan tinggi tak pasti,
+   sehingga foto asli yang besar meluber keluar kartu. */
+.fav-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Menu habis: foto hitam-putih (sama dengan halaman Menu) */
+.fav-card--soldout .fav-card__media img {
+  filter: grayscale(1);
+}
+
+.fav-card__name {
+  margin-top: 8px;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-extrabold);
+  line-height: 18px;
+  color: var(--color-brand-dark);
+}
+
+.fav-card__desc {
+  margin-top: 4px;
+  font-size: var(--fs-card-desc);
+  line-height: 10px;
+  color: var(--color-text-dark);
+  white-space: pre-line;
+}
+
+.fav-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.fav-card__price {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 18px;
+  color: var(--color-black);
+}
+
+a.btn-add[aria-disabled="true"] {
+  pointer-events: none;
+}
+
+/* ===== Footer ===== */
+.site-footer {
+  margin-top: 18px;
+  padding: 14px var(--space-page) 16px;
+  box-shadow: inset 0 1px 0 var(--color-divider);
+  text-align: center;
+}
+
+.site-footer__brand {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
+}
+
+.site-footer__copy {
+  margin-top: 2px;
+  font-size: var(--fs-footer);
+  line-height: 14px;
+  color: var(--color-disabled);
+}
+
+/* ===== Bottom bar (tidak dipakai lagi di landing; tetap tersedia untuk halaman lain) ===== */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--page-max-width);
+  height: var(--bottom-bar-height);
+  background: var(--color-white);
+  border: var(--border-hairline);
+}
