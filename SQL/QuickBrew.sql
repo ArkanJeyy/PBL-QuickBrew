@@ -198,36 +198,37 @@ INSERT INTO kategori (nama_kategori) VALUES
 INSERT INTO menu (kategori_id, nama_menu, harga, gambar, deskripsi, stok) VALUES
 -- --- KATEGORI MINUMAN ---
 (1, 'Americano', 20000, 'americano.png', 'Espresso dengan air dan es, memiliki rasa kopi yang ringan dan menyegarkan.', 50),
-(1, 'Espresso', 25000, NULL, 'Shot espresso dengan rasa kopi yang kuat, pekat, dan aroma yang khas.', 50),
-(1, 'Cappuccino', 26000, 'cappuccino.png', 'Perpaduan espresso, susu steamed, dan foam lembut dengan rasa creamy.', 50),
-(1, 'Caffè Latte', 28000, 'caffe-latte.png', 'Espresso dengan susu steamed yang creamy dan lembut.', 50),
-(1, 'Caramel Macchiato', 30000, 'caramel-macchiato.png', 'Espresso dan susu dengan sentuhan manis serta aroma karamel.', 50),
-(1, 'Mocha Latte', 29000, 'mocha-latte.png', 'Perpaduan espresso, cokelat, dan susu dengan rasa manis yang seimbang.', 50),
-(1, 'Hazelnut Cappuccino', 28000, 'hazelnut-latte.png', 'Cappuccino creamy dengan tambahan aroma hazelnut yang harum dan manis.', 50),
-(1, 'Matcha Latte', 27000, 'matcha-latte.png', 'Matcha lembut yang dipadukan dengan susu creamy dan sedikit rasa earthy.', 50),
-(1, 'Chocolate Latte', 26000, 'choco-latte.png', 'Cokelat creamy dan susu dengan rasa manis yang cocok untuk segala suasana.', 50),
-(1, 'Thai Tea Original', 22000, 'thai-tea-original.png', 'Teh Thailand dengan susu yang creamy, manis, dan aroma teh yang khas.', 50),
-(1, 'Lychee Tea', 21000, 'lyche-tea.png', 'Teh segar dengan rasa leci yang manis dan aroma buah yang menyegarkan.', 50),
-(1, 'Peach Tea', 21000, 'peach-tea.png', 'Teh dingin dengan perpaduan rasa peach yang manis dan menyegarkan.', 50),
-(1, 'Strawberry Milk', 24000, 'strawberry-milk.png', 'Susu creamy dengan perpaduan rasa strawberry yang manis dan fruity.', 50),
-(1, 'Cookies & Cream', 28000, NULL, 'Minuman creamy dengan rasa cookies dan crumble yang renyah.', 50),
+(1, 'Hazelnut Latte', 26000, 'hazelnut-latte.png', 'Latte creamy dengan tambahan sirup hazelnut yang harum dan manis.', 50),
+(1, 'Matcha Latte', 24000, 'matcha-latte.png', 'Matcha lembut yang dipadukan dengan susu creamy dan sedikit rasa earthy.', 50),
+(1, 'Thai Tea Original', 19000, 'thai-tea-original.png', 'Teh Thailand dengan susu yang creamy, manis, dan aroma teh yang khas.', 50),
+(1, 'Strawberry Milk', 26000, 'strawberry-milk.png', 'Susu creamy dengan perpaduan rasa strawberry yang manis dan fruity.', 50),
+(1, 'Mocha Latte', 26000, 'mocha-latte.png', 'Perpaduan espresso, cokelat, dan susu dengan rasa manis yang seimbang.', 50),
+(1, 'Choco Latte', 24000, 'choco-latte.png', 'Cokelat creamy dan susu dengan rasa manis yang cocok untuk segala suasana.', 50),
+(1, 'Caramel Frappe', 24000, 'caramel-frappe.png', 'Minuman blended dingin perpaduan kopi, susu, dan saus karamel yang manis.', 50),
+(1, 'Caramel Macchiato', 20000, 'caramel-macchiato.png', 'Espresso dan susu dengan sentuhan manis serta aroma karamel.', 50),
+(1, 'Caffè Latte', 26000, 'caffe-latte.png', 'Espresso dengan susu steamed yang creamy dan lembut.', 50),
+(1, 'Cappuccino', 24000, 'cappuccino.png', 'Perpaduan espresso, susu steamed, dan foam lembut dengan rasa creamy.', 50),
+(1, 'Peach Tea', 19000, 'peach-tea.png', 'Teh dingin dengan perpaduan rasa peach yang manis dan menyegarkan.', 50),
+(1, 'Lychee Tea', 20000, 'lychee-tea.png', 'Teh segar dengan rasa leci yang manis dan aroma buah yang menyegarkan.', 50),
 
 -- --- KATEGORI MAKANAN ---
-(2, 'Croissant Butter', 22000, 'croissan-butter.png', 'Croissant renyah di luar dengan tekstur lembut dan buttery di dalam.', 50),
-(2, 'Chicken Sandwich', 32000, 'chicken-sandwich.png', 'Roti lembut berisi ayam gurih, sayuran segar, dan saus creamy.', 50),
-(2, 'Beef Toast', 35000, 'beef-toast.png', 'Roti panggang dengan irisan daging sapi gurih dan saus khas.', 50),
-(2, 'French Fries', 20000, 'french-fries.png', 'Kentang goreng renyah dengan rasa gurih, cocok sebagai teman minuman.', 50),
-(2, 'Chicken Croffle', 30000, 'chicken-croffle.png', 'Croffle renyah dengan potongan ayam gurih dan saus yang creamy.', 50),
+(2, 'French Fries', 26000, 'french-fries.png', 'Kentang goreng renyah dengan rasa gurih, cocok sebagai teman minuman.', 50),
+(2, 'Spaghetti Carbonara', 24000, 'spaghetti-carbonara.png', 'Spaghetti al dente dengan saus krim gurih dan taburan keju.', 50),
+(2, 'Chicken Pasta', 19000, 'chicken-pasta.png', 'Pasta dengan potongan ayam panggang saus gurih kaya rasa.', 50),
+(2, 'Chicken Croffle', 20000, 'chicken-croffle.png', 'Croffle renyah dengan potongan ayam gurih dan saus yang creamy.', 50),
+(2, 'Beef Toast', 26000, 'beef-toast.png', 'Roti panggang dengan irisan daging sapi gurih dan saus khas.', 50),
+(2, 'Chicken Sandwich', 19000, 'chicken-sandwich.png', 'Roti lembut berisi ayam gurih, sayuran segar, dan saus creamy.', 50),
+(2, 'Croissant Butter', 24000, 'croissant-butter.png', 'Croissant renyah di luar dengan tekstur lembut dan buttery di dalam.', 50),
 
 -- --- KATEGORI DESSERT ---
-(3, 'Choco Cake', 28000, 'choco-cake.png', 'Cake cokelat lembut dengan rasa cokelat yang rich dan manis.', 50),
-(3, 'Red Velvet Cake', 30000, 'red-velvet-cake.png', 'Cake red velvet lembut dengan cream cheese yang creamy dan sedikit tangy.', 50),
-(3, 'Cheesecake', 32000, 'cheesecake.png', 'Cheesecake lembut dengan rasa keju creamy dan tekstur yang ringan.', 50),
-(3, 'Tiramisu', 32000, 'tiramisu.png', 'Dessert lembut dengan perpaduan mascarpone, kopi, dan cocoa.', 50),
-(3, 'Brownie', 25000, 'brownies.png', 'Brownie cokelat dengan tekstur fudgy dan rasa cokelat yang pekat.', 50),
-(3, 'Waffle Berry', 28000, 'waffle-berry.png', 'Waffle hangat dengan saus berry manis dan topping yang segar.', 50),
-(3, 'Banana Pancake', 27000, 'banana-pancake.png', 'Pancake lembut dengan potongan pisang dan sirup manis.', 50),
-(3, 'Choco Croffle', 26000, NULL, 'Croffle renyah dengan saus cokelat yang manis dan creamy.', 50);
+(3, 'Waffle Berry', 24000, 'waffle-berry.png', 'Waffle hangat dengan saus berry manis dan topping yang segar.', 50),
+(3, 'Tiramisu', 19000, 'tiramisu.png', 'Dessert lembut dengan perpaduan mascarpone, kopi, dan cocoa.', 50),
+(3, 'Brownies', 20000, 'brownies.png', 'Brownie cokelat dengan tekstur fudgy dan rasa cokelat yang pekat.', 50),
+(3, 'Banana Pancake', 26000, 'banana-pancake.png', 'Pancake lembut dengan potongan pisang dan sirup manis.', 50),
+(3, 'Cheesecake', 19000, 'cheesecake.png', 'Cheesecake lembut dengan rasa keju creamy dan tekstur yang ringan.', 50),
+(3, 'Red Velvet Cake', 20000, 'red-velvet-cake.png', 'Cake red velvet lembut dengan cream cheese yang creamy dan sedikit tangy.', 50),
+(3, 'Choco Waffle', 26000, 'choco-waffle.png', 'Waffle hangat dengan saus cokelat dan topping krim yang manis.', 50),
+(3, 'Choco Cake', 24000, 'choco-cake.png', 'Cake cokelat lembut dengan rasa cokelat yang rich dan manis.', 50);
 
 -- 3. Insert Data Meja & Pengguna
 INSERT INTO meja (no_meja, kode_qr) VALUES
