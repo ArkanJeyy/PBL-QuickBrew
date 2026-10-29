@@ -1,0 +1,161 @@
+/* ==========================================================================
+   Halaman Testing QR Meja (?page=qr)
+   ========================================================================== */
+
+.qr-main {
+  padding: 20px var(--space-page) 32px;
+}
+
+.qr-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.qr-head__back {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.qr-head__back img {
+  width: 100%;
+  height: 100%;
+}
+
+.qr-head__title {
+  margin: 0 0 4px;
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+  color: var(--color-brand-dark);
+}
+
+.qr-head__sub {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-text-dark);
+}
+
+.qr-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: var(--color-icon-bg);
+}
+
+.qr-status__label {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-dark);
+}
+
+.qr-status__value {
+  font-size: var(--fs-caption);
+  color: var(--color-brand-dark);
+}
+
+.qr-status__value--empty {
+  color: var(--color-error);
+}
+
+.qr-reset {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: var(--border-option);
+  background: var(--color-white);
+  color: var(--color-brand-dark);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.qr-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(89, 62, 44, 0.15);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card-soft);
+}
+
+.qr-card--active {
+  border: 2px solid var(--color-brand-dark);
+  background: #fdf9f5;
+}
+
+.qr-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.qr-card__table {
+  font-size: 13px;
+  font-weight: var(--fw-bold);
+  color: var(--color-brand-dark);
+}
+
+.qr-card__code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--color-icon-bg);
+  color: var(--color-brand-dark);
+  font-size: 10px;
+  font-weight: var(--fw-semibold);
+}
+
+.qr-card__box {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--color-white);
+}
+
+.qr-card__box svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.qr-card__url {
+  margin: 6px 0 8px;
+  font-size: 9px;
+  line-height: 1.3;
+  color: #6b7280;
+  word-break: break-all;
+}
+
+.qr-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.qr-card__actions .btn {
+  height: 28px;
+  font-size: 10px;
+}
+

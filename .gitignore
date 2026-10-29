@@ -1,0 +1,11 @@
+# Rahasia - JANGAN di-commit
+config/.env
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

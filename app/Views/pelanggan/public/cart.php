@@ -1,8 +1,9 @@
 <?php
-require_once __DIR__ . '/includes/config.php';
-
-$tableNumber = 5; // Sementara statis sesuai Figma. Nantinya dari QR/sesi meja.
-
+/**
+ * Halaman Keranjang pelanggan (isi keranjang disimpan di localStorage oleh cart-store.js).
+ * Variabel dari PelangganController::cart():
+ *   $tableNumber string|null  Nomor meja dari QR (?meja=<kode_qr>)
+ */
 $pageTitle       = 'Keranjang - ' . APP_NAME;
 $pageStyles      = ['cart'];
 $pageScripts     = ['cart-store', 'cart'];
@@ -10,8 +11,8 @@ $pageClass       = 'page--cart';
 $withBrandHeader = false;
 $withBottomBar   = false;
 
-require __DIR__ . '/includes/header.php';
-require __DIR__ . '/includes/cart-header.php';
+require __DIR__ . '/../../layouts/header.php';
+require __DIR__ . '/../component/cart-header.php';
 ?>
 
   <main class="cart-main main-panel">
@@ -39,8 +40,8 @@ require __DIR__ . '/includes/cart-header.php';
     </div>
 
     <div class="cart-actions">
-      <a class="btn btn--block btn--outline" href="menu.php">Tambah Item</a>
-      <a class="btn btn--block" href="checkout.php" data-cart-checkout>Checkout</a>
+      <a class="btn btn--block btn--outline" href="<?= e(url('menu')) ?>">Tambah Item</a>
+      <a class="btn btn--block" href="<?= e(url('checkout')) ?>" data-cart-checkout>Checkout</a>
     </div>
   </section>
 
@@ -67,13 +68,13 @@ require __DIR__ . '/includes/cart-header.php';
       <p class="cart-item__price" data-price></p>
       <div class="cart-item__actions">
         <button type="button" class="cart-action" data-cart-edit>
-          <img src="<?= e(asset('icons/icon-edit.svg')) ?>" alt="">
+          <img src="<?= e(asset('images/icons/icon-edit.svg')) ?>" alt="">
         </button>
         <button type="button" class="cart-action" data-cart-delete>
-          <img src="<?= e(asset('icons/icon-trash.svg')) ?>" alt="">
+          <img src="<?= e(asset('images/icons/icon-trash.svg')) ?>" alt="">
         </button>
       </div>
     </li>
   </template>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/../../layouts/footer.php'; ?>

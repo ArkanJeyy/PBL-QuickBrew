@@ -1,0 +1,3 @@
+# Folder ini hanya di-include oleh public/index.php, tidak boleh diakses langsung dari browser.
+Require all denied
+
