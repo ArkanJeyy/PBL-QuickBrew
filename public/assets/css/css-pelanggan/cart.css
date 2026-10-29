@@ -154,7 +154,7 @@
   height: var(--cart-action-size);
   padding: 0;
   border: 0;
-  background: url("../icons/cart-action-bg.svg") center / 100% 100% no-repeat;
+  background: url("../../images/icons/cart-action-bg.svg") center / 100% 100% no-repeat;
   cursor: pointer;
 }
 

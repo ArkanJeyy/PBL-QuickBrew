@@ -3,8 +3,6 @@
  * Komponen: kartu fitur "Kenapa pilih QuickBrew?".
  * Ikon digambar inline (garis, mengikuti warna teks); belum ada aset ikon di Figma.
  */
-require_once __DIR__ . '/../config.php';
-
 function feature_icon(string $name): string
 {
     $paths = [

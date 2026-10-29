@@ -1,12 +1,10 @@
 <?php
 /**
  * Komponen: pop-up Customization (bottom sheet) saat tombol + pada menu ditekan.
- * Isi (nama, foto, deskripsi, harga) diisi oleh assets/js/menu.js saat dibuka.
+ * Isi (nama, foto, deskripsi, harga) diisi oleh public/assets/js/js-pelanggan/menu.js saat dibuka.
  *
- * @param array $options Isi includes/customization-options.php
+ * @param array $options Isi app/Models/customization-options.php
  */
-require_once __DIR__ . '/../config.php';
-
 /** Satu grup pilihan (radio) bergaya pill. */
 function render_option_group(string $key, array $group): void
 {
@@ -35,7 +33,7 @@ function render_customization_popup(array $options): void
       <div class="sheet__scroll">
         <div class="sheet__head">
           <button type="button" class="sheet__back" data-popup-close aria-label="Kembali ke menu">
-            <img src="<?= e(asset('icons/icon-arrow-back.svg')) ?>" alt="">
+            <img src="<?= e(asset('images/icons/icon-arrow-back.svg')) ?>" alt="">
           </button>
           <h2 class="sheet__title" id="popup-title">Custom</h2>
         </div>
@@ -73,11 +71,11 @@ function render_customization_popup(array $options): void
       <div class="sheet__footer">
         <div class="stepper" role="group" aria-label="Jumlah pesanan">
           <button type="button" data-popup-minus aria-label="Kurangi jumlah">
-            <img src="<?= e(asset('icons/icon-qty-minus.svg')) ?>" alt="">
+            <img src="<?= e(asset('images/icons/icon-qty-minus.svg')) ?>" alt="">
           </button>
           <span class="stepper__qty" data-popup-qty aria-live="polite">1</span>
           <button type="button" data-popup-plus aria-label="Tambah jumlah">
-            <img src="<?= e(asset('icons/icon-qty-plus.svg')) ?>" alt="">
+            <img src="<?= e(asset('images/icons/icon-qty-plus.svg')) ?>" alt="">
           </button>
         </div>
         <p class="sheet__total" data-popup-total>Total: Rp 0</p>

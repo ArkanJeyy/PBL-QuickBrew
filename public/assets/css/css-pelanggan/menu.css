@@ -765,11 +765,11 @@ html.is-popup-open .menu-header {
   flex: none;
   width: 20px;
   height: 20px;
-  background: url("../icons/addon-off.svg") center / 100% 100% no-repeat;
+  background: url("../../images/icons/addon-off.svg") center / 100% 100% no-repeat;
 }
 
 .addon input:checked + .addon__mark {
-  background-image: url("../icons/addon-on.svg");
+  background-image: url("../../images/icons/addon-on.svg");
 }
 
 .addon input:focus-visible + .addon__mark {
@@ -802,7 +802,7 @@ html.is-popup-open .menu-header {
   width: var(--stepper-width);
   height: var(--stepper-height);
   padding: 0 6px 0 7px;
-  background: url("../icons/stepper-bg.svg") center / 100% 100% no-repeat;
+  background: url("../../images/icons/stepper-bg.svg") center / 100% 100% no-repeat;
 }
 
 .stepper button {

@@ -2,8 +2,6 @@
 /**
  * Komponen: footer situs (nama merek + hak cipta).
  */
-require_once __DIR__ . '/../config.php';
-
 function render_site_footer(): void
 {
     ?>

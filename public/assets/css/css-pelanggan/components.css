@@ -35,17 +35,24 @@
 
 /* ===== Label nomor meja (header) ===== */
 .table-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
-  width: 77px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 77px;
   height: 30px;
-  padding-left: 8px;
-  background: url("../icons/table-badge-bg.svg") center / 100% 100% no-repeat;
+  padding: 0 10px 0 8px;
+  background: url("../../images/icons/table-badge-bg.svg") center / 100% 100% no-repeat;
   color: var(--color-brand-dark);
+  text-decoration: none;
+  flex-shrink: 0;
 }
 
-.table-badge__icon { width: 18px; height: 18px; }
+.table-badge--unset {
+  opacity: 0.8;
+}
+
+.table-badge__icon { width: 18px; height: 18px; flex-shrink: 0; }
 
 .table-badge__text {
   font-size: var(--fs-caption);
@@ -223,7 +230,7 @@
   height: var(--add-button-size);
   padding: 0;
   border: 0;
-  background: url("../icons/btn-add-bg.svg") center / 100% 100% no-repeat;
+  background: url("../../images/icons/btn-add-bg.svg") center / 100% 100% no-repeat;
   cursor: pointer;
 }
 

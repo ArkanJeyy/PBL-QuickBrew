@@ -2,16 +2,53 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 date_default_timezone_set('Asia/Jakarta');
 
-// 1. Konfigurasi Database PostgreSQL (QuickBrew)
-const DB_DSN  = 'pgsql:host=localhost;port=5432;dbname=QuickBrew';
-const DB_USER = 'postgres'; 
-const DB_PASS = ''; 
+// 0. Konfigurasi Aplikasi
+const APP_NAME = 'QuickBrew';
+// Root folder proyek (berisi app/, config/, public/)
+define('APP_ROOT', dirname(__DIR__));
+// URL folder public/ (lokasi front controller), terdeteksi otomatis.
+// Contoh: http://localhost/PBL/PBL-QuickBrew/public -> '/PBL/PBL-QuickBrew/public'
+define('BASE_URL', rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/'));
 
-// 2. Konfigurasi Midtrans & App Secret
-const MIDTRANS_SERVER_KEY = 'SB-Mid-server-.pDKNRn8Gd.QEx9bu24H4tQ3';
-const MIDTRANS_CLIENT_KEY = 'Mid-client-DeuELPyLTs0NDr3C';
-const MIDTRANS_PROD       = false; // true untuk production
-const APP_SECRET          = 'x87Bv91mWpQzL29AkmN73PqRstUvWxYz';
+// 1. Loader .env — rahasia disimpan di config/.env (TIDAK di-commit ke Git).
+//    Variabel environment dari server (jika ada) diutamakan di atas isi file .env.
+function env($key, $default = null) {
+    static $vars = null;
+    if ($vars === null) {
+        $vars = [];
+        $file = __DIR__ . '/.env';
+        if (is_readable($file)) {
+            foreach (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+                $line = trim($line);
+                if ($line === '' || $line[0] === '#' || strpos($line, '=') === false) continue;
+                [$k, $v] = explode('=', $line, 2);
+                $v = trim($v);
+                if (strlen($v) > 1 && ($v[0] === '"' || $v[0] === "'") && substr($v, -1) === $v[0]) $v = substr($v, 1, -1);
+                $vars[trim($k)] = $v;
+            }
+        }
+    }
+    $v = getenv($key);
+    return $v !== false ? $v : ($vars[$key] ?? $default);
+}
+
+// 2. Konfigurasi Database PostgreSQL (QuickBrew)
+define('DB_DSN',  sprintf('pgsql:host=%s;port=%s;dbname=%s', env('DB_HOST', 'localhost'), env('DB_PORT', '5432'), env('DB_NAME', 'QuickBrew')));
+define('DB_USER', env('DB_USER', 'postgres'));
+define('DB_PASS', env('DB_PASS', ''));
+
+// 3. Midtrans & App Secret (wajib diisi di config/.env)
+define('MIDTRANS_SERVER_KEY', env('MIDTRANS_SERVER_KEY', ''));
+define('MIDTRANS_CLIENT_KEY', env('MIDTRANS_CLIENT_KEY', ''));
+define('MIDTRANS_PROD',       env('MIDTRANS_PROD', 'false') === 'true'); // true untuk production
+define('APP_SECRET',          env('APP_SECRET', ''));
+
+foreach (['MIDTRANS_SERVER_KEY', 'MIDTRANS_CLIENT_KEY', 'APP_SECRET'] as $k) {
+    if (!constant($k)) {
+        http_response_code(500);
+        exit("Konfigurasi $k belum diisi. Salin config/.env.example menjadi config/.env lalu isi nilainya.");
+    }
+}
 
 function db() {
     static $p;

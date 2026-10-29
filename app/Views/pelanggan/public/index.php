@@ -1,18 +1,13 @@
 <?php
-require_once __DIR__ . '/includes/config.php';
-require_once __DIR__ . '/includes/components/favorite-card.php';
-require_once __DIR__ . '/includes/components/feature-card.php';
-require_once __DIR__ . '/includes/components/site-footer.php';
-
-// Menu favorit diambil dari data menu yang sama dengan halaman Menu (status & harga selalu konsisten).
-// Ganti dengan data dari database saat backend dibuat.
-$menuById = [];
-foreach (require __DIR__ . '/includes/menu-data.php' as $menu) {
-    $menuById[$menu['id']] = $menu;
-}
-// Urutan tampil di carousel. Dua pertama mengikuti gambar referensi; sisanya pilihan saya (mohon dicek).
-$favoriteIds = ['hazelnut-latte', 'matcha-latte', 'americano', 'thai-tea-original', 'caramel-frappe', 'cappuccino'];
-$favorites   = array_values(array_filter(array_map(static fn (string $id): ?array => $menuById[$id] ?? null, $favoriteIds)));
+/**
+ * Halaman Beranda pelanggan.
+ * Variabel dari PelangganController::home():
+ *   $favorites   array        Menu favorit (MenuModel::favorites)
+ *   $tableNumber string|null  Nomor meja dari QR (?meja=<kode_qr>)
+ */
+require_once __DIR__ . '/../component/favorite-card.php';
+require_once __DIR__ . '/../component/feature-card.php';
+require_once __DIR__ . '/../component/site-footer.php';
 
 // Teks kartu fitur disusun ulang (di gambar referensi terlalu kecil untuk dibaca) - mohon dicek.
 $features = [
@@ -26,19 +21,18 @@ $pageTitle     = APP_NAME . ' - Pesan minuman favoritmu';
 $pageStyles    = ['landing'];
 $pageClass     = 'page--landing';
 $withBottomBar = false;
-$tableNumber   = 5; // Sementara statis sesuai Figma. Nantinya dari QR/sesi meja.
 $brandTable    = $tableNumber;
 
-require __DIR__ . '/includes/header.php';
+require __DIR__ . '/../../layouts/header.php';
 ?>
 
   <main>
     <section class="hero" aria-labelledby="hero-title">
-      <img class="hero__image" src="<?= e(asset('img/hero.png')) ?>" alt="">
+      <img class="hero__image" src="<?= e(asset('images/hero.png')) ?>" alt="">
       <h1 class="hero__title" id="hero-title">No More Waiting,<br>Just Brewing.</h1>
       <p class="hero__text">Pesan minuman favoritmu dengan<br>mudah, cepat, dan sesuai selera</p>
       <div class="hero__cta">
-        <a class="btn btn--cta" href="menu.php">
+        <a class="btn btn--cta" href="<?= e(url('menu')) ?>">
           <span>Pesan Sekarang</span>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M1.67 10h16.66M12.5 4.17 18.33 10l-5.83 5.83"/>
@@ -58,7 +52,7 @@ require __DIR__ . '/includes/header.php';
     <section class="favorites" aria-labelledby="favorites-title">
       <div class="favorites__head">
         <h2 class="favorites__title" id="favorites-title">Menu Favorit</h2>
-        <a class="favorites__all" href="menu.php">
+        <a class="favorites__all" href="<?= e(url('menu')) ?>">
           <span>Semua Kategori</span>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M1.67 10h16.66M12.5 4.17 18.33 10l-5.83 5.83"/>
@@ -73,4 +67,4 @@ require __DIR__ . '/includes/header.php';
   </main>
 
 <?php render_site_footer(); ?>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php require __DIR__ . '/../../layouts/footer.php'; ?>
