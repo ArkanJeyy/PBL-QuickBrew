@@ -68,7 +68,6 @@ require __DIR__ . '/../component/cart-header.php';
         <h3 class="cart-item__name"><span data-name></span><span class="cart-item__qty" data-qty hidden></span></h3>
         <p class="cart-item__variants" data-variants></p>
         <p class="cart-item__addon" data-addon></p>
-        <p class="cart-item__note" data-note></p>
       </div>
       <div class="cart-item__media"><img src="" alt="" data-image></div>
       <p class="cart-item__price" data-price></p>

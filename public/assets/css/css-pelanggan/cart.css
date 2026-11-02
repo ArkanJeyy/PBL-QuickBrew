@@ -119,17 +119,6 @@ html.is-popup-open .cart-header {
   pointer-events: none;
 }
 
-/* [Asumsi] catatan pelanggan: tidak ada di desain Figma */
-.cart-item__note {
-  margin-top: 6px;
-  font-size: var(--fs-caption);
-  line-height: 14px;
-  color: var(--color-black);
-  overflow-wrap: anywhere;
-}
-
-.cart-item__note:empty { display: none; }
-
 .cart-item__media {
   position: absolute;
   top: 17px;
