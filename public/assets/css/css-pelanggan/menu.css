@@ -2,7 +2,12 @@
    Halaman Menu - sumber: Figma "Katalog Menu - HiFi" (50:397)
    ========================================================================== */
 
-.page--menu { padding-bottom: 0; }
+.page--menu {
+  padding-bottom: 0;
+  /* Jarak kartu dari atas layar saat di-scroll ke sebuah kategori:
+     tinggi baris Cari + Kategori yang menempel (8 + 30 + 8) + 12px jarak */
+  --menu-tools-offset: 58px;
+}
 
 /* ===== Header ===== */
 .menu-header {
@@ -14,8 +19,8 @@
 
 .menu-header__logo {
   display: block;
-  width: 25px;
-  height: 26px;
+  width: 36px;
+  height: 38px;
   margin-top: 3px; /* logo y=39 */
   overflow: hidden;
 }
@@ -72,13 +77,18 @@
   color: var(--color-brand-dark);
 }
 
-/* ===== Cari + kategori ===== */
+/* ===== Cari + kategori =====
+   Menempel di atas saat scroll (revisi: filter kategori = lompat ke kategori). */
 .menu-tools {
+  position: sticky;
+  top: 0;
+  z-index: 30; /* di atas kartu & overlay dropdown (20), di bawah pop-up/modal (100) */
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-top: 22px; /* baris y=136 */
-  padding: 0 var(--space-page);
+  margin-top: 14px; /* + padding 8px = baris y=136 */
+  padding: 8px var(--space-page);
+  background: var(--color-white);
 }
 
 .search-field {
@@ -133,14 +143,15 @@
   cursor: pointer;
 }
 
+/* Teks di tengah area antara tepi kiri tombol dan panah (revisi: dulu rata kanan) */
 .dropdown__label {
   position: absolute;
   top: 5px;
-  right: 40px;
-  left: 9px;
+  right: 36px;
+  left: 12px;
   font-size: var(--fs-caption);
   color: var(--color-text-dark);
-  text-align: right;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -220,7 +231,7 @@
 .menu-list {
   display: grid;
   gap: var(--menu-card-gap);
-  padding: 22px var(--space-page) 36px; /* kartu pertama y=188 */
+  padding: 14px var(--space-page) 36px; /* + padding bawah baris sticky 8px = kartu pertama y=188 */
 }
 
 .menu-item {
@@ -233,11 +244,25 @@
   border-radius: var(--radius-panel);
   background: var(--color-white);
   box-shadow: var(--shadow-card);
+  scroll-margin-top: var(--menu-tools-offset); /* tidak tertutup baris sticky saat lompat kategori */
 }
 
-/* Jarak ekstra antar section kategori (minuman / makanan / dessert) */
-.menu-item--section-start {
+/* Judul kategori di atas kartu pertama tiap kategori (minuman / makanan / dessert) */
+.menu-section-title {
+  margin-bottom: -8px; /* rapat ke kartu di bawahnya (gap grid daftar 19,2px) */
+  scroll-margin-top: var(--menu-tools-offset); /* tidak tertutup baris sticky saat lompat kategori */
+}
+
+/* Jarak ekstra antar kategori */
+.menu-section-title:not(:first-child) {
   margin-top: var(--menu-section-gap);
+}
+
+.menu-section-title h2 {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
 }
 
 .menu-item__media {
@@ -508,7 +533,7 @@
 }
 
 /* ==========================================================================
-   Pop-up Customization - Figma "Customization Pop-up - HiFi" (52:294)
+   Pop-up Customization - gaya utama di popup.css (dipakai juga halaman Keranjang)
    ========================================================================== */
 
 /* Header tetap terang di atas overlay (sesuai urutan layer Figma) */
@@ -517,323 +542,6 @@ html.is-popup-open .menu-header {
   z-index: 105;
   pointer-events: none; /* klik di area header menembus ke overlay (menutup pop-up) */
 }
-
-.popup {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-}
-
-.popup__backdrop {
-  position: absolute;
-  inset: 0;
-  background: var(--color-overlay-modal);
-}
-
-/* ===== Bottom sheet ===== */
-.sheet {
-  position: absolute;
-  top: var(--sheet-top);
-  bottom: 0;
-  left: 50%;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: var(--page-max-width);
-  overflow: hidden;
-  transform: translateX(-50%);
-  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
-  background: var(--color-white);
-  box-shadow: var(--shadow-sheet);
-}
-
-.sheet__scroll {
-  flex: 1;
-  min-height: 0;
-  padding: 20px 0 27px; /* panah y=101 */
-  overflow-y: auto;
-}
-
-.sheet__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 16px;
-}
-
-.sheet__back {
-  display: block;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-
-.sheet__back img { width: 100%; height: 100%; }
-
-.sheet__title {
-  font-size: var(--fs-section-title);
-  font-weight: var(--fw-extrabold);
-  line-height: 24px;
-  color: var(--color-brand-dark);
-}
-
-/* ===== Ringkasan produk ===== */
-.product {
-  display: grid;
-  grid-template-columns: 167px 1fr;
-  column-gap: 17px;
-  align-items: start;
-  margin-top: 19px; /* foto y=144 */
-  padding: 0 16px 0 20px;
-}
-
-.product__media {
-  width: 167px;
-  height: 100px;
-  overflow: hidden;
-  border-radius: var(--radius-card);
-  background: var(--color-placeholder);
-}
-
-.product__media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.product__info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 100px;
-}
-
-.product__name {
-  font-size: var(--fs-title);
-  font-weight: var(--fw-extrabold);
-  line-height: var(--lh-normal);
-  color: var(--color-brand-dark);
-}
-
-.product__desc {
-  min-height: 24px;
-  margin-top: 1px;
-  font-size: var(--fs-small);
-  line-height: 12px;
-  color: var(--color-black);
-  white-space: pre-line;
-}
-
-.product__price {
-  margin-top: auto;
-  font-size: var(--fs-title);
-  font-weight: var(--fw-semibold);
-  line-height: var(--lh-normal);
-  color: var(--color-black);
-}
-
-/* ===== Kartu opsi ===== */
-.options {
-  margin: 23px var(--space-page) 0; /* kartu y=267 */
-  padding: 0 15px;
-  border-radius: var(--radius-card);
-  background: var(--color-white);
-  box-shadow: var(--shadow-card);
-}
-
-/* Tinggi & padding tiap seksi diukur dari Figma (jarak antar garis tidak seragam) */
-.cust-section {
-  position: relative;
-  height: 70px;
-  padding-top: 10px;
-}
-
-.cust-section:nth-child(2) { height: 73px; }
-.cust-section:nth-child(3) { height: 77px; padding-top: 14px; }
-.cust-section:nth-child(4) { height: 73px; padding-top: 11px; }
-.cust-section:nth-child(5) { height: 134px; padding-top: 14px; }
-
-.cust-section + .cust-section::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: -6px;
-  left: -5px;
-  height: 1px;
-  background: var(--color-divider);
-}
-
-.cust-section__label {
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-semibold);
-  line-height: var(--lh-normal);
-  color: var(--color-black);
-}
-
-/* ===== Pill pilihan (radio) ===== */
-.option-row {
-  display: flex;
-  margin-top: 8px;
-}
-
-.option-row--spread { justify-content: space-between; }
-
-/* Normal rata kiri, Less tepat di tengah baris, Extra rata kanan (revisi dari Figma: Less dulu x=157) */
-.option-row--level {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-}
-
-/* Tipe Minuman: Hot rata kiri, Ice di tengah (revisi dari Figma: Ice dulu rata kanan) */
-.option-row--type {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-}
-
-.option-row--level .option:nth-child(1) { justify-self: start; }
-.option-row--level .option:nth-child(3) { justify-self: end; }
-
-.option { position: relative; display: inline-flex; }
-
-.option input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.option__face {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--option-height);
-  border: var(--border-option);
-  border-radius: 99px;
-  background: var(--color-white);
-  color: var(--color-text-dark);
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-semibold);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.option input:checked + .option__face {
-  background: var(--color-brand-dark);
-  color: var(--color-white);
-}
-
-.option input:focus-visible + .option__face {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.option-row--size .option__face { width: 48px; }
-.option-row--type .option__face { width: 64px; }
-.option-row--level .option:nth-child(1) .option__face { width: 110px; }
-.option-row--level .option:nth-child(2) .option__face { width: 88px; }
-.option-row--level .option:nth-child(3) .option__face { width: 102px; }
-
-/* ===== Add-on / topping (checkbox) ===== */
-.addon-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.addon {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  height: 20px;
-  cursor: pointer;
-}
-
-.addon input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.addon__mark {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  background: url("../../images/icons/addon-off.svg") center / 100% 100% no-repeat;
-}
-
-.addon input:checked + .addon__mark {
-  background-image: url("../../images/icons/addon-on.svg");
-}
-
-.addon input:focus-visible + .addon__mark {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: 50%;
-}
-
-.addon__text {
-  font-size: var(--fs-caption);
-  line-height: var(--lh-normal);
-  color: var(--color-black);
-}
-
-/* ===== Footer: jumlah, total, tombol ===== */
-.sheet__footer {
-  display: grid;
-  flex: none;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  row-gap: 11px;
-  padding: 14px var(--space-page) 32px; /* sheet Figma berakhir y=843 */
-  box-shadow: inset 0 1px 0 var(--color-divider);
-}
-
-.stepper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: var(--stepper-width);
-  height: var(--stepper-height);
-  padding: 0 6px 0 7px;
-  background: url("../../images/icons/stepper-bg.svg") center / 100% 100% no-repeat;
-}
-
-.stepper button {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-
-.stepper button img { width: 16px; height: 16px; }
-
-.stepper__qty {
-  font-size: var(--fs-section-title);
-  font-weight: var(--fw-semibold);
-  line-height: var(--lh-normal);
-  color: var(--color-black);
-}
-
-.sheet__total {
-  justify-self: end;
-  font-size: var(--fs-section-title);
-  font-weight: var(--fw-semibold);
-  line-height: 24px;
-  color: var(--color-black);
-}
-
-.sheet__footer .btn { grid-column: 1 / -1; }
 
 /* ===== Stepper jumlah [- n +] di kartu menu =====
    Warna mengikuti design system (krem + cokelat merek); contoh referensi memakai oranye/pink. */

@@ -19,10 +19,10 @@ function render_menu_item(array $item, bool $sectionStart = false): void
             <span class="chip <?= $soldOut ? 'chip--soldout' : 'chip--available' ?>"><?= $soldOut ? 'Habis' : 'Tersedia' ?></span>
             <p class="menu-item__price"><?= e(format_rupiah($item['price'])) ?></p>
           </div>
-          <button type="button" class="btn-add" data-menu-id="<?= e($item['id']) ?>" aria-label="Tambah <?= e($item['name']) ?>"<?= $soldOut ? ' aria-disabled="true"' : '' ?>>
+<?php if (!$soldOut): // Menu habis: tanpa tombol + dan stepper ?>
+          <button type="button" class="btn-add" data-menu-id="<?= e($item['id']) ?>" aria-label="Tambah <?= e($item['name']) ?>">
             <img src="<?= e(asset('images/icons/icon-plus.svg')) ?>" alt="">
           </button>
-<?php if (!$soldOut): ?>
           <div class="qty-stepper" data-stepper role="group" aria-label="Jumlah <?= e($item['name']) ?>" hidden>
             <button type="button" class="qty-stepper__minus" data-stepper-minus data-menu-id="<?= e($item['id']) ?>" aria-label="Kurangi <?= e($item['name']) ?>">
               <img src="<?= e(asset('images/icons/icon-qty-minus.svg')) ?>" alt="">

@@ -5,6 +5,7 @@
  * Seluruh akses lewat window.QuickBrewCart agar mudah diganti ke API server nanti.
  * Event:
  *   'cart:add'    (dikirim pop-up Customization) -> item ditambahkan.
+ *   Ubah item dari Keranjang memanggil QuickBrewCart.update(lineId, detail) langsung.
  *   'cart:change' (dikirim modul ini)            -> isi keranjang berubah.
  */
 (function () {
@@ -25,6 +26,8 @@
       image: raw.image ? String(raw.image) : '',
       description: raw.description ? String(raw.description) : '',
       basePrice: isFinite(Number(raw.basePrice)) ? Number(raw.basePrice) : unitPrice,
+      // Minuman (bisa diubah lewat pop-up). Data lama tanpa flag: minuman selalu punya ukuran, makanan tidak.
+      customizable: raw.customizable != null ? Boolean(raw.customizable) : Boolean(raw.size),
       quantity: quantity,
       size: raw.size ? String(raw.size) : '',
       type: raw.type ? String(raw.type) : '',
@@ -33,6 +36,7 @@
       addons: Array.isArray(raw.addons) ? raw.addons.map(function (a) {
         return { id: String(a.id), label: String(a.label), price: Number(a.price) || 0 };
       }) : [],
+      note: raw.note ? String(raw.note).trim().slice(0, 100) : '',
       unitPrice: unitPrice
     };
   };
@@ -60,11 +64,12 @@
     document.dispatchEvent(new CustomEvent('cart:change', { detail: { items: items.slice() } }));
   };
 
-  /* Pesanan identik (menu + semua pilihan sama) digabung menjadi satu baris. */
+  /* Pesanan identik (menu + semua pilihan + catatan sama) digabung menjadi satu baris. */
   var signature = function (item) {
     return [
       item.id, item.size, item.type, item.sugar, item.ice,
-      item.addons.map(function (a) { return a.id; }).sort().join('+')
+      item.addons.map(function (a) { return a.id; }).sort().join('+'),
+      item.note
     ].join('|');
   };
 
@@ -83,6 +88,26 @@
         existing.quantity += item.quantity;
       } else {
         items.push(item);
+      }
+      write(items);
+    },
+    /* Ganti isi satu baris (ubah pesanan dari halaman Keranjang); posisi baris dipertahankan.
+       Bila hasilnya identik dengan baris lain, jumlahnya digabung ke baris tersebut. */
+    update: function (lineId, detail) {
+      var items = read();
+      var index = -1;
+      items.forEach(function (i, n) { if (i.lineId === lineId) index = n; });
+      var item = sanitize(Object.assign({}, detail, { lineId: lineId }));
+      if (index === -1 || !item) return;
+
+      var twin = items.filter(function (i) {
+        return i.lineId !== lineId && signature(i) === signature(item);
+      })[0];
+      if (twin) {
+        twin.quantity += item.quantity;
+        items.splice(index, 1);
+      } else {
+        items[index] = item;
       }
       write(items);
     },

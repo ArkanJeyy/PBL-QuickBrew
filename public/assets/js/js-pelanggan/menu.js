@@ -1,4 +1,5 @@
-/* Halaman Menu: filter kategori, pencarian (modal), dan pop-up Customization. Vanilla JS. */
+/* Halaman Menu: filter kategori, pencarian (modal), dan pembuka pop-up Customization
+   (logika pop-up ada di customization-popup.js). Vanilla JS. */
 (function () {
   'use strict';
 
@@ -12,11 +13,6 @@
   }
   var itemsById = {};
   items.forEach(function (item) { itemsById[item.id] = item; });
-
-  var formatRupiah = function (amount, withDecimals) {
-    var digits = String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return 'Rp ' + digits + (withDecimals ? ',00' : '');
-  };
 
   /* Diisi oleh blok modal pencarian di bawah (dipanggil saat + ditekan dari hasil pencarian). */
   var closeSearch = null;
@@ -99,188 +95,24 @@
     }, TOAST_VISIBLE_MS);
   };
 
-  /* Menu tanpa kustomisasi (makanan, dessert): langsung masuk keranjang, jumlah 1. */
-  var addDirect = function (item) {
-    document.dispatchEvent(new CustomEvent('cart:add', {
-      detail: {
-        id: item.id,
-        name: item.name,
-        image: item.image,
-        description: item.description,
-        basePrice: item.priceValue,
-        quantity: 1,
-        size: '',
-        type: '',
-        sugar: '',
-        ice: '',
-        addons: [],
-        unitPrice: item.priceValue,
-        total: item.priceValue
-      }
-    }));
-    notify(item.name);
-  };
-
-  /* ---------- Pop-up Customization ---------- */
-  var openPopup = function () {};
-  var popup = document.querySelector('[data-popup]');
-
-  if (popup) {
-    var popupImage = popup.querySelector('[data-popup-image]');
-    var popupName = popup.querySelector('[data-popup-name]');
-    var popupDesc = popup.querySelector('[data-popup-desc]');
-    var popupPrice = popup.querySelector('[data-popup-price]');
-    var qtyEl = popup.querySelector('[data-popup-qty]');
-    var totalEl = popup.querySelector('[data-popup-total]');
-    var scroller = popup.querySelector('.sheet__scroll');
-    var state = { item: null, qty: 1, opener: null };
-
-    var checkedAddons = function () {
-      return Array.prototype.slice.call(popup.querySelectorAll('[data-addon]:checked'));
-    };
-
-    var unitPrice = function () {
-      var sum = state.item ? state.item.priceValue : 0;
-      // Tambahan harga dari pilihan (mis. ukuran M/L)
-      Array.prototype.forEach.call(popup.querySelectorAll('input[type="radio"]:checked'), function (radio) {
-        sum += Number(radio.getAttribute('data-price')) || 0;
-      });
-      checkedAddons().forEach(function (box) { sum += Number(box.getAttribute('data-price')); });
-      return sum;
-    };
-
-    var refresh = function () {
-      qtyEl.textContent = String(state.qty);
-      totalEl.textContent = 'Total: ' + formatRupiah(unitPrice() * state.qty, false);
-    };
-
-    var selectedValue = function (name) {
-      var input = popup.querySelector('input[name="' + name + '"]:checked');
-      return input ? input.value : null;
-    };
-
-    openPopup = function (item, opener) {
-      state.item = item;
-      state.qty = 1;
-      state.opener = opener || null;
-
-      popupName.textContent = item.name;
-      popupDesc.textContent = item.description;
-      popupPrice.textContent = formatRupiah(item.priceValue, true);
-      popupImage.src = item.image;
-
-      Array.prototype.forEach.call(popup.querySelectorAll('input[type="radio"]'), function (radio) {
-        radio.checked = radio.defaultChecked;
-      });
-      Array.prototype.forEach.call(popup.querySelectorAll('[data-addon]'), function (box) {
-        box.checked = false;
-      });
-      refresh();
-
-      popup.hidden = false;
-      root.classList.add('is-locked', 'is-popup-open');
-      scroller.scrollTop = 0;
-      popup.querySelector('.sheet__back').focus();
-    };
-
-    var closePopup = function () {
-      popup.hidden = true;
-      root.classList.remove('is-locked', 'is-popup-open');
-      if (state.opener && document.contains(state.opener) && state.opener.offsetParent !== null) {
-        state.opener.focus();
-      } else if (state.item) {
-        focusItemControl(state.item.id); // tombol + sudah berganti menjadi stepper
-      }
-    };
-
-    Array.prototype.forEach.call(popup.querySelectorAll('[data-popup-close]'), function (el) {
-      el.addEventListener('click', closePopup);
-    });
-
-    popup.addEventListener('change', refresh);
-
-    popup.querySelector('[data-popup-minus]').addEventListener('click', function () {
-      if (state.qty > 1) {
-        state.qty -= 1;
-        refresh();
-      }
-    });
-
-    popup.querySelector('[data-popup-plus]').addEventListener('click', function () {
-      state.qty += 1;
-      refresh();
-    });
-
-    /* Keranjang belum diimplementasikan: kirim event agar bisa dipakai halaman Keranjang nanti. */
-    popup.querySelector('[data-popup-submit]').addEventListener('click', function () {
-      var detail = {
-        id: state.item.id,
-        name: state.item.name,
-        image: state.item.image,
-        description: state.item.description,
-        basePrice: state.item.priceValue,
-        quantity: state.qty,
-        size: selectedValue('size'),
-        type: selectedValue('type'),
-        sugar: selectedValue('sugar'),
-        ice: selectedValue('ice'),
-        addons: checkedAddons().map(function (box) {
-          return {
-            id: box.value,
-            label: box.getAttribute('data-label'),
-            price: Number(box.getAttribute('data-price'))
-          };
-        }),
-        unitPrice: unitPrice(),
-        total: unitPrice() * state.qty
-      };
-      document.dispatchEvent(new CustomEvent('cart:add', { detail: detail }));
-      notify(state.item.name);
-      closePopup();
-    });
-
-    popup.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') {
-        closePopup();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      var focusable = popup.querySelectorAll('button, input');
-      var first = focusable[0];
-      var last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    });
-  }
-
-  /* Tombol + (daftar utama maupun hasil pencarian). Menu "Habis" tidak melakukan apa pun; makanan/dessert langsung ke keranjang. */
+  /* Tombol + (daftar utama maupun hasil pencarian) selalu membuka pop-up. Menu "Habis" tidak punya tombol +. */
   document.addEventListener('click', function (event) {
     var btn = event.target.closest('.btn-add[data-menu-id], [data-stepper-plus][data-menu-id]');
     if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
     var item = itemsById[btn.getAttribute('data-menu-id')];
-    if (!item) return;
-
-    if (!item.customizable) {
-      addDirect(item);
-      if (btn.closest('[data-search-modal]') && closeSearch) {
-        closeSearch();
-      } else {
-        focusItemControl(item.id); // tombol + yang diklik bisa berganti menjadi stepper
-      }
-      return;
-    }
+    if (!item || item.status === 'soldout') return;
 
     var opener = btn;
     if (btn.closest('[data-search-modal]') && closeSearch) {
       closeSearch(false);
       opener = document.querySelector('[data-search-open]');
     }
-    openPopup(item, opener);
+    if (!window.QuickBrewPopup) return;
+    window.QuickBrewPopup.open(item, {
+      opener: opener,
+      onAdded: function (added) { notify(added.name); },
+      onClose: function (closed) { focusItemControl(closed.id); } // tombol + bisa sudah berganti menjadi stepper
+    });
   });
 
   /* ---------- Dropdown kategori ---------- */
@@ -300,23 +132,83 @@
       trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
     };
 
-    /* Jarak antar section hanya antara item terlihat yang kategorinya berganti (bukan di item pertama). */
-    var markSections = function () {
-      var prev = null;
-      Array.prototype.forEach.call(list.children, function (card) {
-        if (card.hidden) return;
-        var category = card.getAttribute('data-category');
-        card.classList.toggle('menu-item--section-start', prev !== null && category !== prev);
-        prev = category;
+    /* Semua menu selalu tampil. Memilih kategori = scroll ke kartu pertama kategori itu;
+       label dropdown ikut berganti sesuai kategori yang sedang terlihat (scroll-spy). */
+    var tools = dropdown.closest('.menu-tools');
+    var activeValue = 'all';
+
+    // Judul tiap kategori (dirender menu.php di atas kartu pertama kategori), urut sesuai tampilan.
+    // Dipakai sebagai titik tujuan lompat kategori dan acuan scroll-spy.
+    var firstCards = Array.prototype.map.call(list.querySelectorAll('[data-category-heading]'), function (heading) {
+      return { category: heading.getAttribute('data-category-heading'), card: heading };
+    });
+
+    var setActive = function (value) {
+      var match = options.filter(function (o) { return o.getAttribute('data-value') === value; })[0];
+      if (!match) return;
+      activeValue = value;
+      options.forEach(function (o) {
+        o.setAttribute('aria-selected', o === match ? 'true' : 'false');
       });
+      label.textContent = match.querySelector('.dropdown__option-label').textContent;
     };
 
-    var applyCategory = function (value) {
-      Array.prototype.forEach.call(list.children, function (card) {
-        card.hidden = value !== 'all' && card.getAttribute('data-category') !== value;
-      });
-      markSections();
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var autoScrolling = false;
+    var autoScrollTimer = null;
+
+    var scrollToCategory = function (value) {
+      var behavior = reduceMotion ? 'auto' : 'smooth';
+      var target = value === 'all' ? null : firstCards.filter(function (f) { return f.category === value; })[0];
+      if (value !== 'all' && !target) return;
+
+      // Jeda scroll-spy selama scroll otomatis agar label tidak berkedip melewati kategori lain
+      autoScrolling = true;
+      window.clearTimeout(autoScrollTimer);
+      autoScrollTimer = window.setTimeout(endAutoScroll, 700); // fallback bila 'scrollend' tidak didukung
+
+      if (target) {
+        target.card.scrollIntoView({ behavior: behavior, block: 'start' }); // jarak dari baris sticky: scroll-margin-top di menu.css
+      } else {
+        window.scrollTo({ top: 0, behavior: behavior });
+      }
     };
+
+    /* Kategori aktif = kategori terakhir yang judulnya sudah sampai di bawah baris sticky. */
+    var currentCategory = function () {
+      // Toleransi 20px: sedikit lebih besar dari jarak scroll-margin (lihat --menu-tools-offset di menu.css)
+      var line = (tools ? tools.getBoundingClientRect().bottom : 0) + 20;
+      var atBottom = window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 2;
+      var value = 'all';
+      firstCards.forEach(function (f) {
+        var top = f.card.getBoundingClientRect().top;
+        // Di dasar halaman, kategori terakhir mungkin tidak bisa naik sampai garis: cukup sudah terlihat
+        if (top <= line || (atBottom && top < window.innerHeight)) value = f.category;
+      });
+      return value;
+    };
+
+    var spyFrame = null;
+    var spy = function () {
+      spyFrame = null;
+      if (autoScrolling || !panel.hidden) return;
+      var value = currentCategory();
+      if (value !== activeValue) setActive(value);
+    };
+
+    var endAutoScroll = function () {
+      window.clearTimeout(autoScrollTimer);
+      autoScrolling = false;
+      spy();
+    };
+
+    window.addEventListener('scroll', function () {
+      if (spyFrame === null) spyFrame = window.requestAnimationFrame(spy);
+    }, { passive: true });
+    window.addEventListener('scrollend', function () {
+      if (autoScrolling) endAutoScroll();
+    });
+    spy(); // posisi awal (mis. kembali ke halaman dengan scroll tersimpan)
 
     trigger.addEventListener('click', function () {
       setDropdown(panel.hidden);
@@ -324,13 +216,11 @@
 
     options.forEach(function (option) {
       option.addEventListener('click', function () {
-        options.forEach(function (o) {
-          o.setAttribute('aria-selected', o === option ? 'true' : 'false');
-        });
-        label.textContent = option.querySelector('.dropdown__option-label').textContent;
-        applyCategory(option.getAttribute('data-value'));
+        var value = option.getAttribute('data-value');
+        setActive(value);
         setDropdown(false);
-        trigger.focus();
+        scrollToCategory(value);
+        trigger.focus({ preventScroll: true });
       });
     });
 
@@ -379,11 +269,12 @@
     node.querySelector('.search-result__price').textContent = item.price;
     chip.textContent = soldOut ? 'Habis' : 'Tersedia';
     chip.classList.add(soldOut ? 'chip--soldout' : 'chip--available');
-    add.setAttribute('data-menu-id', item.id);
-    add.setAttribute('aria-label', 'Tambah ' + item.name);
     if (soldOut) {
-      add.setAttribute('aria-disabled', 'true');
+      add.remove(); // menu habis: tanpa tombol +, foto hitam-putih
       node.classList.add('search-result--soldout');
+    } else {
+      add.setAttribute('data-menu-id', item.id);
+      add.setAttribute('aria-label', 'Tambah ' + item.name);
     }
     return node;
   };

@@ -24,8 +24,8 @@ function redirect(string $to): void
     exit;
 }
 
-/** Format rupiah: format_rupiah(20000) -> "Rp 20.000,00"; format_rupiah(20000, false) -> "Rp 20.000" */
-function format_rupiah($amount, bool $withDecimals = true): string
+/** Format rupiah: format_rupiah(20000) -> "Rp 20.000"; format_rupiah(20000, true) -> "Rp 20.000,00" */
+function format_rupiah($amount, bool $withDecimals = false): string
 {
     return 'Rp ' . number_format((float) $amount, 0, ',', '.') . ($withDecimals ? ',00' : '');
 }
