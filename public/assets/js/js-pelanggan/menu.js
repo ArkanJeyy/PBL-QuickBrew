@@ -95,12 +95,46 @@
     }, TOAST_VISIBLE_MS);
   };
 
-  /* Tombol + (daftar utama maupun hasil pencarian) selalu membuka pop-up. Menu "Habis" tidak punya tombol +. */
+  /* Menu tanpa kustomisasi (makanan, dessert): langsung masuk keranjang, jumlah 1. */
+  var addDirect = function (item) {
+    document.dispatchEvent(new CustomEvent('cart:add', {
+      detail: {
+        id: item.id,
+        name: item.name,
+        image: item.image,
+        description: item.description,
+        basePrice: item.priceValue,
+        customizable: false,
+        quantity: 1,
+        size: '',
+        type: '',
+        sugar: '',
+        ice: '',
+        addons: [],
+        unitPrice: item.priceValue,
+        total: item.priceValue
+      }
+    }));
+    notify(item.name);
+  };
+
+  /* Tombol + (daftar utama maupun hasil pencarian). Minuman membuka pop-up Custom;
+     makanan/dessert langsung ke keranjang. Menu "Habis" tidak punya tombol +. */
   document.addEventListener('click', function (event) {
     var btn = event.target.closest('.btn-add[data-menu-id], [data-stepper-plus][data-menu-id]');
     if (!btn || btn.getAttribute('aria-disabled') === 'true') return;
     var item = itemsById[btn.getAttribute('data-menu-id')];
     if (!item || item.status === 'soldout') return;
+
+    if (!item.customizable) {
+      addDirect(item);
+      if (btn.closest('[data-search-modal]') && closeSearch) {
+        closeSearch();
+      } else {
+        focusItemControl(item.id); // tombol + yang diklik bisa berganti menjadi stepper
+      }
+      return;
+    }
 
     var opener = btn;
     if (btn.closest('[data-search-modal]') && closeSearch) {

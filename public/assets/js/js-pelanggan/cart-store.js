@@ -36,7 +36,6 @@
       addons: Array.isArray(raw.addons) ? raw.addons.map(function (a) {
         return { id: String(a.id), label: String(a.label), price: Number(a.price) || 0 };
       }) : [],
-      note: raw.note ? String(raw.note).trim().slice(0, 100) : '',
       unitPrice: unitPrice
     };
   };
@@ -64,12 +63,11 @@
     document.dispatchEvent(new CustomEvent('cart:change', { detail: { items: items.slice() } }));
   };
 
-  /* Pesanan identik (menu + semua pilihan + catatan sama) digabung menjadi satu baris. */
+  /* Pesanan identik (menu + semua pilihan sama) digabung menjadi satu baris. */
   var signature = function (item) {
     return [
       item.id, item.size, item.type, item.sugar, item.ice,
-      item.addons.map(function (a) { return a.id; }).sort().join('+'),
-      item.note
+      item.addons.map(function (a) { return a.id; }).sort().join('+')
     ].join('|');
   };
 

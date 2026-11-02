@@ -7,12 +7,17 @@
   /* Jarak kartu dari atas layar saat di-scroll ke sebuah kategori:
      tinggi baris Cari + Kategori yang menempel (8 + 30 + 8) + 12px jarak */
   --menu-tools-offset: 58px;
+  /* Jarak judul "← Menu" ke garis header = jarak judul ke kolom Cari (judul tepat di tengah) */
+  --menu-title-gap: 24px;
+  /* Lebar kolom Cari = lebar dropdown kategori (revisi: dulu Cari 187px) */
+  --menu-tool-width: 156px;
 }
 
-/* ===== Header ===== */
+/* ===== Header =====
+   Revisi: logo kiri; label meja lalu keranjang di kanan, semua sejajar tengah. */
 .menu-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   height: 76px;
   padding: 36px var(--space-page) 0; /* baris atas mulai y=36 */
 }
@@ -21,9 +26,10 @@
   display: block;
   width: 36px;
   height: 38px;
-  margin-top: 3px; /* logo y=39 */
   overflow: hidden;
 }
+
+.menu-header .table-badge { margin-left: auto; } /* dorong label meja + keranjang ke kanan */
 
 .menu-header__logo img {
   width: 100%;
@@ -36,7 +42,7 @@
   display: block;
   width: 24px;
   height: 24px;
-  margin: 3px 8px 0 auto; /* ikon y=39, rapat ke label meja */
+  margin-left: 12px; /* jarak dari label meja */
 }
 
 .menu-header__cart img { width: 100%; height: 100%; }
@@ -63,7 +69,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 14px; /* judul y=90 */
+  margin-top: var(--menu-title-gap); /* jarak dari garis header */
   padding: 0 var(--space-page) 0 12px;
 }
 
@@ -73,7 +79,7 @@
 .menu-title__text {
   font-size: var(--fs-section-title);
   font-weight: var(--fw-extrabold);
-  line-height: 24px;
+  line-height: 20px;
   color: var(--color-brand-dark);
 }
 
@@ -86,15 +92,15 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-top: 14px; /* + padding 8px = baris y=136 */
+  margin-top: calc(var(--menu-title-gap) - 8px); /* + padding atas 8px = jarak yang sama dengan di atas judul */
   padding: 8px var(--space-page);
   background: var(--color-white);
 }
 
 .search-field {
   position: relative;
-  flex: 0 0 187px;
-  width: 187px;
+  flex: 0 0 var(--menu-tool-width);
+  width: var(--menu-tool-width);
   height: 30px;
   padding: 0;
   border: var(--border-input);
@@ -126,8 +132,8 @@
 .dropdown {
   position: relative;
   z-index: 30; /* di atas overlay */
-  flex: 0 0 156px;
-  width: 156px;
+  flex: 0 0 var(--menu-tool-width);
+  width: var(--menu-tool-width);
   height: 30px;
 }
 
@@ -542,6 +548,9 @@ html.is-popup-open .menu-header {
   z-index: 105;
   pointer-events: none; /* klik di area header menembus ke overlay (menutup pop-up) */
 }
+
+/* Revisi: logo tidak ditampilkan saat pop-up terbuka (latar putih logo tampak seperti kotak di atas overlay) */
+html.is-popup-open .menu-header__logo { visibility: hidden; }
 
 /* ===== Stepper jumlah [- n +] di kartu menu =====
    Warna mengikuti design system (krem + cokelat merek); contoh referensi memakai oranye/pink. */

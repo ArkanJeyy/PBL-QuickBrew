@@ -1,9 +1,8 @@
 <?php
 /**
- * Komponen: pop-up Customization (bottom sheet) saat tombol + pada menu ditekan.
- * Isi (nama, foto, deskripsi, harga) diisi oleh public/assets/js/js-pelanggan/menu.js saat dibuka.
- * Menu non-minuman memakai mode ringkas (.popup--simple): section [data-cust-drink] disembunyikan,
- * hanya kolom catatan, jumlah, dan tombol yang tampil.
+ * Komponen: pop-up Customization (bottom sheet) khusus minuman - dibuka dari tombol + di Menu
+ * dan tombol pensil di Keranjang. Isi (nama, foto, deskripsi, harga) diisi oleh
+ * public/assets/js/js-pelanggan/customization-popup.js saat dibuka.
  *
  * @param array $options Isi app/Models/customization-options.php
  */
@@ -12,7 +11,7 @@ function render_option_group(string $key, array $group): void
 {
     $labelId = 'cust-label-' . $key;
     ?>
-        <section class="cust-section" data-cust-drink>
+        <section class="cust-section">
           <p class="cust-section__label" id="<?= e($labelId) ?>"><?= e($group['label']) ?></p>
           <div class="option-row option-row--<?= e($group['layout']) ?> option-row--<?= e($key) ?>" role="radiogroup" aria-labelledby="<?= e($labelId) ?>">
 <?php foreach ($group['options'] as $i => $label): ?>
@@ -55,7 +54,7 @@ function render_customization_popup(array $options): void
         render_option_group($key, $options[$key]);
     }
 ?>
-          <section class="cust-section" data-cust-drink>
+          <section class="cust-section">
             <p class="cust-section__label" id="cust-label-addons"><?= e($options['addons']['label']) ?></p>
             <div class="addon-list" role="group" aria-labelledby="cust-label-addons">
 <?php foreach ($options['addons']['items'] as $addon): ?>
@@ -66,10 +65,6 @@ function render_customization_popup(array $options): void
               </label>
 <?php endforeach; ?>
             </div>
-          </section>
-          <section class="cust-section cust-section--note">
-            <label class="cust-section__label" for="cust-note">Catatan</label>
-            <textarea class="note-input" id="cust-note" data-popup-note rows="2" maxlength="100" placeholder="Contoh: tanpa sedotan, saus dipisah"></textarea>
           </section>
         </div>
       </div>

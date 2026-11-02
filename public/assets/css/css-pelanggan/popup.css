@@ -269,40 +269,6 @@
   color: var(--color-black);
 }
 
-/* ===== Catatan pelanggan [Asumsi: gaya mengikuti token input, tidak ada di Figma] ===== */
-.cust-section--note {
-  height: auto;
-  padding: 14px 0 16px;
-}
-
-.cust-section--note .cust-section__label { display: block; }
-
-.note-input {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px 12px;
-  border: var(--border-input);
-  border-radius: 10px;
-  background: var(--color-white);
-  color: var(--color-text-dark);
-  font: inherit;
-  font-size: var(--fs-caption);
-  line-height: var(--lh-normal);
-  resize: none;
-}
-
-.note-input::placeholder { color: var(--color-disabled); opacity: 1; }
-
-.note-input:focus-visible {
-  border-color: var(--color-primary);
-  outline: none;
-}
-
-/* Mode ringkas (makanan/dessert): sembunyikan opsi minuman */
-.popup--simple [data-cust-drink] { display: none; }
-.popup--simple .cust-section--note::before { display: none; }
-
 /* ===== Footer: jumlah, total, tombol ===== */
 .sheet__footer {
   display: grid;

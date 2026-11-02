@@ -2,10 +2,10 @@
  * Pop-up Customization (bottom sheet) - dipakai halaman Menu (tambah item) dan Keranjang (ubah item).
  * Markup: app/Views/pelanggan/component/customization-popup.php. Gaya: css-pelanggan/popup.css.
  *
- * Minuman: semua opsi + catatan. Makanan/dessert: mode ringkas (.popup--simple), hanya catatan & jumlah.
+ * Khusus minuman (ukuran, tipe, gula, es, add-on). Makanan/dessert langsung masuk keranjang dari menu.js.
  *
  * API: window.QuickBrewPopup.open(item, options)
- *   item    { id, name, image, description, priceValue, customizable }
+ *   item    { id, name, image, description, priceValue }
  *   options {
  *     opener:  elemen yang menerima fokus kembali saat pop-up ditutup,
  *     line:    baris keranjang yang diubah (mode edit; isian awal diambil dari baris ini),
@@ -26,7 +26,6 @@
   var popupPrice = popup.querySelector('[data-popup-price]');
   var qtyEl = popup.querySelector('[data-popup-qty]');
   var totalEl = popup.querySelector('[data-popup-total]');
-  var noteEl = popup.querySelector('[data-popup-note]');
   var submitBtn = popup.querySelector('[data-popup-submit]');
   var scroller = popup.querySelector('.sheet__scroll');
   var SUBMIT_ADD = submitBtn.textContent;
@@ -51,8 +50,6 @@
 
   var unitPrice = function () {
     var sum = state.item ? state.item.priceValue : 0;
-    // Mode ringkas: opsi minuman tersembunyi (radio default tetap tercentang) tidak dihitung
-    if (!state.item || !state.item.customizable) return sum;
     // Tambahan harga dari pilihan (mis. ukuran M/L)
     radios().forEach(function (radio) {
       if (radio.checked) sum += Number(radio.getAttribute('data-price')) || 0;
@@ -75,7 +72,6 @@
   var fillOptions = function (line) {
     radios().forEach(function (radio) { radio.checked = radio.defaultChecked; });
     addonBoxes().forEach(function (box) { box.checked = false; });
-    if (noteEl) noteEl.value = line ? line.note || '' : '';
     if (!line) return;
 
     ['size', 'type', 'sugar', 'ice'].forEach(function (name) {
@@ -104,7 +100,6 @@
     submitBtn.textContent = state.line ? SUBMIT_EDIT : SUBMIT_ADD;
 
     fillOptions(state.line);
-    popup.classList.toggle('popup--simple', !item.customizable);
     refresh();
 
     popup.hidden = false;
@@ -143,27 +138,25 @@
 
   submitBtn.addEventListener('click', function () {
     var item = state.item;
-    var custom = item.customizable;
     var detail = {
       id: item.id,
       name: item.name,
       image: item.image,
       description: item.description,
       basePrice: item.priceValue,
-      customizable: custom,
+      customizable: true,
       quantity: state.qty,
-      size: custom ? selectedValue('size') : '',
-      type: custom ? selectedValue('type') : '',
-      sugar: custom ? selectedValue('sugar') : '',
-      ice: custom ? selectedValue('ice') : '',
-      addons: !custom ? [] : checkedAddons().map(function (box) {
+      size: selectedValue('size'),
+      type: selectedValue('type'),
+      sugar: selectedValue('sugar'),
+      ice: selectedValue('ice'),
+      addons: checkedAddons().map(function (box) {
         return {
           id: box.value,
           label: box.getAttribute('data-label'),
           price: Number(box.getAttribute('data-price'))
         };
       }),
-      note: noteEl ? noteEl.value.trim() : '',
       unitPrice: unitPrice(),
       total: unitPrice() * state.qty
     };
@@ -183,8 +176,8 @@
       return;
     }
     if (event.key !== 'Tab') return;
-    // Lewati input opsi minuman yang tersembunyi di mode ringkas
-    var focusable = Array.prototype.filter.call(popup.querySelectorAll('button, input, textarea'), function (el) {
+    // Jaga fokus tetap di dalam pop-up (lewati elemen yang tidak terlihat)
+    var focusable = Array.prototype.filter.call(popup.querySelectorAll('button, input'), function (el) {
       return el.offsetParent !== null;
     });
     var first = focusable[0];
