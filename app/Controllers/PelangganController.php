@@ -49,6 +49,7 @@ final class PelangganController
     public function cart(): void
     {
         view('pelanggan/public/cart', [
+            'custOptions' => require APP_ROOT . '/app/Models/customization-options.php', // pop-up ubah minuman
             'tableNumber' => $this->tableNumber(),
         ]);
     }

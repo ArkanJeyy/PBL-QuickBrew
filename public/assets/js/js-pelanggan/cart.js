@@ -24,7 +24,7 @@
   var pendingTrigger = null;
 
   var formatRupiah = function (amount) {
-    return 'Rp ' + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',00';
+    return 'Rp ' + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
   var buildItem = function (item) {
@@ -61,6 +61,10 @@
       }).join(', ');
     }
 
+    if (item.note) {
+      node.querySelector('[data-note]').textContent = 'Catatan: ' + item.note;
+    }
+
     node.querySelector('[data-price]').textContent = formatRupiah(item.unitPrice * item.quantity);
 
     if (item.image) {
@@ -69,7 +73,12 @@
       img.remove();
     }
 
-    edit.setAttribute('aria-label', 'Ubah ' + item.name);
+    // Hanya minuman yang bisa diubah (pop-up Custom); makanan/dessert tanpa tombol pensil
+    if (item.customizable) {
+      edit.setAttribute('aria-label', 'Ubah ' + item.name);
+    } else {
+      edit.remove();
+    }
     del.setAttribute('aria-label', 'Hapus ' + item.name);
     return node;
   };
@@ -174,10 +183,28 @@
       return;
     }
 
-    /* Perilaku "ubah" belum ada di desain: kirim event agar bisa dihubungkan nanti. */
-    if (event.target.closest('[data-cart-edit]')) {
+    /* Pensil: buka pop-up Custom berisi pilihan baris ini; "Simpan Perubahan" memanggil cart.update(). */
+    var editBtn = event.target.closest('[data-cart-edit]');
+    if (editBtn && window.QuickBrewPopup) {
       var item = cart.items().filter(function (i) { return i.lineId === lineId; })[0];
-      if (item) document.dispatchEvent(new CustomEvent('cart:edit', { detail: item }));
+      if (!item || !item.customizable) return;
+      window.QuickBrewPopup.open({
+        id: item.id,
+        name: item.name,
+        image: item.image,
+        description: item.description,
+        priceValue: item.basePrice,
+        customizable: true
+      }, {
+        line: item,
+        opener: editBtn,
+        // Kartu dirender ulang setelah disimpan: fokus ke pensil baris yang sama, atau baris pertama yang setara
+        onClose: function () {
+          var target = list.querySelector('.cart-item[data-line-id="' + lineId + '"] [data-cart-edit]')
+            || list.querySelector('.cart-item [data-cart-edit]');
+          if (target) target.focus();
+        }
+      });
     }
   });
 
