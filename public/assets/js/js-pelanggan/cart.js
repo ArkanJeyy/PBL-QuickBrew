@@ -61,10 +61,6 @@
       }).join(', ');
     }
 
-    if (item.note) {
-      node.querySelector('[data-note]').textContent = 'Catatan: ' + item.note;
-    }
-
     node.querySelector('[data-price]').textContent = formatRupiah(item.unitPrice * item.quantity);
 
     if (item.image) {
