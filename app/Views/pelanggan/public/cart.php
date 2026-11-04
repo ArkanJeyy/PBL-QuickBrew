@@ -65,7 +65,7 @@ require __DIR__ . '/../component/cart-header.php';
   <template id="cart-item-template">
     <li class="cart-item">
       <div class="cart-item__info">
-        <h3 class="cart-item__name"><span data-name></span><span class="cart-item__qty" data-qty hidden></span></h3>
+        <h3 class="cart-item__name" data-name></h3>
         <p class="cart-item__variants" data-variants></p>
         <p class="cart-item__addon" data-addon></p>
       </div>
@@ -75,9 +75,15 @@ require __DIR__ . '/../component/cart-header.php';
         <button type="button" class="cart-action" data-cart-edit>
           <img src="<?= e(asset('images/icons/icon-edit.svg')) ?>" alt="">
         </button>
-        <button type="button" class="cart-action" data-cart-delete>
-          <img src="<?= e(asset('images/icons/icon-trash.svg')) ?>" alt="">
-        </button>
+        <div class="qty-stepper" role="group" data-cart-stepper>
+          <button type="button" class="qty-stepper__minus" data-cart-minus>
+            <img src="<?= e(asset('images/icons/icon-qty-minus.svg')) ?>" alt="">
+          </button>
+          <span class="qty-stepper__count" data-cart-qty aria-live="polite"></span>
+          <button type="button" class="qty-stepper__plus" data-cart-plus>
+            <img src="<?= e(asset('images/icons/icon-plus.svg')) ?>" alt="">
+          </button>
+        </div>
       </div>
     </li>
   </template>
