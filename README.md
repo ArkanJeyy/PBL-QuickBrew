@@ -153,7 +153,6 @@ Sistem memisahkan hak akses operasional harian (Kasir & Barista) dari fungsi pen
 | Kategori → Menu | 1 : N | Satu kategori memiliki banyak menu |
 | Menu → Detail Pemesanan | 1 : N | Satu menu dapat muncul di banyak baris detail pesanan |
 | Pemesanan → Detail Pemesanan | 1 : N | Satu transaksi dapat berisi beberapa item menu |
-| Pengguna → Pemesanan | 1 : N | Satu staf dapat memproses banyak pesanan |
 | Meja → Pemesanan | 1 : N | Satu meja dapat memiliki banyak pesanan |
 | Pemesanan → Pembayaran | 1 : 1 | Pembayaran terkait pesanan tertentu |
 | Pengguna → Pembayaran | 1 : N | Satu staf dapat memvalidasi banyak pembayaran |
@@ -197,9 +196,9 @@ Sistem memisahkan hak akses operasional harian (Kasir & Barista) dari fungsi pen
 |---|---|---|
 | id | SERIAL | Primary Key |
 | meja_id | VARCHAR(10) | Foreign Key → meja, NOT NULL |
-| pengguna_id | INT | Foreign Key → pengguna (relasi memproses), NOT NULL |
 | nama_pelanggan | VARCHAR(100) | NULL |
 | email_pelanggan | VARCHAR(50) | — |
+| catatan | TEXT | NULL|
 | total_harga | DECIMAL(12,2) | NOT NULL |
 | waktu_pemesanan | DATETIME | DEFAULT CURRENT_TIMESTAMP |
 | status_pemesanan | VARCHAR(50) | — |

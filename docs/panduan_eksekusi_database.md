@@ -126,3 +126,51 @@ Berbeda dengan cara manual (copy-paste), kita akan langsung memuat file SQL meng
 5. Pilih tab **Data** di jendela tengah (di sebelah tab *Properties*) untuk memastikan seluruh baris data (termasuk menu minuman, makanan, dan dessert) telah berhasil disuntikkan.
 
 ✨ **Selesai!** Seluruh struktur skema dan data awal database `QuickBrew` kamu sudah siap digunakan.
+
+## Pembaruan Struktur Database
+
+Bagian ini ditujukan bagi anggota tim yang sebelumnya sudah menjalankan file `SQL/QuickBrew.sql` dan memiliki database Quick Brew di PostgreSQL.
+
+Terdapat beberapa perubahan struktur database berdasarkan hasil evaluasi dan presentasi project, yaitu:
+
+1. Menambahkan kolom `catatan` pada tabel `pemesanan` untuk menyimpan catatan tambahan dari pelanggan.
+2. Menghapus kolom `pengguna_id` beserta relasi foreign key pada tabel `pemesanan`.
+3. Mempertahankan relasi antara tabel `pengguna` dan `pembayaran`.
+4. Mempertahankan kolom `harga` dan `subtotal` pada tabel `detail_pemesanan`.
+
+### Langkah Penerapan Perubahan
+
+Bagi anggota yang sudah memiliki database sebelumnya, ikuti langkah berikut:
+
+1. Buka PostgreSQL melalui pgAdmin atau aplikasi database client yang digunakan.
+2. Pilih database `QuickBrew`.
+3. Buka Query Tool.
+4. Jalankan perintah SQL berikut untuk memperbarui struktur tabel.
+
+```sql
+BEGIN;
+
+-- Menambahkan kolom catatan pada tabel pemesanan
+ALTER TABLE pemesanan
+ADD COLUMN catatan TEXT;
+
+-- Menghapus relasi pengguna dari tabel pemesanan
+ALTER TABLE pemesanan
+DROP CONSTRAINT IF EXISTS pemesanan_pengguna_id_fkey;
+
+-- Menghapus kolom pengguna_id dari tabel pemesanan
+ALTER TABLE pemesanan
+DROP COLUMN IF EXISTS pengguna_id;
+
+COMMIT;
+```
+
+5. Pastikan query berhasil dijalankan tanpa error.
+6. Periksa kembali struktur tabel `pemesanan` untuk memastikan kolom `catatan` sudah tersedia dan kolom `pengguna_id` sudah tidak ada.
+
+### Catatan
+
+- Perubahan ini hanya perlu diterapkan satu kali pada database yang masih menggunakan struktur sebelumnya.
+- Anggota yang baru membuat database menggunakan file `SQL/QuickBrew.sql` versi terbaru tidak perlu menjalankan SQL migrasi di atas.
+- Jangan menjalankan ulang seluruh file `QuickBrew.sql` hanya untuk menerapkan perubahan ini karena file tersebut dapat menghapus dan membuat ulang tabel.
+- Pastikan perubahan database sudah diterapkan sebelum menjalankan aplikasi dengan kode terbaru.
