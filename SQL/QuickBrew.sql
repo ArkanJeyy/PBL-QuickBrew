@@ -74,9 +74,9 @@ CREATE TABLE pengguna (
 CREATE TABLE pemesanan (
     id               SERIAL PRIMARY KEY,
     meja_id          INT          NOT NULL,
-    pengguna_id      INT          NULL,
     nama_pelanggan   VARCHAR(100) NOT NULL,
     email_pelanggan  VARCHAR(150) NOT NULL,
+    catatan          TEXT,
     total_harga      INT          NOT NULL CHECK (total_harga >= 0),
     status_pemesanan VARCHAR(30)  NOT NULL DEFAULT 'menunggu_pembayaran'
                      CHECK (status_pemesanan IN (
@@ -86,7 +86,6 @@ CREATE TABLE pemesanan (
     waktu_pemesanan  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     diperbarui_pada  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (meja_id)     REFERENCES meja(id)     ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY (pengguna_id) REFERENCES pengguna(id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 -- ---------------------------------------------------------------------
