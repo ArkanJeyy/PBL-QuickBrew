@@ -112,6 +112,14 @@
     remove: function (lineId) {
       write(read().filter(function (item) { return item.lineId !== lineId; }));
     },
+    /* Tambah satu porsi pada baris yang sama (pilihan tidak berubah) - tombol + di halaman Keranjang. */
+    increment: function (lineId) {
+      var items = read();
+      items.forEach(function (item) {
+        if (item.lineId === lineId) item.quantity += 1;
+      });
+      write(items);
+    },
     /* Hapus satu porsi: jumlah > 1 dikurangi 1; jumlah 1 menghapus barisnya. */
     decrement: function (lineId) {
       var next = [];

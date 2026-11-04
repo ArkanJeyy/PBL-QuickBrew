@@ -76,14 +76,6 @@
   color: var(--color-brand-dark);
 }
 
-/* [Asumsi] hanya muncul bila jumlah > 1; jumlah tidak ada di desain */
-.cart-item__qty {
-  margin-left: 8px;
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-semibold);
-  color: var(--color-black);
-}
-
 .cart-item__variants {
   display: flex;
   flex-wrap: wrap;
@@ -112,6 +104,13 @@
 
 .cart-item__addon:empty { display: none; }
 
+/* Header tetap terang di atas overlay pop-up Custom (sama seperti halaman Menu) */
+html.is-popup-open .cart-header {
+  position: relative;
+  z-index: 105;
+  pointer-events: none;
+}
+
 .cart-item__media {
   position: absolute;
   top: 17px;
@@ -139,12 +138,14 @@
   color: var(--color-black);
 }
 
+/* Tombol pensil (minuman) + stepper jumlah [- n +] (revisi: dulu pensil + tempat sampah) */
 .cart-item__actions {
   position: absolute;
-  right: 25px;
+  right: 20px; /* stepper rata dengan tepi kanan foto */
   bottom: 17px;
   display: flex;
-  gap: 21px;
+  align-items: center;
+  gap: 12px;
 }
 
 .cart-action {

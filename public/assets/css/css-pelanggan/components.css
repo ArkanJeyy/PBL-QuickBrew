@@ -235,3 +235,49 @@
 }
 
 .btn-add img { width: 20px; height: 20px; }
+
+/* ===== Stepper jumlah [- n +] =====
+   Dipakai kartu halaman Menu dan kartu halaman Keranjang (posisi diatur di CSS masing-masing halaman).
+   Warna mengikuti design system (krem + cokelat merek). */
+.qty-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: var(--qty-stepper-height);
+  padding: 2px;
+  border-radius: 99px;
+  background: var(--color-icon-bg);
+}
+
+.qty-stepper__minus,
+.qty-stepper__plus {
+  display: grid;
+  place-items: center;
+  height: var(--qty-stepper-button);
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.qty-stepper__minus {
+  width: 22px;
+  background: none;
+}
+
+.qty-stepper__minus img { width: 16px; height: 16px; }
+
+.qty-stepper__plus {
+  width: var(--qty-stepper-button);
+  border-radius: 50%;
+  background: var(--color-brand-dark);
+}
+
+.qty-stepper__plus img { width: 16px; height: 16px; }
+
+.qty-stepper__count {
+  min-width: 16px; /* muat 2 digit */
+  color: var(--color-black);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  text-align: center;
+}

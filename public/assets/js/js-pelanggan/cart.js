@@ -1,4 +1,5 @@
-/* Halaman Keranjang: render daftar, hapus item, dan hitung ringkasan. Vanilla JS. */
+/* Halaman Keranjang: render daftar, ubah jumlah lewat stepper [- n +], ubah minuman (pensil),
+   dan hitung ringkasan. Tombol - pada jumlah 1 menghapus item lewat dialog konfirmasi. Vanilla JS. */
 (function () {
   'use strict';
 
@@ -24,23 +25,17 @@
   var pendingTrigger = null;
 
   var formatRupiah = function (amount) {
-    return 'Rp ' + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',00';
+    return 'Rp ' + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
   var buildItem = function (item) {
     var node = template.content.firstElementChild.cloneNode(true);
     var img = node.querySelector('[data-image]');
     var variants = node.querySelector('[data-variants]');
-    var qty = node.querySelector('[data-qty]');
     var edit = node.querySelector('[data-cart-edit]');
-    var del = node.querySelector('[data-cart-delete]');
 
     node.setAttribute('data-line-id', item.lineId);
     node.querySelector('[data-name]').textContent = item.name;
-    if (item.quantity > 1) {
-      qty.textContent = item.quantity + 'x';
-      qty.hidden = false;
-    }
 
     // Tipe | Level Ice | Level Gula (urutan seperti di Figma)
     [item.type, item.ice, item.sugar].filter(Boolean).forEach(function (text, index) {
@@ -69,8 +64,18 @@
       img.remove();
     }
 
-    edit.setAttribute('aria-label', 'Ubah ' + item.name);
-    del.setAttribute('aria-label', 'Hapus ' + item.name);
+    // Hanya minuman yang bisa diubah (pop-up Custom); makanan/dessert tanpa tombol pensil
+    if (item.customizable) {
+      edit.setAttribute('aria-label', 'Ubah ' + item.name);
+    } else {
+      edit.remove();
+    }
+
+    // Stepper jumlah [- n +]
+    node.querySelector('[data-cart-stepper]').setAttribute('aria-label', 'Jumlah ' + item.name);
+    node.querySelector('[data-cart-qty]').textContent = String(item.quantity);
+    node.querySelector('[data-cart-minus]').setAttribute('aria-label', 'Kurangi ' + item.name);
+    node.querySelector('[data-cart-plus]').setAttribute('aria-label', 'Tambah ' + item.name);
     return node;
   };
 
@@ -103,16 +108,20 @@
     }
   };
 
-  /* ---------- Konfirmasi hapus: satu porsi per konfirmasi ---------- */
+  /* Fokus ke tombol stepper ([data-cart-minus] / [data-cart-plus]) pada baris yang sama setelah render ulang. */
+  var focusRowControl = function (lineId, selector) {
+    var target = list.querySelector('.cart-item[data-line-id="' + lineId + '"] ' + selector);
+    if (target) target.focus();
+  };
+
+  /* ---------- Konfirmasi hapus: dipakai saat tombol - ditekan pada jumlah 1 ---------- */
   var openConfirm = function (lineId, trigger) {
     var item = cart.items().filter(function (i) { return i.lineId === lineId; })[0];
     if (!item || !dialog) return;
 
     pendingLineId = lineId;
     pendingTrigger = trigger;
-    dialogText.textContent = item.quantity > 1
-      ? 'Satu porsi ' + item.name + ' akan dihapus dari keranjang. Sisa pesanan: ' + (item.quantity - 1) + 'x.'
-      : item.name + ' akan dihapus dari keranjang.';
+    dialogText.textContent = item.name + ' akan dihapus dari keranjang.';
 
     dialog.hidden = false;
     document.documentElement.classList.add('is-locked');
@@ -137,11 +146,10 @@
       closeConfirm(false);
       if (!lineId) return;
 
-      cart.decrement(lineId); // memicu cart:change -> render ulang
+      cart.decrement(lineId); // jumlah 1 -> baris terhapus; memicu cart:change -> render ulang
 
-      // Fokus: tombol hapus baris yang sama bila masih ada, kalau tidak ke item pertama / "Tambah Item"
-      var again = list.querySelector('.cart-item[data-line-id="' + lineId + '"] [data-cart-delete]')
-        || list.querySelector('[data-cart-delete]')
+      // Fokus: tombol - item pertama yang tersisa, atau "Tambah Item" bila keranjang kosong
+      var again = list.querySelector('[data-cart-minus]')
         || document.querySelector('.cart-actions .btn');
       if (again) again.focus();
     });
@@ -169,15 +177,48 @@
     if (!row) return;
     var lineId = row.getAttribute('data-line-id');
 
-    if (event.target.closest('[data-cart-delete]')) {
-      openConfirm(lineId, event.target.closest('[data-cart-delete]'));
+    /* Stepper: + menambah satu porsi; - mengurangi satu porsi, pada jumlah 1 minta konfirmasi hapus dulu. */
+    if (event.target.closest('[data-cart-plus]')) {
+      cart.increment(lineId); // memicu cart:change -> render ulang
+      focusRowControl(lineId, '[data-cart-plus]');
       return;
     }
 
-    /* Perilaku "ubah" belum ada di desain: kirim event agar bisa dihubungkan nanti. */
-    if (event.target.closest('[data-cart-edit]')) {
+    var minusBtn = event.target.closest('[data-cart-minus]');
+    if (minusBtn) {
+      var line = cart.items().filter(function (i) { return i.lineId === lineId; })[0];
+      if (!line) return;
+      if (line.quantity > 1) {
+        cart.decrement(lineId);
+        focusRowControl(lineId, '[data-cart-minus]');
+      } else {
+        openConfirm(lineId, minusBtn);
+      }
+      return;
+    }
+
+    /* Pensil: buka pop-up Custom berisi pilihan baris ini; "Simpan Perubahan" memanggil cart.update(). */
+    var editBtn = event.target.closest('[data-cart-edit]');
+    if (editBtn && window.QuickBrewPopup) {
       var item = cart.items().filter(function (i) { return i.lineId === lineId; })[0];
-      if (item) document.dispatchEvent(new CustomEvent('cart:edit', { detail: item }));
+      if (!item || !item.customizable) return;
+      window.QuickBrewPopup.open({
+        id: item.id,
+        name: item.name,
+        image: item.image,
+        description: item.description,
+        priceValue: item.basePrice,
+        customizable: true
+      }, {
+        line: item,
+        opener: editBtn,
+        // Kartu dirender ulang setelah disimpan: fokus ke pensil baris yang sama, atau baris pertama yang setara
+        onClose: function () {
+          var target = list.querySelector('.cart-item[data-line-id="' + lineId + '"] [data-cart-edit]')
+            || list.querySelector('.cart-item [data-cart-edit]');
+          if (target) target.focus();
+        }
+      });
     }
   });
 
