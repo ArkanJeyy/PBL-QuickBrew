@@ -1,6 +1,6 @@
 <?php
 /**
- * Controller halaman pelanggan: beranda, menu, keranjang, checkout, konfirmasi pesanan, QR meja.
+ * Controller halaman pelanggan: beranda, menu, keranjang, checkout, pembayaran, QR meja.
  */
 final class PelangganController
 {
@@ -102,8 +102,8 @@ final class PelangganController
                         'total'   => $priced['total'],
                         'lines'   => $priced['lines'],
                     ]);
-                    $_SESSION['pesanan_baru'] = $id; // halaman konfirmasi mengosongkan keranjang satu kali
-                    redirect(url('pesanan', ['id' => $id, 't' => tok($id)]));
+                    $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
+                    redirect(url('pembayaran', ['id' => $id, 't' => tok($id)]));
                 }
             }
         }
@@ -120,8 +120,12 @@ final class PelangganController
         ]);
     }
 
-    /** Konfirmasi pesanan: ?page=pesanan&id=<id>&t=<tok(id)> (token mencegah membuka pesanan orang lain). */
-    public function pesanan(): void
+    /**
+     * Halaman Pembayaran setelah Checkout: ?page=pembayaran&id=<id>&t=<tok(id)>
+     * (token mencegah membuka pesanan orang lain). Tampilan berbeda untuk QRIS & Tunai;
+     * "Lihat Status Pembayaran" memuat ulang halaman ini untuk membaca status terbaru dari database.
+     */
+    public function pembayaran(): void
     {
         $id    = (int) ($_GET['id'] ?? 0);
         $token = (string) ($_GET['t'] ?? '');
@@ -134,12 +138,12 @@ final class PelangganController
         $justOrdered = $order && ($_SESSION['pesanan_baru'] ?? null) === $id;
         unset($_SESSION['pesanan_baru']);
 
-        view('pelanggan/public/pesanan', [
-            'order'       => $order,
-            'justOrdered' => $justOrdered,
-            'tableNumber' => $this->tableNumber(),
-            'metodeList'  => PemesananModel::METODE,
-            'statusLabel' => PemesananModel::STATUS_LABEL,
+        view('pelanggan/public/pembayaran', [
+            'order'        => $order,
+            'justOrdered'  => $justOrdered,
+            'statusUrl'    => $order ? url('pembayaran', ['id' => $id, 't' => $token]) : url('menu'),
+            'tableNumber'  => $this->tableNumber(),
+            'paymentLabel' => PemesananModel::PAYMENT_LABEL,
         ]);
     }
 

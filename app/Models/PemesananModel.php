@@ -5,7 +5,7 @@
  * - price(): menghitung ulang harga di server dari isi keranjang yang dikirim browser
  *   (harga menu & stok dari database, tambahan harga dari customization-options.php).
  * - create(): menyimpan pesanan + detail + pembayaran (status pending) dalam satu transaksi.
- * - find(): data untuk halaman konfirmasi pesanan.
+ * - find(): data untuk halaman Pembayaran (dengan nomor pesanan "#A0012" & batas bayar).
  *
  * Stok TIDAK dikurangi di sini; pengurangan stok terjadi saat pembayaran lunas (apply_payment() di config.php).
  *
@@ -40,8 +40,62 @@ final class PemesananModel
         'batal'               => 'Dibatalkan',
     ];
 
+    /** Label status pembayaran (tabel pembayaran) untuk badge di halaman Pembayaran. */
+    public const PAYMENT_LABEL = [
+        'pending' => 'Belum Dibayar',
+        'paid'    => 'Sudah Dibayar',
+        'deny'    => 'Ditolak',
+        'cancel'  => 'Dibatalkan',
+        'expire'  => 'Kedaluwarsa',
+        'failure' => 'Gagal',
+    ];
+
+    /** Batas bayar QRIS yang DITAMPILKAN (menit setelah pesanan dibuat). Tidak ada pembatalan otomatis. */
+    public const PAYMENT_MINUTES = 15;
+
     private const MAX_LINES    = 50;
     private const MAX_QUANTITY = 99;
+
+    /** Nomor pesanan untuk pelanggan & kasir: id 12 -> "#A0012". */
+    public static function displayNumber(int $id): string
+    {
+        return '#A' . str_pad((string) $id, 4, '0', STR_PAD_LEFT);
+    }
+
+    /** Jam batas bayar QRIS ("18.20") dari waktu_pemesanan + PAYMENT_MINUTES. */
+    public static function paymentDeadline(string $orderedAt): string
+    {
+        $time = strtotime($orderedAt);
+        return $time ? date('H.i', $time + self::PAYMENT_MINUTES * 60) : '';
+    }
+
+    /**
+     * Pecah detail_pemesanan.catatan minuman ("L, Ice, Normal Sugar, Normal Ice, Extra Shot") menjadi
+     * ukuran, pilihan, dan add-on (dengan harga) untuk ditampilkan. Teks lain dikembalikan apa adanya.
+     * @return array{size:string, variants:string[], addons:array, raw:?string}
+     */
+    private static function parseOptions(?string $catatan): array
+    {
+        $result = ['size' => '', 'variants' => [], 'addons' => [], 'raw' => null];
+        if ($catatan === null || $catatan === '') return $result;
+
+        $opts  = customization_options();
+        $parts = array_map('trim', explode(',', $catatan));
+        if (count($parts) < 4 || !in_array($parts[0], $opts['size']['options'], true)) {
+            $result['raw'] = $catatan; // bukan format pilihan minuman
+            return $result;
+        }
+
+        $addonsByLabel = [];
+        foreach ($opts['addons']['items'] as $addon) $addonsByLabel[$addon['label']] = $addon;
+
+        $result['size']     = $parts[0];
+        $result['variants'] = array_slice($parts, 1, 3); // tipe, gula, es
+        foreach (array_slice($parts, 4) as $label) {
+            $result['addons'][] = ['label' => $label, 'price' => (int) ($addonsByLabel[$label]['price'] ?? 0)];
+        }
+        return $result;
+    }
 
     /**
      * Hitung ulang isi keranjang di server.
@@ -195,9 +249,17 @@ final class PemesananModel
             }
         }
 
+        // Pilihan minuman untuk ringkasan: ukuran di nama, tipe | gula | es, dan add-on
+        foreach ($order['items'] as &$item) {
+            $item['options'] = self::parseOptions($item['catatan']);
+        }
+        unset($item);
+
         $subtotal          = array_sum(array_map('intval', array_column($order['items'], 'subtotal')));
         $order['subtotal'] = $subtotal;
         $order['tax']      = (int) $order['total_harga'] - $subtotal;
+        $order['number']   = self::displayNumber((int) $order['id']);
+        $order['deadline'] = self::paymentDeadline((string) $order['waktu_pemesanan']);
         return $order;
     }
 }
