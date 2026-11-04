@@ -24,8 +24,8 @@ $searchData = array_map(static fn (array $i): array => [
 ], $menuItems);
 
 $pageTitle       = 'Menu - ' . APP_NAME;
-$pageStyles      = ['menu'];
-$pageScripts     = ['cart-store', 'cart-badge', 'menu'];
+$pageStyles      = ['menu', 'popup'];
+$pageScripts     = ['cart-store', 'cart-badge', 'customization-popup', 'menu'];
 $pageClass       = 'page--menu';
 $withBrandHeader = false;
 $withBottomBar   = false;
@@ -71,12 +71,18 @@ require __DIR__ . '/../component/menu-header.php';
     <ul class="menu-list" id="menu-list">
 <?php
 // Daftar sudah dikelompokkan per kategori oleh MenuModel::all() (ORDER BY kategori);
-// item pertama tiap kategori (kecuali yang paling atas) diberi jarak ekstra.
+// setiap kategori diawali judul (dipakai juga oleh menu.js untuk lompat kategori & label dropdown).
 $prevCategory = null;
-foreach ($menuItems as $item) {
-    render_menu_item($item, $prevCategory !== null && $prevCategory !== $item['category']);
+foreach ($menuItems as $item):
+    if ($item['category'] !== $prevCategory):
+        $categoryLabel = $categories[$item['category']] ?? ucfirst($item['category']);
+?>
+      <li class="menu-section-title" data-category-heading="<?= e($item['category']) ?>"><h2><?= e($categoryLabel) ?></h2></li>
+<?php
+    endif;
+    render_menu_item($item);
     $prevCategory = $item['category'];
-}
+endforeach;
 ?>
     </ul>
   </main>

@@ -1,7 +1,8 @@
 <?php
 /**
- * Komponen: pop-up Customization (bottom sheet) saat tombol + pada menu ditekan.
- * Isi (nama, foto, deskripsi, harga) diisi oleh public/assets/js/js-pelanggan/menu.js saat dibuka.
+ * Komponen: pop-up Customization (bottom sheet) khusus minuman - dibuka dari tombol + di Menu
+ * dan tombol pensil di Keranjang. Isi (nama, foto, deskripsi, harga) diisi oleh
+ * public/assets/js/js-pelanggan/customization-popup.js saat dibuka.
  *
  * @param array $options Isi app/Models/customization-options.php
  */
