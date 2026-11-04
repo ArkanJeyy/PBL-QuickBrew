@@ -1,4 +1,5 @@
-/* Halaman Keranjang: render daftar, hapus item, dan hitung ringkasan. Vanilla JS. */
+/* Halaman Keranjang: render daftar, ubah jumlah lewat stepper [- n +], ubah minuman (pensil),
+   dan hitung ringkasan. Tombol - pada jumlah 1 menghapus item lewat dialog konfirmasi. Vanilla JS. */
 (function () {
   'use strict';
 
@@ -31,16 +32,10 @@
     var node = template.content.firstElementChild.cloneNode(true);
     var img = node.querySelector('[data-image]');
     var variants = node.querySelector('[data-variants]');
-    var qty = node.querySelector('[data-qty]');
     var edit = node.querySelector('[data-cart-edit]');
-    var del = node.querySelector('[data-cart-delete]');
 
     node.setAttribute('data-line-id', item.lineId);
     node.querySelector('[data-name]').textContent = item.name;
-    if (item.quantity > 1) {
-      qty.textContent = item.quantity + 'x';
-      qty.hidden = false;
-    }
 
     // Tipe | Level Ice | Level Gula (urutan seperti di Figma)
     [item.type, item.ice, item.sugar].filter(Boolean).forEach(function (text, index) {
@@ -75,7 +70,12 @@
     } else {
       edit.remove();
     }
-    del.setAttribute('aria-label', 'Hapus ' + item.name);
+
+    // Stepper jumlah [- n +]
+    node.querySelector('[data-cart-stepper]').setAttribute('aria-label', 'Jumlah ' + item.name);
+    node.querySelector('[data-cart-qty]').textContent = String(item.quantity);
+    node.querySelector('[data-cart-minus]').setAttribute('aria-label', 'Kurangi ' + item.name);
+    node.querySelector('[data-cart-plus]').setAttribute('aria-label', 'Tambah ' + item.name);
     return node;
   };
 
@@ -108,16 +108,20 @@
     }
   };
 
-  /* ---------- Konfirmasi hapus: satu porsi per konfirmasi ---------- */
+  /* Fokus ke tombol stepper ([data-cart-minus] / [data-cart-plus]) pada baris yang sama setelah render ulang. */
+  var focusRowControl = function (lineId, selector) {
+    var target = list.querySelector('.cart-item[data-line-id="' + lineId + '"] ' + selector);
+    if (target) target.focus();
+  };
+
+  /* ---------- Konfirmasi hapus: dipakai saat tombol - ditekan pada jumlah 1 ---------- */
   var openConfirm = function (lineId, trigger) {
     var item = cart.items().filter(function (i) { return i.lineId === lineId; })[0];
     if (!item || !dialog) return;
 
     pendingLineId = lineId;
     pendingTrigger = trigger;
-    dialogText.textContent = item.quantity > 1
-      ? 'Satu porsi ' + item.name + ' akan dihapus dari keranjang. Sisa pesanan: ' + (item.quantity - 1) + 'x.'
-      : item.name + ' akan dihapus dari keranjang.';
+    dialogText.textContent = item.name + ' akan dihapus dari keranjang.';
 
     dialog.hidden = false;
     document.documentElement.classList.add('is-locked');
@@ -142,11 +146,10 @@
       closeConfirm(false);
       if (!lineId) return;
 
-      cart.decrement(lineId); // memicu cart:change -> render ulang
+      cart.decrement(lineId); // jumlah 1 -> baris terhapus; memicu cart:change -> render ulang
 
-      // Fokus: tombol hapus baris yang sama bila masih ada, kalau tidak ke item pertama / "Tambah Item"
-      var again = list.querySelector('.cart-item[data-line-id="' + lineId + '"] [data-cart-delete]')
-        || list.querySelector('[data-cart-delete]')
+      // Fokus: tombol - item pertama yang tersisa, atau "Tambah Item" bila keranjang kosong
+      var again = list.querySelector('[data-cart-minus]')
         || document.querySelector('.cart-actions .btn');
       if (again) again.focus();
     });
@@ -174,8 +177,23 @@
     if (!row) return;
     var lineId = row.getAttribute('data-line-id');
 
-    if (event.target.closest('[data-cart-delete]')) {
-      openConfirm(lineId, event.target.closest('[data-cart-delete]'));
+    /* Stepper: + menambah satu porsi; - mengurangi satu porsi, pada jumlah 1 minta konfirmasi hapus dulu. */
+    if (event.target.closest('[data-cart-plus]')) {
+      cart.increment(lineId); // memicu cart:change -> render ulang
+      focusRowControl(lineId, '[data-cart-plus]');
+      return;
+    }
+
+    var minusBtn = event.target.closest('[data-cart-minus]');
+    if (minusBtn) {
+      var line = cart.items().filter(function (i) { return i.lineId === lineId; })[0];
+      if (!line) return;
+      if (line.quantity > 1) {
+        cart.decrement(lineId);
+        focusRowControl(lineId, '[data-cart-minus]');
+      } else {
+        openConfirm(lineId, minusBtn);
+      }
       return;
     }
 
