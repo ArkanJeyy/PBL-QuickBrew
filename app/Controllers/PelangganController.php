@@ -75,16 +75,16 @@ final class PelangganController
             if (!csrf_check($_POST['csrf_token'] ?? null)) {
                 $errors['form'] = 'Sesi formulir sudah kedaluwarsa. Silakan coba lagi.';
             }
-            if ($old['nama'] === '' || mb_strlen($old['nama']) > 100) {
+            if ($old['nama'] === '' || text_length($old['nama']) > 100) {
                 $errors['nama'] = 'Nama wajib diisi (maksimal 100 karakter).';
             }
-            if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || mb_strlen($old['email']) > 150) {
+            if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || text_length($old['email']) > 150) {
                 $errors['email'] = 'Masukkan alamat email yang valid.';
             }
             if (!isset(PemesananModel::METODE[$old['metode']])) {
                 $errors['metode'] = 'Pilih metode pembayaran.';
             }
-            if (mb_strlen($old['catatan']) > PemesananModel::NOTE_MAX) {
+            if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
                 $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
             }
 

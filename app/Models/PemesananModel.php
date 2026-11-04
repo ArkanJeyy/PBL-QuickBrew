@@ -105,7 +105,7 @@ final class PemesananModel
                 'harga'    => $unitPrice,
                 'jumlah'   => $quantity,
                 'subtotal' => $unitPrice * $quantity,
-                'catatan'  => $notes ? mb_substr(implode(', ', $notes), 0, 255) : null,
+                'catatan'  => $notes ? text_cut(implode(', ', $notes), 255) : null,
             ];
         }
 
@@ -123,8 +123,8 @@ final class PemesananModel
         // Catatan umum ikut disimpan di catatan item pertama (lihat penjelasan di atas class)
         $lines = $order['lines'];
         if (!empty($order['catatan']) && $lines) {
-            $lines[0]['catatan'] = mb_substr(
-                ($lines[0]['catatan'] ?? '') . self::NOTE_MARKER . $order['catatan'], 0, 255
+            $lines[0]['catatan'] = text_cut(
+                ($lines[0]['catatan'] ?? '') . self::NOTE_MARKER . $order['catatan'], 255
             );
         }
 

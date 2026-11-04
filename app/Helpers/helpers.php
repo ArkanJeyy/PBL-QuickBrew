@@ -30,6 +30,24 @@ function format_rupiah($amount, bool $withDecimals = false): string
     return 'Rp ' . number_format((float) $amount, 0, ',', '.') . ($withDecimals ? ',00' : '');
 }
 
+/**
+ * Panjang teks dalam karakter (UTF-8). Tidak mewajibkan ekstensi mbstring
+ * (tidak selalu aktif, mis. saat menjalankan `php -S` tanpa php.ini Laragon).
+ */
+function text_length(string $text): int
+{
+    if (function_exists('mb_strlen')) return mb_strlen($text, 'UTF-8');
+    $count = preg_match_all('/./us', $text);
+    return $count === false ? strlen($text) : $count; // UTF-8 rusak: hitung byte
+}
+
+/** Potong teks menjadi maksimal $max karakter (UTF-8), tanpa mewajibkan mbstring. */
+function text_cut(string $text, int $max): string
+{
+    if (function_exists('mb_substr')) return mb_substr($text, 0, $max, 'UTF-8');
+    return preg_match('/^.{0,' . $max . '}/us', $text, $m) ? $m[0] : substr($text, 0, $max);
+}
+
 /** Ubah teks menjadi slug: "Caffè Latte" -> "caffe-latte" */
 function slugify(string $text): string
 {
