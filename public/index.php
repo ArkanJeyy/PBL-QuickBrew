@@ -8,14 +8,17 @@ require_once __DIR__ . '/../config/config.php';
 require_once APP_ROOT . '/app/Helpers/helpers.php';
 require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
+require_once APP_ROOT . '/app/Models/PemesananModel.php';
 require_once APP_ROOT . '/app/Controllers/PelangganController.php';
 
 // page => [Controller, method]
 $routes = [
-    'home' => [PelangganController::class, 'home'],
-    'menu' => [PelangganController::class, 'menu'],
-    'cart' => [PelangganController::class, 'cart'],
-    'qr'   => [PelangganController::class, 'qr'],
+    'home'     => [PelangganController::class, 'home'],
+    'menu'     => [PelangganController::class, 'menu'],
+    'cart'     => [PelangganController::class, 'cart'],
+    'checkout' => [PelangganController::class, 'checkout'], // GET form, POST buat pesanan
+    'pesanan'  => [PelangganController::class, 'pesanan'],  // konfirmasi: ?page=pesanan&id=..&t=..
+    'qr'       => [PelangganController::class, 'qr'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');

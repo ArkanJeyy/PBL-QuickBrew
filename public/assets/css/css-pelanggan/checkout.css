@@ -1,0 +1,436 @@
+/* ==========================================================================
+   Halaman Checkout & Konfirmasi Pesanan - sumber: screenshot desain Checkout
+   [Asumsi] ukuran dibaca dari screenshot (belum ada node Figma); memakai token yang sudah ada.
+   Header memakai .cart-header dari cart.css.
+   ========================================================================== */
+
+.page--checkout {
+  padding-bottom: 0;
+  --checkout-submit-height: 80px; /* [Asumsi] area tombol "Buat Pesanan" yang menempel di bawah */
+}
+
+.checkout-main {
+  display: grid;
+  gap: 16px;
+  padding: 12px var(--space-page) calc(var(--checkout-submit-height) + 24px);
+}
+
+.checkout-main--done { padding-bottom: 32px; }
+
+.checkout-form {
+  display: grid;
+  gap: 16px;
+}
+
+/* ===== Kartu ===== */
+.checkout-card {
+  min-width: 0;
+  margin: 0;
+  padding: 14px var(--space-page) 16px;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+.checkout-card__title {
+  padding: 0;
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
+}
+
+/* Judul dengan garis pemisah di bawahnya (Ringkasan, Informasi Pemesan, Catatan) */
+.checkout-card__title--ruled {
+  margin: 0 calc(-1 * var(--space-page) + 4px);
+  padding: 0 calc(var(--space-page) - 4px) 10px;
+  box-shadow: inset 0 -1px 0 var(--color-divider);
+}
+
+/* <legend> di fieldset Metode Pembayaran */
+legend.checkout-card__title {
+  float: left; /* legend mengikuti alur kartu, tidak menempel di garis fieldset */
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.checkout-payment .pay-options { clear: both; }
+
+/* ===== Ringkasan pesanan ===== */
+.checkout-items {
+  display: grid;
+}
+
+.checkout-item {
+  padding: 16px 0 14px;
+  box-shadow: inset 0 -1px 0 var(--color-divider);
+}
+
+.checkout-item__row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  column-gap: 16px;
+  align-items: center;
+}
+
+.checkout-item__media {
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--color-placeholder);
+}
+
+.checkout-item__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.checkout-item__name {
+  font-size: var(--fs-summary-value);
+  font-weight: var(--fw-medium);
+  color: var(--color-black);
+}
+
+.checkout-item__qty {
+  margin-top: 2px;
+  font-size: var(--fs-caption);
+  color: var(--color-disabled);
+}
+
+.checkout-item__price {
+  align-self: start;
+  margin-top: 4px;
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-semibold);
+  color: var(--color-black);
+  white-space: nowrap;
+}
+
+.checkout-item__meta {
+  margin-top: 10px;
+  font-size: var(--fs-caption);
+  line-height: 18px;
+  color: var(--color-disabled);
+  white-space: pre-wrap; /* jaga spasi di sekitar "|" */
+}
+
+.checkout-item__meta + .checkout-item__meta { margin-top: 2px; }
+
+.checkout-empty {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0 4px;
+  text-align: center;
+  color: var(--color-disabled);
+}
+
+.checkout-total__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  font-size: var(--fs-summary-value);
+  color: var(--color-black);
+}
+
+.checkout-total__row + .checkout-total__row { box-shadow: inset 0 1px 0 var(--color-divider); }
+
+.checkout-total__row--grand {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-bold);
+}
+
+/* ===== Form ===== */
+.field { margin-top: 14px; }
+
+.field__label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--fs-summary-value);
+  font-weight: var(--fw-medium);
+  color: var(--color-black);
+}
+
+.field__input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 18px;
+  border: var(--border-input);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font: inherit;
+  font-size: var(--fs-caption);
+}
+
+.field__input--area {
+  height: auto;
+  min-height: 140px;
+  margin-top: 16px;
+  padding: 14px 18px;
+  resize: vertical;
+}
+
+.field__input::placeholder { color: var(--color-disabled); opacity: 1; }
+
+.field__input:focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.field__input[aria-invalid="true"] { border-color: var(--color-error); }
+
+.field__error {
+  margin-top: 6px;
+  font-size: var(--fs-caption);
+  color: var(--color-error);
+}
+
+.checkout-alert {
+  padding: 12px var(--space-page);
+  border-radius: var(--radius-panel);
+  background: rgba(239, 68, 68, 0.1); /* var(--color-error) 10% */
+  color: var(--color-error);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+}
+
+/* ===== Metode pembayaran (radio kotak) ===== */
+.pay-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pay-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 40px;
+  padding: 0 18px;
+  border: var(--border-input);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pay-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pay-option__mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--color-brand-dark);
+  border-radius: 50%;
+}
+
+.pay-option input:checked + .pay-option__mark {
+  box-shadow: inset 0 0 0 4px var(--color-white);
+  background: var(--color-brand-dark);
+}
+
+.pay-option input:focus-visible + .pay-option__mark {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.pay-option__label {
+  font-size: var(--fs-summary-value);
+  color: var(--color-black);
+}
+
+/* ===== Tombol "Buat Pesanan" menempel di bawah ===== */
+.checkout-submit {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 40;
+  width: 100%;
+  max-width: var(--page-max-width);
+  padding: 16px var(--space-page) calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  background: var(--color-white);
+}
+
+.checkout-submit__btn {
+  gap: 8px;
+  height: 40px;
+  font-size: var(--fs-summary-value);
+}
+
+.checkout-submit__btn:disabled,
+.checkout-submit__btn[aria-busy="true"] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ===== Belum scan meja / pesanan tidak ditemukan ===== */
+.checkout-notice {
+  display: grid;
+  gap: 14px;
+}
+
+.checkout-notice__text {
+  font-size: var(--fs-caption);
+  line-height: 18px;
+  color: var(--color-text-dark);
+}
+
+/* ===== Konfirmasi pesanan ===== */
+.order-done { text-align: center; }
+
+.order-done__badge {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 4px auto 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: var(--color-white);
+  font-size: 28px;
+  font-weight: var(--fw-bold);
+}
+
+.order-done__title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-extrabold);
+  color: var(--color-brand-dark);
+}
+
+.order-done__info {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  text-align: left;
+}
+
+.order-done__info div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-summary-value);
+}
+
+.order-done__info dt { color: var(--color-disabled); }
+.order-done__info dd { margin: 0; font-weight: var(--fw-semibold); color: var(--color-black); }
+
+.order-status {
+  padding: 2px 10px;
+  border-radius: 99px;
+  background: var(--color-icon-bg);
+  color: var(--color-brand-dark);
+  font-size: var(--fs-caption);
+}
+
+.order-pay .checkout-notice__text { margin-top: 12px; }
+
+.order-pay__qris {
+  width: 200px;
+  height: 200px;
+  margin: 16px auto 0;
+}
+
+.order-note {
+  margin-top: 4px;
+  font-size: var(--fs-caption);
+  line-height: 18px;
+  color: var(--color-text-dark);
+}
+
+.order-done__back { height: 40px; }
+
+/* ===== Dialog "Konfirmasi Pesanan" (bottom sheet dari popup.css) =====
+   [Asumsi] ukuran dibaca dari screenshot desain konfirmasi. */
+.confirm-order .sheet { top: 36px; } /* sheet lebih tinggi dari pop-up Custom */
+
+.confirm-order .sheet__scroll {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 24px var(--space-page) 16px;
+}
+
+.confirm-order__head {
+  padding-bottom: 14px;
+  text-align: center;
+  box-shadow: inset 0 -1px 0 var(--color-divider);
+}
+
+.confirm-order__icon {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 10px;
+}
+
+.confirm-order__title {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+  line-height: 24px;
+  color: var(--color-brand-dark);
+}
+
+.confirm-order__desc {
+  max-width: 240px;
+  margin: 4px auto 0;
+  font-size: var(--fs-caption);
+  line-height: 16px;
+  color: var(--color-text-dark);
+}
+
+.confirm-order__card-title { font-size: var(--fs-summary-value); }
+
+.confirm-order__info {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.confirm-order__info div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-caption);
+}
+
+.confirm-order__info dt { color: var(--color-brand-dark); }
+
+.confirm-order__info dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-brand-dark);
+  text-align: right;
+  overflow-wrap: anywhere; /* email panjang tidak keluar kartu */
+}
+
+/* Catatan bisa panjang/multi-baris: label di atas, isi di bawah rata kiri */
+.confirm-order__info .confirm-order__info-note {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.confirm-order__info-note dd {
+  text-align: left;
+  white-space: pre-line; /* baris baru dari textarea tetap terlihat */
+}
+
+.confirm-order__value--empty { color: var(--color-disabled); }
+
+.confirm-order__footer {
+  row-gap: 10px;
+  padding-top: 16px;
+}
+
+.confirm-order__footer .btn { height: 40px; }
+
+.confirm-order__footer .btn:disabled { opacity: 0.6; cursor: default; }

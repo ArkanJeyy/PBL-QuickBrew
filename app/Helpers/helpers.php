@@ -44,3 +44,28 @@ function view(string $name, array $data = []): void
     require APP_ROOT . '/app/Views/' . $name . '.php';
 }
 
+/** Opsi kustomisasi minuman (app/Models/customization-options.php), dimuat sekali per request. */
+function customization_options(): array
+{
+    static $options = null;
+    if ($options === null) {
+        $options = require APP_ROOT . '/app/Models/customization-options.php';
+    }
+    return $options;
+}
+
+/** Token CSRF per sesi untuk form POST (mis. Checkout). */
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/** Cek token CSRF dari form; perbandingan aman terhadap timing attack. */
+function csrf_check($token): bool
+{
+    return is_string($token) && !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
