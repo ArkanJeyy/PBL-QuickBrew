@@ -551,63 +551,13 @@
   outline: none;
 }
 
-/* ==========================================================================
-   Pop-up Customization - gaya utama di popup.css (dipakai juga halaman Keranjang)
-   ========================================================================== */
-
-/* Header tetap terang di atas overlay (sesuai urutan layer Figma) */
-html.is-popup-open .menu-header {
-  z-index: 105; /* header sudah sticky (berposisi), cukup naikkan z-index */
-  pointer-events: none; /* klik di area header menembus ke overlay (menutup pop-up) */
-}
-
-/* Revisi: logo tidak ditampilkan saat pop-up terbuka (latar putih logo tampak seperti kotak di atas overlay) */
-html.is-popup-open .menu-header__logo { visibility: hidden; }
+/* Pop-up Customization: gaya ada di popup.css (dipakai juga halaman Keranjang).
+   Revisi: header tidak lagi dinaikkan di atas overlay pop-up; ikut tertutup latar gelap seperti isi halaman. */
 
 /* ===== Stepper jumlah [- n +] di kartu menu =====
-   Warna mengikuti design system (krem + cokelat merek); contoh referensi memakai oranye/pink. */
+   Tampilan stepper ada di components.css (dipakai juga halaman Keranjang); di sini hanya posisinya. */
 .menu-item > .qty-stepper {
   position: absolute;
   right: 8px;
   bottom: 9px; /* sebaris dengan harga agar tidak menimpa deskripsi */
-  display: inline-flex;
-  align-items: center;
-  height: var(--qty-stepper-height);
-  padding: 2px;
-  border-radius: 99px;
-  background: var(--color-icon-bg);
-}
-
-.qty-stepper__minus,
-.qty-stepper__plus {
-  display: grid;
-  place-items: center;
-  height: var(--qty-stepper-button);
-  padding: 0;
-  border: 0;
-  cursor: pointer;
-}
-
-.qty-stepper__minus {
-  width: 22px;
-  background: none;
-}
-
-.qty-stepper__minus img { width: 16px; height: 16px; }
-
-.qty-stepper__plus {
-  width: var(--qty-stepper-button);
-  border-radius: 50%;
-  background: var(--color-brand-dark);
-}
-
-.qty-stepper__plus img { width: 16px; height: 16px; }
-
-.qty-stepper__count {
-  min-width: 16px; /* muat 2 digit */
-  color: var(--color-black);
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-bold);
-  line-height: 1;
-  text-align: center;
 }
