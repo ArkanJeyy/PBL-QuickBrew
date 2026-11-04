@@ -4,22 +4,32 @@
 
 .page--menu {
   padding-bottom: 0;
-  /* Jarak kartu dari atas layar saat di-scroll ke sebuah kategori:
-     tinggi baris Cari + Kategori yang menempel (8 + 30 + 8) + 12px jarak */
-  --menu-tools-offset: 58px;
   /* Jarak judul "← Menu" ke garis header = jarak judul ke kolom Cari (judul tepat di tengah) */
   --menu-title-gap: 24px;
   /* Lebar kolom Cari = lebar dropdown kategori (revisi: dulu Cari 187px) */
   --menu-tool-width: 156px;
+  /* Revisi: header, judul "← Menu", dan baris Cari + Kategori menempel di atas saat scroll.
+     Posisi tempel tiap bagian = jumlah tinggi bagian di atasnya. */
+  --menu-header-height: 76px;
+  --menu-title-height: calc(2 * var(--menu-title-gap) + 16px);           /* padding atas + ikon 24px + padding bawah */
+  --menu-tools-top: calc(var(--menu-header-height) + var(--menu-title-height));
+  /* Jarak kartu/judul kategori dari atas layar saat lompat kategori:
+     seluruh area yang menempel + baris Cari (8 + 30 + 8) + 12px jarak */
+  --menu-tools-offset: calc(var(--menu-tools-top) + 46px + 12px);
 }
 
 /* ===== Header =====
-   Revisi: logo kiri; label meja lalu keranjang di kanan, semua sejajar tengah. */
+   Revisi: logo kiri; label meja lalu keranjang di kanan, semua sejajar tengah; menempel di atas. */
 .menu-header {
+  position: sticky;
+  top: 0;
+  z-index: 15; /* di atas kartu, di bawah overlay dropdown (20) */
   display: flex;
   align-items: center;
-  height: 76px;
+  height: var(--menu-header-height);
   padding: 36px var(--space-page) 0; /* baris atas mulai y=36 */
+  background: var(--color-white);
+  box-shadow: inset 0 -1px 0 var(--color-divider); /* garis bawah header (ikut menempel) */
 }
 
 .menu-header__logo {
@@ -66,11 +76,15 @@
 
 /* ===== Area utama ===== */
 .menu-title {
+  position: sticky;
+  top: var(--menu-header-height); /* menempel tepat di bawah header */
+  z-index: 15;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: var(--menu-title-gap); /* jarak dari garis header */
-  padding: 0 var(--space-page) 0 12px;
+  /* Jarak dari garis header & ke kolom Cari memakai padding (bukan margin) agar tidak ada celah saat menempel */
+  padding: var(--menu-title-gap) var(--space-page) calc(var(--menu-title-gap) - 8px) 12px;
+  background: var(--color-white);
 }
 
 .menu-title__back { display: block; width: 24px; height: 24px; }
@@ -87,13 +101,12 @@
    Menempel di atas saat scroll (revisi: filter kategori = lompat ke kategori). */
 .menu-tools {
   position: sticky;
-  top: 0;
+  top: var(--menu-tools-top); /* menempel di bawah header + judul */
   z-index: 30; /* di atas kartu & overlay dropdown (20), di bawah pop-up/modal (100) */
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-top: calc(var(--menu-title-gap) - 8px); /* + padding atas 8px = jarak yang sama dengan di atas judul */
-  padding: 8px var(--space-page);
+  padding: 8px var(--space-page); /* padding atas 8px + padding bawah judul = jarak yang sama dengan di atas judul */
   background: var(--color-white);
 }
 
@@ -544,8 +557,7 @@
 
 /* Header tetap terang di atas overlay (sesuai urutan layer Figma) */
 html.is-popup-open .menu-header {
-  position: relative;
-  z-index: 105;
+  z-index: 105; /* header sudah sticky (berposisi), cukup naikkan z-index */
   pointer-events: none; /* klik di area header menembus ke overlay (menutup pop-up) */
 }
 
