@@ -63,6 +63,19 @@ final class MenuModel
         }
     }
 
+    /**
+     * Mengambil semua menu aktif khusus untuk API.
+     * Tidak menggunakan data fallback jika database gagal.
+     */
+    public static function allForApi(): array
+    {
+        $rows = db()->query(
+            self::SELECT . " WHERE m.aktif ORDER BY k.id, m.id"
+        )->fetchAll();
+
+        return array_map([self::class, 'map'], $rows);
+    }
+
     /** Menu favorit: paling laris (pembayaran 'paid'), lalu yang stoknya tersedia. */
     public static function favorites(int $limit = 6): array
     {
