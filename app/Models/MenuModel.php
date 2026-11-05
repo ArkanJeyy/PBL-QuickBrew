@@ -163,7 +163,7 @@ final class MenuModel
     /**
      * Path gambar relatif ke public/assets.
      * Urutan: kolom menu.gambar (nama file di assets/images/menu atau URL) -> slug nama menu -> logo.
-     * Publik karena dipakai juga PemesananModel (halaman konfirmasi pesanan).
+     * Publik karena dipakai juga PemesananModel (halaman Pembayaran).
      */
     public static function image(?string $gambar, string $nama): string
     {

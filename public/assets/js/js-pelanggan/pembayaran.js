@@ -1,4 +1,4 @@
-/* Halaman konfirmasi pesanan: kosongkan keranjang satu kali tepat setelah pesanan dibuat. Vanilla JS. */
+/* Halaman Pembayaran: kosongkan keranjang satu kali tepat setelah pesanan dibuat. Vanilla JS. */
 (function () {
   'use strict';
 

@@ -106,4 +106,8 @@
   --qty-stepper-height: 30px;      /* [Asumsi] disesuaikan dengan tombol tambah 30px */
   --qty-stepper-button: 26px;      /* [Asumsi] lingkaran tombol + di dalam stepper */
   --menu-section-gap: 24px;        /* [Asumsi] jarak tambahan antar section kategori */
+
+  /* ===== Halaman Pembayaran (referensi screenshot) ===== */
+  --color-warning-bg: #f9d27c;     /* [Asumsi] badge "Belum Dibayar" (kuning) */
+  --color-notice-bg: #f5ebe1;      /* [Asumsi] kotak info "Belum ada pembayaran yang dikonfirmasi" (krem) */
 }

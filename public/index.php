@@ -17,7 +17,7 @@ $routes = [
     'menu'     => [PelangganController::class, 'menu'],
     'cart'     => [PelangganController::class, 'cart'],
     'checkout' => [PelangganController::class, 'checkout'], // GET form, POST buat pesanan
-    'pesanan'  => [PelangganController::class, 'pesanan'],  // konfirmasi: ?page=pesanan&id=..&t=..
+    'pembayaran' => [PelangganController::class, 'pembayaran'], // setelah checkout: ?page=pembayaran&id=..&t=..
     'qr'       => [PelangganController::class, 'qr'],
 ];
 
