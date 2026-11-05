@@ -11,3 +11,4 @@ ALTER TABLE pembayaran
     ADD COLUMN IF NOT EXISTS qris_data TEXT NULL;
 
 COMMIT;
+
