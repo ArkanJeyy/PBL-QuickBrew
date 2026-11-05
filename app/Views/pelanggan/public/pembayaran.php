@@ -69,12 +69,16 @@ require __DIR__ . '/../component/cart-header.php';
       <p class="pay-amount__label" id="pay-amount-title">Total yang perlu dibayar</p>
       <p class="pay-amount__value"><?= e($totalText) ?></p>
 <?php if ($isQris): ?>
-      <img class="pay-qr" src="<?= e(asset('images/qris-placeholder.svg')) ?>" alt="Kode QRIS untuk membayar <?= e($totalText) ?>">
+<?php if (!empty($qrSvg)): ?>
+      <?= $qrSvg ?>
+<?php else: ?>
+      <img class="pay-qr" src="<?= e($qrImgSrc ?? asset('images/qris-placeholder.svg')) ?>" alt="Kode QRIS untuk membayar <?= e($totalText) ?>">
+<?php endif; ?>
 <?php if ($order['deadline'] !== ''): ?>
       <p class="pay-amount__deadline">Batas bayar pukul <?= e($order['deadline']) ?></p>
 <?php endif; ?>
-      <a class="btn btn--block btn--outline pay-amount__save" href="<?= e(asset('images/qris-placeholder.svg')) ?>"
-         download="<?= e('qris-quickbrew-' . ltrim($order['number'], '#') . '.svg') ?>">Simpan QR</a>
+      <a class="btn btn--block btn--outline pay-amount__save" href="<?= e($qrDownloadHref ?? asset('images/qris-placeholder.svg')) ?>"
+         download="<?= e($qrDownloadName ?? ('qris-quickbrew-' . ltrim($order['number'], '#') . '.svg')) ?>">Simpan QR</a>
 <?php else: ?>
       <div class="pay-cashier">
         <p class="pay-cashier__title">Sebutkan <?= e($order['number']) ?> di kasir</p>
