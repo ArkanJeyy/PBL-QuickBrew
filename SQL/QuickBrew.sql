@@ -85,7 +85,7 @@ CREATE TABLE pemesanan (
                      )),
     waktu_pemesanan  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     diperbarui_pada  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (meja_id)     REFERENCES meja(id)     ON UPDATE CASCADE ON DELETE RESTRICT,
+    FOREIGN KEY (meja_id)     REFERENCES meja(id)     ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 -- ---------------------------------------------------------------------
