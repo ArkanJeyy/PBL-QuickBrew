@@ -1,16 +1,33 @@
 <?php
 /**
- * Generator QR Code mandiri (Versi 1-4, Error Correction Level L, Byte Mode) -> SVG.
- * Dipakai untuk menghasilkan QR code meja secara offline tanpa library eksternal.
+ * Generator QR Code mandiri (Versi 1-17, Error Correction Level L, Byte Mode) -> SVG.
+ * Dipakai untuk menghasilkan QR code meja dan QRIS pembayaran secara offline tanpa library eksternal.
  */
 final class QrSvg
 {
-    // [version => [size, totalCodewords, dataCodewords, ecCodewords]] (Level L, 1 block)
+    /**
+     * Tabel parameter ISO/IEC 18004 untuk Error Correction Level L:
+     * version => [size, totalCodewords, ecPerBlock, g1Blocks, g1DataCw, g2Blocks, g2DataCw, alignCoords]
+     * Kapasitas maksimal V17-L (Byte Mode, header 20 bit) = 644 byte.
+     */
     private const VERSIONS = [
-        1 => [21, 26,  19, 7],
-        2 => [25, 44,  34, 10],
-        3 => [29, 70,  55, 15],
-        4 => [33, 100, 80, 20],
+        1  => [21,  26,  7, 1,  19, 0,   0, []],
+        2  => [25,  44, 10, 1,  34, 0,   0, [6, 18]],
+        3  => [29,  70, 15, 1,  55, 0,   0, [6, 22]],
+        4  => [33, 100, 20, 1,  80, 0,   0, [6, 26]],
+        5  => [37, 134, 26, 1, 108, 0,   0, [6, 30]],
+        6  => [41, 172, 18, 2,  68, 0,   0, [6, 34]],
+        7  => [45, 196, 20, 2,  78, 0,   0, [6, 22, 38]],
+        8  => [49, 242, 24, 2,  97, 0,   0, [6, 24, 42]],
+        9  => [53, 292, 30, 2, 116, 0,   0, [6, 26, 46]],
+        10 => [57, 346, 18, 2,  68, 2,  69, [6, 28, 50]],
+        11 => [61, 404, 20, 4,  81, 0,   0, [6, 30, 54]],
+        12 => [65, 466, 24, 2,  92, 2,  93, [6, 32, 58]],
+        13 => [69, 532, 26, 4, 107, 0,   0, [6, 34, 62]],
+        14 => [73, 581, 30, 3, 115, 1, 116, [6, 26, 46, 66]],
+        15 => [77, 655, 22, 5,  87, 1,  88, [6, 26, 48, 70]],
+        16 => [81, 733, 24, 5,  98, 1,  99, [6, 26, 50, 74]],
+        17 => [85, 815, 28, 1, 107, 5, 108, [6, 30, 54, 78]],
     ];
 
     public static function svg(string $text, int $margin = 2, string $fg = '#2e1f1a', string $bg = '#ffffff'): string
@@ -42,17 +59,26 @@ final class QrSvg
         $bytes = array_values(unpack('C*', $text));
         $len   = count($bytes);
 
-        $ver = 4;
-        foreach (self::VERSIONS as $v => [, , $dataCap]) {
-            if ($len + 2 <= $dataCap) {
+        $ver = null;
+        foreach (self::VERSIONS as $v => [, , , $g1Blocks, $g1DataCw, $g2Blocks, $g2DataCw]) {
+            $dataCap  = $g1Blocks * $g1DataCw + $g2Blocks * $g2DataCw;
+            // Byte mode (4 bit) + character count (8 bit utk V1-9, 16 bit utk V10-26)
+            $overhead = $v <= 9 ? 2 : 3;
+            if ($len + $overhead <= $dataCap) {
                 $ver = $v;
                 break;
             }
         }
-        [$size, , $dataCap, $ecLen] = self::VERSIONS[$ver];
+        if ($ver === null) {
+            throw new InvalidArgumentException('Panjang data QR melebihi kapasitas maksimal (644 byte).');
+        }
 
-        // Susun bit stream: mode 0100 (byte) + 8-bit length + data + terminator
-        $bits = '0100' . str_pad(decbin($len), 8, '0', STR_PAD_LEFT);
+        [$size, , $ecLen, $g1Blocks, $g1DataCw, $g2Blocks, $g2DataCw, $alignCoords] = self::VERSIONS[$ver];
+        $dataCap   = $g1Blocks * $g1DataCw + $g2Blocks * $g2DataCw;
+        $countBits = $ver <= 9 ? 8 : 16;
+
+        // Susun bit stream: mode 0100 (byte) + panjang karakter (8/16 bit) + data + terminator
+        $bits = '0100' . str_pad(decbin($len), $countBits, '0', STR_PAD_LEFT);
         foreach ($bytes as $b) {
             $bits .= str_pad(decbin($b), 8, '0', STR_PAD_LEFT);
         }
@@ -70,7 +96,7 @@ final class QrSvg
             $data[] = $pads[$p & 1];
         }
 
-        $codewords = array_merge($data, self::reedSolomon($data, $ecLen));
+        $codewords = self::interleaveBlocks($data, $ecLen, $g1Blocks, $g1DataCw, $g2Blocks, $g2DataCw);
 
         // Inisialisasi matriks & area fungsi
         $m   = array_fill(0, $size, array_fill(0, $size, false));
@@ -85,13 +111,36 @@ final class QrSvg
             $res[6][$i] = $res[$i][6] = true;
         }
 
-        if ($ver >= 2) {
-            $ap = 18 + ($ver - 2) * 4;
-            for ($dr = -2; $dr <= 2; $dr++) {
-                for ($dc = -2; $dc <= 2; $dc++) {
-                    $m[$ap + $dr][$ap + $dc]   = max(abs($dr), abs($dc)) !== 1;
-                    $res[$ap + $dr][$ap + $dc] = true;
+        // Alignment patterns (lewati 3 sudut yang bertumpukan dengan finder pattern)
+        foreach ($alignCoords as $ar) {
+            foreach ($alignCoords as $ac) {
+                if (($ar === 6 && $ac === 6)
+                    || ($ar === 6 && $ac === $size - 7)
+                    || ($ar === $size - 7 && $ac === 6)
+                ) {
+                    continue;
                 }
+                for ($dr = -2; $dr <= 2; $dr++) {
+                    for ($dc = -2; $dc <= 2; $dc++) {
+                        $m[$ar + $dr][$ac + $dc]   = max(abs($dr), abs($dc)) !== 1;
+                        $res[$ar + $dr][$ac + $dc] = true;
+                    }
+                }
+            }
+        }
+
+        // Version information 18-bit (Golay code 0x1F25) wajib untuk Versi >= 7
+        if ($ver >= 7) {
+            $verInfo = self::versionInfoBits($ver);
+            for ($i = 0; $i < 18; $i++) {
+                $bit = (($verInfo >> $i) & 1) === 1;
+                $r1  = $size - 11 + ($i % 3);
+                $c1  = intdiv($i, 3);
+                $r2  = intdiv($i, 3);
+                $c2  = $size - 11 + ($i % 3);
+
+                $m[$r1][$c1]   = $m[$r2][$c2]   = $bit;
+                $res[$r1][$c1] = $res[$r2][$c2] = true;
             }
         }
 
@@ -150,6 +199,65 @@ final class QrSvg
         return $m;
     }
 
+    /**
+     * Bagi data ke blok-blok Reed-Solomon (Group 1 & Group 2), hitung EC tiap blok,
+     * lalu susun secara interleaved sesuai ISO/IEC 18004 Section 6.6.
+     */
+    private static function interleaveBlocks(
+        array $data,
+        int $ecLen,
+        int $g1Blocks,
+        int $g1DataCw,
+        int $g2Blocks,
+        int $g2DataCw
+    ): array {
+        $dataBlocks = [];
+        $ecBlocks   = [];
+        $offset     = 0;
+
+        for ($b = 0; $b < $g1Blocks; $b++) {
+            $block        = array_slice($data, $offset, $g1DataCw);
+            $offset      += $g1DataCw;
+            $dataBlocks[] = $block;
+            $ecBlocks[]   = self::reedSolomon($block, $ecLen);
+        }
+        for ($b = 0; $b < $g2Blocks; $b++) {
+            $block        = array_slice($data, $offset, $g2DataCw);
+            $offset      += $g2DataCw;
+            $dataBlocks[] = $block;
+            $ecBlocks[]   = self::reedSolomon($block, $ecLen);
+        }
+
+        $codewords  = [];
+        $maxDataLen = max($g1DataCw, $g2DataCw);
+        for ($col = 0; $col < $maxDataLen; $col++) {
+            foreach ($dataBlocks as $block) {
+                if (isset($block[$col])) {
+                    $codewords[] = $block[$col];
+                }
+            }
+        }
+        for ($col = 0; $col < $ecLen; $col++) {
+            foreach ($ecBlocks as $ec) {
+                $codewords[] = $ec[$col];
+            }
+        }
+
+        return $codewords;
+    }
+
+    /** Hitung 18-bit Version Information memakai polinom Golay 0x1F25 (ISO/IEC 18004 Annex D). */
+    private static function versionInfoBits(int $ver): int
+    {
+        $rem = $ver << 12;
+        for ($bit = 17; $bit >= 12; $bit--) {
+            if (($rem >> $bit) & 1) {
+                $rem ^= (0x1F25 << ($bit - 12));
+            }
+        }
+        return ($ver << 12) | $rem;
+    }
+
     private static function finder(array &$m, array &$res, int $r0, int $c0): void
     {
         $size = count($m);
@@ -204,4 +312,3 @@ final class QrSvg
         return $rem;
     }
 }
-
