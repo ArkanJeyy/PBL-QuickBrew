@@ -79,6 +79,15 @@ require __DIR__ . '/../component/cart-header.php';
 <?php endif; ?>
       <a class="btn btn--block btn--outline pay-amount__save" href="<?= e($qrDownloadHref ?? asset('images/qris-placeholder.svg')) ?>"
          download="<?= e($qrDownloadName ?? ('qris-quickbrew-' . ltrim($order['number'], '#') . '.svg')) ?>">Simpan QR</a>
+<?php if (!MIDTRANS_PROD): ?>
+      <form method="post" style="margin-top: 10px;">
+        <input type="hidden" name="simulasi_bayar" value="1">
+        <button type="submit" class="btn btn--block" style="background: #2e7d32; color: #fff; font-size: 13px; font-weight: 600; padding: 10px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          Simulasikan Pembayaran Berhasil (Sandbox)
+        </button>
+      </form>
+<?php endif; ?>
 <?php else: ?>
       <div class="pay-cashier">
         <p class="pay-cashier__title">Sebutkan <?= e($order['number']) ?> di kasir</p>
