@@ -1,38 +1,48 @@
 <?php
 /**
- * PembayaranService — semua logika integrasi Midtrans (Snap + Core API status) untuk QuickBrew.
+ * PembayaranService — sentralisasi integrasi Midtrans Core API QRIS, verifikasi webhook,
+ * sinkronisasi status cadangan, dan pelunasan pesanan QuickBrew.
  *
  * Memakai cURL native PHP (tanpa Composer). Kredensial dibaca lewat env() dari config/config.php:
  *   MIDTRANS_SERVER_KEY  server key Sandbox / Production
  *   MIDTRANS_PROD        'true' -> Production, selain itu -> Sandbox
  *
- * Contoh pemakaian di controller:
- *   $service = new PembayaranService();
- *   $hasil   = $service->buatTransaksi($pesanan, $detailPesanan);
- *   // simpan $hasil['snap_token'] & $hasil['midtrans_order_id'] ke tabel pembayaran
- *
- *   $status  = $service->sinkron($midtransOrderId); // cadangan bila webhook gagal
+ * Kontrak utama:
+ *   - buatQris($pesanan, $detail)                     -> charge QRIS Core API (POST /v2/charge)
+ *   - sinkron($midtransOrderId)                       -> cek status Core API (GET /v2/{id}/status)
+ *   - verifikasiSignature($notif)                     -> validasi SHA512 signature_key webhook
+ *   - terapkanStatus($data)                           -> terapkan notifikasi/status ke DB
+ *   - tandaiLunas($pemesananId, $metode, $penggunaId) -> pelunasan idempotent (QRIS maupun Tunai kasir)
  */
 final class PembayaranService
 {
-    /** Masa berlaku transaksi (menit). */
-    private const EXPIRY_MINUTES = 15;
+    /** Masa berlaku transaksi QRIS dalam menit (satu sumber kebenaran bersama PemesananModel). */
+    public const EXPIRY_MINUTES = 15;
 
-    /** Batas waktu request ke Midtrans (detik) agar halaman tidak hang. */
-    private const TIMEOUT        = 20;
+    /** Batas waktu request HTTP ke Midtrans (detik) agar halaman tidak hang. */
+    private const TIMEOUT         = 20;
     private const CONNECT_TIMEOUT = 10;
 
-    /** Batas panjang field dari Midtrans. */
+    /** Batas panjang field item_details di Midtrans. */
     private const MAX_ITEM_NAME = 50;
     private const MAX_ITEM_ID   = 50;
 
     private string $serverKey;
     private bool   $production;
 
-    public function __construct()
+    /**
+     * Transport HTTP opsional untuk pengujian otomatis (tanpa memanggil jaringan Midtrans).
+     * Signature: fn(string $method, string $url, ?array $body): array{httpCode:int, raw?:string|false, body?:array, errno?:int, error?:string}
+     *
+     * @var callable|null
+     */
+    private $httpTransport;
+
+    public function __construct(?callable $httpTransport = null)
     {
-        $this->serverKey  = (string) env('MIDTRANS_SERVER_KEY', '');
-        $this->production = env('MIDTRANS_PROD', 'false') === 'true';
+        $this->serverKey     = (string) env('MIDTRANS_SERVER_KEY', '');
+        $this->production    = env('MIDTRANS_PROD', 'false') === 'true';
+        $this->httpTransport = $httpTransport;
 
         if ($this->serverKey === '') {
             throw new RuntimeException('MIDTRANS_SERVER_KEY belum diisi di config/.env.');
@@ -40,84 +50,109 @@ final class PembayaranService
     }
 
     // ------------------------------------------------------------------
-    //  1. Membuat transaksi Snap
+    //  1. Membuat transaksi QRIS (Midtrans Core API: POST /v2/charge)
     // ------------------------------------------------------------------
 
     /**
-     * Buat transaksi Snap Midtrans untuk satu pesanan.
+     * Buat transaksi QRIS dinamis melalui Midtrans Core API (POST /v2/charge).
+     * PENTING: Jangan memanggil metode ini di dalam transaksi database yang sedang terbuka.
      *
-     * @param array $pesanan       Baris tabel pemesanan. Wajib: id, total_harga.
-     *                             Opsional: nama_pelanggan, email_pelanggan,
-     *                             pajak (int, ditambahkan sebagai item tersendiri).
-     * @param array $detailPesanan Baris detail_pemesanan (+ nama menu). Per baris wajib:
-     *                             menu_id, harga (harga satuan SUDAH termasuk ukuran & add-on), jumlah.
-     *                             Opsional: nama_menu, catatan.
+     * @param array $pesanan Baris pesanan. Wajib: id, total_harga.
+     *                       Opsional: nama_pelanggan, email_pelanggan, pajak (int, item tersendiri).
+     * @param array $detail  Baris detail pesanan. Per baris wajib: menu_id, harga (sudah termasuk
+     *                       ukuran & add-on), jumlah. Opsional: nama_menu, catatan.
+     * @return array{
+     *     midtrans_order_id: string,
+     *     transaction_id: string,
+     *     qr_string: string,
+     *     qr_url: string,
+     *     expiry_time: string
+     * }
+     * @throws InvalidArgumentException bila data pesanan tidak valid atau SUM(item) != gross_amount.
+     * @throws RuntimeException         bila panggilan ke Midtrans gagal atau respons ditolak.
+     */
+    public function buatQris(array $pesanan, array $detail): array
+    {
+        [$orderId, $items, $grossAmount] = $this->siapkanTransaksi($pesanan, $detail);
+
+        // Payload Core API QRIS sesuai dokumentasi resmi Midtrans (POST /v2/charge)
+        $payload = [
+            'payment_type'        => 'qris',
+            'transaction_details' => [
+                'order_id'     => $orderId,
+                'gross_amount' => $grossAmount,
+            ],
+            'item_details'     => $items,
+            'customer_details' => array_filter([
+                'first_name' => self::potong((string) ($pesanan['nama_pelanggan'] ?? ''), 50),
+                'email'      => (string) ($pesanan['email_pelanggan'] ?? ''),
+            ], static fn (string $v): bool => $v !== ''),
+            'qris' => [
+                'acquirer' => 'gopay',
+            ],
+            'custom_expiry' => [
+                'expiry_duration' => self::EXPIRY_MINUTES,
+                'unit'            => 'minute',
+            ],
+        ];
+
+        try {
+            ['data' => $response] = $this->request('POST', $this->apiUrl() . '/charge', $payload);
+        } catch (RuntimeException $e) {
+            throw new RuntimeException('Gagal membuat pembayaran QRIS Midtrans: ' . $e->getMessage(), 0, $e);
+        }
+
+        // Core API dapat mengembalikan HTTP 200 dengan status_code 4xx/5xx di dalam body JSON.
+        $statusCode = (string) ($response['status_code'] ?? '');
+        $txStatus   = (string) ($response['transaction_status'] ?? '');
+        $qrString   = trim((string) ($response['qr_string'] ?? ''));
+
+        if ($statusCode === '' || $statusCode[0] !== '2' || $txStatus !== 'pending' || $qrString === '') {
+            $pesan = (string) ($response['status_message'] ?? 'Respons QRIS Midtrans tidak valid.');
+            if (!empty($response['validation_messages']) && is_array($response['validation_messages'])) {
+                $pesan .= ' (' . implode('; ', array_map('strval', $response['validation_messages'])) . ')';
+            }
+            throw new RuntimeException(sprintf(
+                'Midtrans menolak pembuatan QRIS (kode %s, status %s): %s',
+                $statusCode !== '' ? $statusCode : '-',
+                $txStatus !== '' ? $txStatus : '-',
+                $pesan
+            ));
+        }
+
+        // Ekstrak URL gambar QR cadangan dari actions[] yang namanya diawali "generate-qr-code"
+        $qrUrl = '';
+        foreach ((array) ($response['actions'] ?? []) as $action) {
+            if (!is_array($action)) {
+                continue;
+            }
+            $actName = (string) ($action['name'] ?? '');
+            $actUrl  = trim((string) ($action['url'] ?? ''));
+            if (str_starts_with($actName, 'generate-qr-code') && $actUrl !== '') {
+                $qrUrl = $actUrl;
+                break;
+            }
+        }
+
+        return [
+            'midtrans_order_id' => (string) ($response['order_id'] ?? $orderId),
+            'transaction_id'    => (string) ($response['transaction_id'] ?? ''),
+            'qr_string'         => $qrString,
+            'qr_url'            => $qrUrl,
+            'expiry_time'       => (string) ($response['expiry_time'] ?? ''),
+        ];
+    }
+
+    /**
+     * Buat transaksi Snap Midtrans untuk satu pesanan (warisan implementasi awal).
+     *
+     * @deprecated Tidak dipakai lagi sejak beralih ke Core API QRIS; gunakan {@see buatQris()}.
      * @return array{snap_token: string, midtrans_order_id: string, redirect_url: ?string}
-     * @throws InvalidArgumentException bila data pesanan tidak valid / total tidak cocok.
-     * @throws RuntimeException         bila request ke Midtrans gagal.
      */
     public function buatTransaksi(array $pesanan, array $detailPesanan): array
     {
-        $idPesanan = (int) ($pesanan['id'] ?? 0);
-        if ($idPesanan <= 0) {
-            throw new InvalidArgumentException('ID pesanan tidak valid.');
-        }
-        if (!$detailPesanan) {
-            throw new InvalidArgumentException('Detail pesanan kosong.');
-        }
+        [$orderId, $items, $grossAmount] = $this->siapkanTransaksi($pesanan, $detailPesanan);
 
-        // order_id kustom: TRX-{id_pesanan}-{timestamp}.
-        // Timestamp membuat order_id selalu unik, jadi pesanan yang sama bisa dibuatkan
-        // transaksi baru (mis. setelah transaksi lama expire) tanpa ditolak Midtrans.
-        $orderId = sprintf('TRX-%d-%d', $idPesanan, time());
-
-        // --- Susun item_details ---------------------------------------
-        // Midtrans mewajibkan: SUM(price * quantity) dari item_details == gross_amount.
-        // Karena itu harga per item diambil dari detail_pemesanan.harga (snapshot harga satuan
-        // yang sudah termasuk tambahan ukuran & add-on), bukan dari harga dasar menu.
-        $items = [];
-        foreach ($detailPesanan as $i => $d) {
-            $harga  = (int) ($d['harga'] ?? -1);
-            $jumlah = (int) ($d['jumlah'] ?? 0);
-            if ($harga < 0 || $jumlah <= 0) {
-                throw new InvalidArgumentException("Harga/jumlah pada detail pesanan ke-" . ($i + 1) . " tidak valid.");
-            }
-
-            $nama = (string) ($d['nama_menu'] ?? ('Menu #' . ($d['menu_id'] ?? '?')));
-            if (!empty($d['catatan'])) {
-                $nama .= ' (' . $d['catatan'] . ')'; // mis. "Americano (L, Ice, Extra Shot)"
-            }
-
-            $items[] = [
-                // id dibuat unik per baris karena 1 menu bisa muncul beberapa kali dgn catatan berbeda
-                'id'       => self::potong('MENU-' . ($d['menu_id'] ?? 0) . '-' . ($i + 1), self::MAX_ITEM_ID),
-                'price'    => $harga,
-                'quantity' => $jumlah,
-                'name'     => self::potong($nama, self::MAX_ITEM_NAME),
-            ];
-        }
-
-        // Pajak/biaya lain (jika total_harga pesanan memasukkannya) dikirim sebagai item tersendiri
-        // agar penjumlahan item tetap sama dengan gross_amount.
-        $pajak = (int) ($pesanan['pajak'] ?? 0);
-        if ($pajak > 0) {
-            $items[] = ['id' => 'PAJAK', 'price' => $pajak, 'quantity' => 1, 'name' => 'Pajak'];
-        }
-
-        $totalItem   = array_sum(array_map(static fn (array $it): int => $it['price'] * $it['quantity'], $items));
-        $grossAmount = (int) ($pesanan['total_harga'] ?? $totalItem);
-
-        // Validasi di sisi kita dulu supaya error-nya jelas (Midtrans hanya membalas 400).
-        if ($totalItem !== $grossAmount) {
-            throw new InvalidArgumentException(sprintf(
-                'Total item (%d) tidak sama dengan total_harga pesanan (%d).', $totalItem, $grossAmount
-            ));
-        }
-        if ($grossAmount <= 0) {
-            throw new InvalidArgumentException('Total pembayaran harus lebih dari 0.');
-        }
-
-        // --- Payload Snap ---------------------------------------------
         $payload = [
             'transaction_details' => [
                 'order_id'     => $orderId,
@@ -127,9 +162,7 @@ final class PembayaranService
             'customer_details' => array_filter([
                 'first_name' => self::potong((string) ($pesanan['nama_pelanggan'] ?? ''), 50),
                 'email'      => (string) ($pesanan['email_pelanggan'] ?? ''),
-            ]),
-            // Transaksi otomatis kedaluwarsa 15 menit setelah dibuat
-            // (Midtrans lalu mengirim status 'expire').
+            ], static fn (string $v): bool => $v !== ''),
             'expiry' => [
                 'unit'     => 'minutes',
                 'duration' => self::EXPIRY_MINUTES,
@@ -137,7 +170,7 @@ final class PembayaranService
         ];
 
         try {
-            $response = $this->request('POST', $this->snapUrl() . '/transactions', $payload);
+            ['data' => $response] = $this->request('POST', $this->snapUrl() . '/transactions', $payload);
         } catch (RuntimeException $e) {
             throw new RuntimeException('Gagal membuat transaksi Midtrans: ' . $e->getMessage(), 0, $e);
         }
@@ -154,17 +187,18 @@ final class PembayaranService
     }
 
     // ------------------------------------------------------------------
-    //  2. Sinkron status (cadangan bila webhook gagal)
+    //  2. Sinkronisasi status cadangan (GET /v2/{order_id}/status)
     // ------------------------------------------------------------------
 
     /**
-     * Ambil status transaksi langsung dari Midtrans: GET /v2/{order_id}/status,
-     * lalu terapkan ke tabel pemesanan & pembayaran (logika yang sama dengan webhook).
+     * Ambil status transaksi langsung dari Midtrans (GET /v2/{order_id}/status) sebagai
+     * cadangan bila webhook belum sampai, lalu terapkan ke database.
      *
-     * @return array Respons status Midtrans (transaction_status, payment_type, fraud_status, dst.).
-     * @throws RuntimeException bila request gagal atau transaksi tidak ditemukan.
+     * @return array|null Data status Midtrans, atau null bila Midtrans membalas 404 (transaksi belum ada).
+     * @throws InvalidArgumentException bila midtrans_order_id kosong.
+     * @throws RuntimeException         bila request gagal atau status_code selain 2xx/404.
      */
-    public function sinkron(string $midtrans_order_id): array
+    public function sinkron(string $midtrans_order_id): ?array
     {
         $midtrans_order_id = trim($midtrans_order_id);
         if ($midtrans_order_id === '') {
@@ -172,17 +206,35 @@ final class PembayaranService
         }
 
         try {
-            $status = $this->request('GET', $this->apiUrl() . '/' . rawurlencode($midtrans_order_id) . '/status');
+            $res = $this->request(
+                'GET',
+                $this->apiUrl() . '/' . rawurlencode($midtrans_order_id) . '/status',
+                null,
+                true // izinkan HTTP 404 ditangani sebagai null di bawah
+            );
         } catch (RuntimeException $e) {
             throw new RuntimeException('Gagal mengecek status Midtrans: ' . $e->getMessage(), 0, $e);
         }
 
-        // Core API kadang membalas HTTP 200 tetapi status_code di body berisi "404"
-        // (transaksi belum pernah dibayar / order_id tidak dikenal).
-        $code = (string) ($status['status_code'] ?? '');
+        $httpCode = $res['httpCode'];
+        $status   = $res['data'];
+        $code     = (string) ($status['status_code'] ?? '');
+
+        // Transaksi belum dikenal di Midtrans (HTTP 404 atau HTTP 200 dengan status_code "404")
+        if ($httpCode === 404 || $code === '404') {
+            return null;
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            $pesan = (string) ($status['status_message'] ?? 'Permintaan cek status ditolak.');
+            throw new RuntimeException(sprintf('HTTP %d dari Midtrans: %s', $httpCode, $pesan));
+        }
+
         if ($code !== '' && $code[0] !== '2') {
             throw new RuntimeException(sprintf(
-                'Status Midtrans %s: %s', $code, $status['status_message'] ?? 'tidak diketahui'
+                'Status Midtrans %s: %s',
+                $code,
+                $status['status_message'] ?? 'tidak diketahui'
             ));
         }
 
@@ -191,99 +243,345 @@ final class PembayaranService
     }
 
     // ------------------------------------------------------------------
-    //  3. Menerapkan status ke database (dipakai sinkron() & webhook)
+    //  3. Satu fungsi pelunasan terpusat (QRIS webhook/sinkron & Tunai kasir)
     // ------------------------------------------------------------------
 
     /**
-     * Update pemesanan, pembayaran, dan stok menu berdasarkan data status Midtrans
-     * (body notifikasi webhook atau respons GET /status).
+     * Tandai pesanan sebagai lunas secara atomik dan idempotent:
+     *   - Kunci baris pemesanan & pembayaran (SELECT ... FOR UPDATE).
+     *   - Hanya memproses bila pemesanan.status_pemesanan === 'menunggu_pembayaran'.
+     *   - Kurangi stok per menu (kunci baris menu FOR UPDATE; bila stok kurang -> set 0 + log,
+     *     pembayaran tetap diselesaikan agar tidak melanggar CHECK stok >= 0).
+     *   - Ubah pemesanan.status_pemesanan menjadi 'diproses' (bukan 'dibayar').
+     *   - Ubah pembayaran.status_pembayaran menjadi 'paid', isi waktu_pembayaran, metode_pembayaran,
+     *     dan pembayaran.pengguna_id (jika diberikan oleh kasir).
      *
-     *   settlement / capture+accept       -> pembayaran 'paid',  pemesanan 'dibayar', stok dikurangi
-     *   deny / cancel / expire / failure  -> pembayaran = status, pemesanan 'batal'
-     *   pending / lainnya                 -> tidak ada perubahan
+     * Dapat dipanggil mandiri (membuka transaksi sendiri) maupun di dalam transaksi aktif.
      *
-     * Hanya diproses bila pemesanan masih 'menunggu_pembayaran', sehingga aman dipanggil berulang
-     * (webhook + sinkron untuk transaksi yang sama tidak mengurangi stok dua kali).
+     * @return bool True bila pelunasan baru saja diterapkan; false bila sudah pernah diproses / tidak ditemukan.
      */
-    public function terapkanStatus(array $data): void
+    public function tandaiLunas(int $pemesananId, string $metode, ?int $penggunaId = null): bool
     {
-        $orderId = (string) ($data['order_id'] ?? '');
-        $pid     = $this->cariPemesananId($orderId);
-        if (!$pid) return;
+        if ($pemesananId <= 0) {
+            throw new InvalidArgumentException('ID pemesanan tidak valid.');
+        }
 
-        $ts   = (string) ($data['transaction_status'] ?? '');
-        $paid = $ts === 'settlement' || ($ts === 'capture' && ($data['fraud_status'] ?? 'accept') === 'accept');
-        $fail = in_array($ts, ['deny', 'cancel', 'expire', 'failure'], true);
-        if (!$paid && !$fail) return;
+        $db    = db();
+        $ownTx = !$db->inTransaction();
+        if ($ownTx) {
+            $db->beginTransaction();
+        }
 
-        $db = db();
-        $db->beginTransaction();
         try {
-            // Kunci baris pemesanan agar webhook & sinkron yang datang bersamaan tidak bentrok
-            $s = $db->prepare("SELECT status_pemesanan FROM pemesanan WHERE id = ? FOR UPDATE");
-            $s->execute([$pid]);
+            // Kunci baris pemesanan dan pembayaran sekaligus untuk mencegah race condition
+            $stmtLock = $db->prepare("
+                SELECT p.id, p.status_pemesanan, b.id AS pembayaran_id
+                  FROM pemesanan p
+                  JOIN pembayaran b ON b.pemesanan_id = p.id
+                 WHERE p.id = ?
+                   FOR UPDATE OF p, b
+            ");
+            $stmtLock->execute([$pemesananId]);
+            $row = $stmtLock->fetch(PDO::FETCH_ASSOC);
 
-            if ($s->fetchColumn() === 'menunggu_pembayaran') {
-                if ($paid) {
-                    $db->prepare("UPDATE pemesanan SET status_pemesanan = 'dibayar' WHERE id = ?")
-                       ->execute([$pid]);
-
-                    // waktu_pembayaran wajib terisi bila status 'paid' (CHECK constraint)
-                    $db->prepare("UPDATE pembayaran
-                                     SET status_pembayaran = 'paid',
-                                         metode_pembayaran = ?,
-                                         waktu_pembayaran  = CURRENT_TIMESTAMP,
-                                         midtrans_order_id = COALESCE(midtrans_order_id, ?)
-                                   WHERE pemesanan_id = ?")
-                       ->execute([$data['payment_type'] ?? null, $orderId, $pid]);
-
-                    // Kurangi stok per menu (1 menu bisa muncul di beberapa baris detail)
-                    $db->prepare("UPDATE menu
-                                     SET stok = GREATEST(menu.stok - x.qty, 0)
-                                    FROM (SELECT menu_id, SUM(jumlah) AS qty
-                                            FROM detail_pemesanan
-                                           WHERE pemesanan_id = ?
-                                           GROUP BY menu_id) x
-                                   WHERE x.menu_id = menu.id")
-                       ->execute([$pid]);
-                } else {
-                    $db->prepare("UPDATE pemesanan SET status_pemesanan = 'batal' WHERE id = ?")
-                       ->execute([$pid]);
-
-                    $db->prepare("UPDATE pembayaran
-                                     SET status_pembayaran = ?,
-                                         metode_pembayaran = COALESCE(?, metode_pembayaran),
-                                         midtrans_order_id = COALESCE(midtrans_order_id, ?)
-                                   WHERE pemesanan_id = ?")
-                       ->execute([$ts, $data['payment_type'] ?? null, $orderId, $pid]);
+            if (!$row || (string) $row['status_pemesanan'] !== 'menunggu_pembayaran') {
+                if ($ownTx) {
+                    $db->commit();
                 }
+                return false;
             }
 
-            $db->commit();
+            // Hitung total jumlah per menu (dipisah dari FOR UPDATE karena PostgreSQL tidak
+            // mengizinkan FOR UPDATE pada query GROUP BY), diurutkan berdasarkan menu_id untuk mencegah deadlock.
+            $stmtQty = $db->prepare("
+                SELECT menu_id, SUM(jumlah) AS jumlah_dipesan
+                  FROM detail_pemesanan
+                 WHERE pemesanan_id = ?
+                 GROUP BY menu_id
+                 ORDER BY menu_id
+            ");
+            $stmtQty->execute([$pemesananId]);
+            $kebutuhanPerMenu = $stmtQty->fetchAll(PDO::FETCH_KEY_PAIR);
+
+            $stmtLockMenu   = $db->prepare("SELECT id, nama_menu, stok FROM menu WHERE id = ? FOR UPDATE");
+            $stmtUpdateStok = $db->prepare("UPDATE menu SET stok = ? WHERE id = ?");
+
+            foreach ($kebutuhanPerMenu as $menuId => $jumlahDipesan) {
+                $menuId        = (int) $menuId;
+                $jumlahDipesan = (int) $jumlahDipesan;
+
+                $stmtLockMenu->execute([$menuId]);
+                $menuRow = $stmtLockMenu->fetch(PDO::FETCH_ASSOC);
+                if (!$menuRow) {
+                    continue;
+                }
+
+                $stokSaatIni = (int) $menuRow['stok'];
+                if ($stokSaatIni < $jumlahDipesan) {
+                    error_log(sprintf(
+                        '[QuickBrew Pembayaran] Stok menu #%d (%s) kurang saat pelunasan pemesanan_id=%d (dipesan=%d, tersedia=%d). Stok diset menjadi 0.',
+                        $menuId,
+                        $menuRow['nama_menu'],
+                        $pemesananId,
+                        $jumlahDipesan,
+                        $stokSaatIni
+                    ));
+                    $stokBaru = 0;
+                } else {
+                    $stokBaru = $stokSaatIni - $jumlahDipesan;
+                }
+
+                $stmtUpdateStok->execute([$stokBaru, $menuId]);
+            }
+
+            // Pesanan yang sudah lunas langsung berstatus 'diproses'
+            $db->prepare("UPDATE pemesanan SET status_pemesanan = 'diproses' WHERE id = ?")
+               ->execute([$pemesananId]);
+
+            $metodeBersih = trim($metode);
+            $db->prepare("
+                UPDATE pembayaran
+                   SET status_pembayaran = 'paid',
+                       waktu_pembayaran  = CURRENT_TIMESTAMP,
+                       metode_pembayaran = COALESCE(NULLIF(?, ''), metode_pembayaran),
+                       pengguna_id       = COALESCE(?, pengguna_id)
+                 WHERE pemesanan_id = ?
+            ")->execute([$metodeBersih, $penggunaId, $pemesananId]);
+
+            if ($ownTx) {
+                $db->commit();
+            }
+            return true;
         } catch (Throwable $e) {
-            $db->rollBack();
+            if ($ownTx && $db->inTransaction()) {
+                $db->rollBack();
+            }
             throw $e;
         }
     }
 
+    // ------------------------------------------------------------------
+    //  4. Verifikasi signature & pemetaan status Midtrans -> Database
+    // ------------------------------------------------------------------
+
     /**
-     * Verifikasi signature_key notifikasi webhook agar tidak bisa dipalsukan:
+     * Verifikasi signature_key notifikasi webhook Midtrans:
      * SHA512(order_id + status_code + gross_amount + server_key).
-     * Wajib dipanggil di endpoint webhook sebelum terapkanStatus().
+     * Nilai gross_amount dipakai persis apa adanya (mis. "24000.00") tanpa diformat ulang.
      */
     public function verifikasiSignature(array $notif): bool
     {
-        $expected = hash('sha512',
-            ($notif['order_id'] ?? '') . ($notif['status_code'] ?? '') . ($notif['gross_amount'] ?? '') . $this->serverKey
-        );
-        return hash_equals($expected, (string) ($notif['signature_key'] ?? ''));
+        $orderId      = (string) ($notif['order_id'] ?? '');
+        $statusCode   = (string) ($notif['status_code'] ?? '');
+        $grossAmount  = isset($notif['gross_amount']) ? (string) $notif['gross_amount'] : '';
+        $signatureKey = (string) ($notif['signature_key'] ?? '');
+
+        if ($orderId === '' || $statusCode === '' || $grossAmount === '' || $signatureKey === '') {
+            return false;
+        }
+
+        $expected = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+        return hash_equals($expected, $signatureKey);
+    }
+
+    /**
+     * Terapkan payload status Midtrans (dari webhook atau sinkron()) ke database.
+     *
+     * Aturan:
+     *   - Pencarian pesanan HANYA melalui pembayaran.midtrans_order_id (tanpa fallback regex).
+     *   - gross_amount dicocokkan secara numerik terhadap pembayaran.total_bayar.
+     *   - Idempotent: hanya memproses bila pemesanan.status_pemesanan === 'menunggu_pembayaran'.
+     *   - settlement / capture+accept      -> tandaiLunas() (pemesanan 'diproses', pembayaran 'paid', stok berkurang).
+     *   - deny / cancel / expire / failure -> pemesanan 'batal', pembayaran = status terkait.
+     *   - pending                          -> catat metode_pembayaran saja.
+     *   - lainnya (mis. capture+challenge) -> catat ke log, tanpa perubahan status.
+     *
+     * @return string Kode hasil pemrosesan: 'paid'|'failed'|'pending'|'already_processed'|'not_found'|'amount_mismatch'|'ignored'
+     */
+    public function terapkanStatus(array $data): string
+    {
+        $orderId           = trim((string) ($data['order_id'] ?? ''));
+        $transactionStatus = trim((string) ($data['transaction_status'] ?? ''));
+        $fraudStatus       = isset($data['fraud_status']) && trim((string) $data['fraud_status']) !== ''
+            ? trim((string) $data['fraud_status'])
+            : 'accept';
+        $paymentType       = isset($data['payment_type']) && trim((string) $data['payment_type']) !== ''
+            ? trim((string) $data['payment_type'])
+            : null;
+        $grossAmountRaw    = isset($data['gross_amount']) ? trim((string) $data['gross_amount']) : '';
+
+        if ($orderId === '') {
+            error_log('[QuickBrew Pembayaran] Payload status tidak memiliki order_id.');
+            return 'ignored';
+        }
+
+        $db = db();
+        $db->beginTransaction();
+        try {
+            // Cari pesanan HANYA berdasarkan midtrans_order_id dan kunci kedua baris
+            $stmtOrder = $db->prepare("
+                SELECT p.id                AS pemesanan_id,
+                       p.status_pemesanan  AS status_pemesanan,
+                       b.id                AS pembayaran_id,
+                       b.status_pembayaran AS status_pembayaran,
+                       b.total_bayar       AS total_bayar
+                  FROM pembayaran b
+                  JOIN pemesanan p ON p.id = b.pemesanan_id
+                 WHERE b.midtrans_order_id = ?
+                   FOR UPDATE OF p, b
+            ");
+            $stmtOrder->execute([$orderId]);
+            $pesanan = $stmtOrder->fetch(PDO::FETCH_ASSOC);
+
+            if (!$pesanan) {
+                $db->rollBack();
+                error_log("[QuickBrew Pembayaran] Pesanan dengan midtrans_order_id={$orderId} tidak ditemukan.");
+                return 'not_found';
+            }
+
+            // Verifikasi kecocokan nominal secara numerik (mis. "26400.00" vs 26400)
+            $totalBayar = (int) $pesanan['total_bayar'];
+            if ($grossAmountRaw === '' || !is_numeric($grossAmountRaw) || abs((float) $grossAmountRaw - (float) $totalBayar) >= 0.01) {
+                $db->rollBack();
+                error_log(sprintf(
+                    '[QuickBrew Pembayaran] Nominal gross_amount (%s) tidak cocok dengan total_bayar (%d) pada midtrans_order_id=%s.',
+                    $grossAmountRaw !== '' ? $grossAmountRaw : '-',
+                    $totalBayar,
+                    $orderId
+                ));
+                return 'amount_mismatch';
+            }
+
+            $pemesananId     = (int) $pesanan['pemesanan_id'];
+            $statusPemesanan = (string) $pesanan['status_pemesanan'];
+
+            // Idempotent: abaikan jika pesanan sudah pernah dilunasi atau dibatalkan
+            if ($statusPemesanan !== 'menunggu_pembayaran') {
+                $db->commit();
+                return 'already_processed';
+            }
+
+            $isPaid = $transactionStatus === 'settlement'
+                   || ($transactionStatus === 'capture' && $fraudStatus === 'accept');
+            $isFail = in_array($transactionStatus, ['deny', 'cancel', 'expire', 'failure'], true);
+
+            if ($isPaid) {
+                $this->tandaiLunas($pemesananId, $paymentType ?? 'qris');
+                $db->commit();
+                return 'paid';
+            }
+
+            if ($isFail) {
+                $db->prepare("UPDATE pemesanan SET status_pemesanan = 'batal' WHERE id = ?")
+                   ->execute([$pemesananId]);
+
+                $db->prepare("
+                    UPDATE pembayaran
+                       SET status_pembayaran = ?,
+                           metode_pembayaran = COALESCE(?, metode_pembayaran)
+                     WHERE pemesanan_id = ?
+                ")->execute([$transactionStatus, $paymentType, $pemesananId]);
+
+                $db->commit();
+                return 'failed';
+            }
+
+            if ($transactionStatus === 'pending') {
+                if ($paymentType !== null) {
+                    $db->prepare("
+                        UPDATE pembayaran
+                           SET metode_pembayaran = ?
+                         WHERE pemesanan_id = ?
+                    ")->execute([$paymentType, $pemesananId]);
+                }
+                $db->commit();
+                return 'pending';
+            }
+
+            // Status lain (mis. capture dengan fraud_status = challenge)
+            error_log("[QuickBrew Pembayaran] Status transaksi belum final (status={$transactionStatus}, fraud={$fraudStatus}) untuk midtrans_order_id={$orderId}.");
+            $db->commit();
+            return 'ignored';
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     // ------------------------------------------------------------------
     //  Helper internal
     // ------------------------------------------------------------------
 
-    /** Base URL Snap API (membuat transaksi). */
+    /**
+     * Validasi pesanan, susun order_id kustom TRX-{id}-{timestamp}, dan bentuk item_details
+     * termasuk item Pajak tersendiri sehingga SUM(price * quantity) == gross_amount.
+     *
+     * @return array{0: string, 1: array<int, array{id:string, price:int, quantity:int, name:string}>, 2: int}
+     */
+    private function siapkanTransaksi(array $pesanan, array $detailPesanan): array
+    {
+        $idPesanan = (int) ($pesanan['id'] ?? 0);
+        if ($idPesanan <= 0) {
+            throw new InvalidArgumentException('ID pesanan tidak valid.');
+        }
+        if (!$detailPesanan) {
+            throw new InvalidArgumentException('Detail pesanan kosong.');
+        }
+
+        $orderId = sprintf('TRX-%d-%d', $idPesanan, time());
+
+        $items = [];
+        foreach ($detailPesanan as $i => $d) {
+            $harga  = (int) ($d['harga'] ?? -1);
+            $jumlah = (int) ($d['jumlah'] ?? 0);
+            if ($harga < 0 || $jumlah <= 0) {
+                throw new InvalidArgumentException('Harga/jumlah pada detail pesanan ke-' . ($i + 1) . ' tidak valid.');
+            }
+
+            $nama = (string) ($d['nama_menu'] ?? ('Menu #' . ($d['menu_id'] ?? '?')));
+            if (!empty($d['catatan'])) {
+                $nama .= ' (' . $d['catatan'] . ')';
+            }
+
+            $items[] = [
+                'id'       => self::potong('MENU-' . ($d['menu_id'] ?? 0) . '-' . ($i + 1), self::MAX_ITEM_ID),
+                'price'    => $harga,
+                'quantity' => $jumlah,
+                'name'     => self::potong($nama, self::MAX_ITEM_NAME),
+            ];
+        }
+
+        // Pajak 10% dikirim sebagai item tersendiri agar SUM(item_details) == gross_amount
+        $pajak = (int) ($pesanan['pajak'] ?? 0);
+        if ($pajak > 0) {
+            $items[] = [
+                'id'       => 'PAJAK',
+                'price'    => $pajak,
+                'quantity' => 1,
+                'name'     => 'Pajak',
+            ];
+        }
+
+        $totalItem   = array_sum(array_map(static fn (array $it): int => $it['price'] * $it['quantity'], $items));
+        $grossAmount = array_key_exists('total_harga', $pesanan) ? (int) $pesanan['total_harga'] : $totalItem;
+
+        if ($totalItem !== $grossAmount) {
+            throw new InvalidArgumentException(sprintf(
+                'Total item (%d) tidak sama dengan total_harga pesanan (%d).',
+                $totalItem,
+                $grossAmount
+            ));
+        }
+        if ($grossAmount <= 0) {
+            throw new InvalidArgumentException('Total pembayaran harus lebih dari 0.');
+        }
+
+        return [$orderId, $items, $grossAmount];
+    }
+
+    /** Base URL Snap API (untuk method @deprecated buatTransaksi). */
     private function snapUrl(): string
     {
         return $this->production
@@ -291,7 +589,7 @@ final class PembayaranService
             : 'https://app.sandbox.midtrans.com/snap/v1';
     }
 
-    /** Base URL Core API v2 (cek status). */
+    /** Base URL Core API v2 (charge QRIS & cek status transaksi). */
     private function apiUrl(): string
     {
         return $this->production
@@ -300,55 +598,65 @@ final class PembayaranService
     }
 
     /**
-     * Kirim request HTTP ke Midtrans memakai cURL native.
+     * Kirim request HTTP ke Midtrans memakai transport terinjeksi (pengujian) atau cURL native.
      *
-     * @throws RuntimeException bila cURL gagal, respons bukan 2xx, atau body bukan JSON.
+     * @return array{httpCode: int, data: array}
+     * @throws RuntimeException bila koneksi gagal, respons bukan JSON, atau HTTP bukan 2xx (kecuali 404 saat $allowNotFound).
      */
-    private function request(string $method, string $url, ?array $body = null): array
+    private function request(string $method, string $url, ?array $body = null, bool $allowNotFound = false): array
     {
-        $ch = curl_init($url);
-        if ($ch === false) {
-            throw new RuntimeException('Tidak dapat menginisialisasi cURL.');
+        if ($this->httpTransport !== null) {
+            $res      = ($this->httpTransport)($method, $url, $body);
+            $httpCode = (int) ($res['httpCode'] ?? 200);
+            $errno    = (int) ($res['errno'] ?? 0);
+            $error    = (string) ($res['error'] ?? '');
+            $raw      = array_key_exists('body', $res) && is_array($res['body'])
+                ? json_encode($res['body'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+                : ($res['raw'] ?? '');
+        } else {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                throw new RuntimeException('Tidak dapat menginisialisasi cURL.');
+            }
+
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST  => $method,
+                CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
+                CURLOPT_TIMEOUT        => self::TIMEOUT,
+                CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
+                CURLOPT_USERPWD        => $this->serverKey . ':',
+                CURLOPT_HTTPHEADER     => [
+                    'Accept: application/json',
+                    'Content-Type: application/json',
+                ],
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+
+            if ($body !== null) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            }
+
+            $raw      = curl_exec($ch);
+            $errno    = curl_errno($ch);
+            $error    = curl_error($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
         }
 
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,              // kembalikan body sebagai string, jangan di-echo
-            CURLOPT_CUSTOMREQUEST  => $method,           // GET / POST
-            CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT, // batas waktu membuka koneksi
-            CURLOPT_TIMEOUT        => self::TIMEOUT,     // batas waktu total request (anti hang)
-            // Autentikasi Midtrans: HTTP Basic, username = server key, password kosong.
-            // cURL otomatis membentuk header "Authorization: Basic base64(server_key:)".
-            CURLOPT_HTTPAUTH       => CURLAUTH_BASIC,
-            CURLOPT_USERPWD        => $this->serverKey . ':',
-            CURLOPT_HTTPHEADER     => [
-                'Accept: application/json',
-                'Content-Type: application/json',
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,              // jangan matikan verifikasi SSL
-        ]);
-
-        if ($body !== null) {
-            // Payload dikirim sebagai JSON (Midtrans tidak menerima form-urlencoded)
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-        }
-
-        $raw      = curl_exec($ch);
-        $errno    = curl_errno($ch);
-        $error    = curl_error($ch);
-        $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
-
-        // Gagal di level jaringan (DNS, timeout, SSL, dll.)
         if ($raw === false || $errno !== 0) {
-            throw new RuntimeException(sprintf('cURL error #%d: %s', $errno, $error ?: 'tidak diketahui'));
+            throw new RuntimeException(sprintf('cURL error #%d: %s', $errno, $error !== '' ? $error : 'tidak diketahui'));
         }
 
         $data = json_decode((string) $raw, true);
 
-        // Respons HTTP bukan 2xx -> ambil pesan error dari Midtrans bila ada
+        if ($allowNotFound && $httpCode === 404) {
+            return ['httpCode' => 404, 'data' => is_array($data) ? $data : ['status_code' => '404']];
+        }
+
         if ($httpCode < 200 || $httpCode >= 300) {
             $pesan = is_array($data)
-                ? implode('; ', (array) ($data['error_messages'] ?? $data['status_message'] ?? 'Permintaan ditolak'))
+                ? implode('; ', (array) ($data['error_messages'] ?? $data['validation_messages'] ?? $data['status_message'] ?? 'Permintaan ditolak'))
                 : substr((string) $raw, 0, 200);
             throw new RuntimeException(sprintf('HTTP %d dari Midtrans: %s', $httpCode, $pesan));
         }
@@ -357,32 +665,23 @@ final class PembayaranService
             throw new RuntimeException('Respons Midtrans bukan JSON yang valid.');
         }
 
-        return $data;
+        return ['httpCode' => $httpCode, 'data' => $data];
     }
 
-    /**
-     * Cari pemesanan.id dari order_id Midtrans.
-     * Prioritas kolom pembayaran.midtrans_order_id; fallback mengurai format TRX-{id}-{timestamp}.
-     */
-    private function cariPemesananId(string $orderId): int
-    {
-        if ($orderId === '') return 0;
-
-        $s = db()->prepare("SELECT pemesanan_id FROM pembayaran WHERE midtrans_order_id = ?");
-        $s->execute([$orderId]);
-        $pid = (int) $s->fetchColumn();
-        if ($pid) return $pid;
-
-        if (!preg_match('/^TRX-(\d+)-\d+$/', $orderId, $m)) return 0;
-        $s = db()->prepare("SELECT id FROM pemesanan WHERE id = ?");
-        $s->execute([(int) $m[1]]);
-        return (int) $s->fetchColumn();
-    }
-
-    /** Potong teks sesuai batas panjang field Midtrans (aman untuk UTF-8). */
+    /** Potong teks sesuai batas panjang field Midtrans (aman tanpa mewajibkan ekstensi mbstring). */
     private static function potong(string $text, int $max): string
     {
-        return mb_strlen($text) > $max ? mb_substr($text, 0, $max - 3) . '...' : $text;
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            return mb_strlen($text, 'UTF-8') > $max
+                ? mb_substr($text, 0, $max - 3, 'UTF-8') . '...'
+                : $text;
+        }
+        $len = preg_match_all('/./us', $text);
+        $len = $len === false ? strlen($text) : $len;
+        if ($len <= $max) {
+            return $text;
+        }
+        $cut = preg_match('/^.{0,' . ($max - 3) . '}/us', $text, $m) ? $m[0] : substr($text, 0, $max - 3);
+        return $cut . '...';
     }
 }
-
