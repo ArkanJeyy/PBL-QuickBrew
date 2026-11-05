@@ -1,24 +1,24 @@
 <?php
+require_once APP_ROOT . '/app/Services/PembayaranService.php';
+
 /**
  * Model pesanan pelanggan (tabel: pemesanan, detail_pemesanan, pembayaran).
  *
  * - price(): menghitung ulang harga di server dari isi keranjang yang dikirim browser
  *   (harga menu & stok dari database, tambahan harga dari customization-options.php).
  * - create(): menyimpan pesanan + detail + pembayaran (status pending) dalam satu transaksi.
- * - find(): data untuk halaman Pembayaran (dengan nomor pesanan "#A0012" & batas bayar).
+ * - simpanQris() / tandaiGagalQris(): memperbarui hasil pembuatan QRIS Midtrans Core API.
+ * - find(): data untuk halaman Pembayaran (nomor pesanan "#A0012", batas bayar, dan data QRIS).
  *
- * Stok TIDAK dikurangi di sini; pengurangan stok terjadi saat pembayaran lunas (apply_payment() di config.php).
+ * Stok TIDAK dikurangi saat pesanan dibuat; pengurangan stok dan perubahan status pesanan menjadi
+ * 'diproses' dilakukan secara atomik di PembayaranService::tandaiLunas() saat pembayaran lunas.
  *
- * Catatan umum dari form Checkout: tabel pemesanan tidak punya kolom catatan (skema dikelola tim database),
- * jadi catatan disimpan di detail_pemesanan.catatan milik item PERTAMA, setelah penanda NOTE_MARKER.
- * find() memisahkannya lagi menjadi $order['catatan'].
+ * Catatan umum dari form Checkout disimpan langsung di kolom pemesanan.catatan, sedangkan
+ * detail_pemesanan.catatan khusus menyimpan pilihan kustomisasi tiap item minuman.
  */
 final class PemesananModel
 {
-    /** Pemisah catatan umum di detail_pemesanan.catatan item pertama: "L, Ice, ... | Catatan pesanan: ...". */
-    public const NOTE_MARKER = ' | Catatan pesanan: ';
-
-    /** Panjang maksimal catatan umum agar muat bersama pilihan minuman di VARCHAR(255). */
+    /** Panjang maksimal catatan umum dari form Checkout (karakter). */
     public const NOTE_MAX = 150;
 
     /** Pajak 10% (sama dengan TAX_RATE di cart.js). total_harga yang disimpan sudah termasuk pajak. */
@@ -50,8 +50,8 @@ final class PemesananModel
         'failure' => 'Gagal',
     ];
 
-    /** Batas bayar QRIS yang DITAMPILKAN (menit setelah pesanan dibuat). Tidak ada pembatalan otomatis. */
-    public const PAYMENT_MINUTES = 15;
+    /** Batas waktu pembayaran QRIS (menit), mengacu pada satu sumber di PembayaranService. */
+    public const PAYMENT_MINUTES = PembayaranService::EXPIRY_MINUTES;
 
     private const MAX_LINES    = 50;
     private const MAX_QUANTITY = 99;
@@ -155,11 +155,12 @@ final class PemesananModel
             }
 
             $lines[] = [
-                'menu_id'  => $menuId,
-                'harga'    => $unitPrice,
-                'jumlah'   => $quantity,
-                'subtotal' => $unitPrice * $quantity,
-                'catatan'  => $notes ? text_cut(implode(', ', $notes), 255) : null,
+                'menu_id'   => $menuId,
+                'nama_menu' => $menu['name'],
+                'harga'     => $unitPrice,
+                'jumlah'    => $quantity,
+                'subtotal'  => $unitPrice * $quantity,
+                'catatan'   => $notes ? text_cut(implode(', ', $notes), 255) : null,
             ];
         }
 
@@ -174,22 +175,17 @@ final class PemesananModel
      */
     public static function create(array $order): int
     {
-        // Catatan umum ikut disimpan di catatan item pertama (lihat penjelasan di atas class)
-        $lines = $order['lines'];
-        if (!empty($order['catatan']) && $lines) {
-            $lines[0]['catatan'] = text_cut(
-                ($lines[0]['catatan'] ?? '') . self::NOTE_MARKER . $order['catatan'], 255
-            );
-        }
+        $lines   = $order['lines'];
+        $catatan = isset($order['catatan']) && $order['catatan'] !== '' ? (string) $order['catatan'] : null;
 
         $db = db();
         $db->beginTransaction();
         try {
             $s = $db->prepare(
-                "INSERT INTO pemesanan (meja_id, nama_pelanggan, email_pelanggan, total_harga)
-                 VALUES (?, ?, ?, ?) RETURNING id"
+                "INSERT INTO pemesanan (meja_id, nama_pelanggan, email_pelanggan, catatan, total_harga)
+                 VALUES (?, ?, ?, ?, ?) RETURNING id"
             );
-            $s->execute([$order['meja_id'], $order['nama'], $order['email'], $order['total']]);
+            $s->execute([$order['meja_id'], $order['nama'], $order['email'], $catatan, $order['total']]);
             $id = (int) $s->fetchColumn();
 
             $detail = $db->prepare(
@@ -207,17 +203,55 @@ final class PemesananModel
             $db->commit();
             return $id;
         } catch (Throwable $ex) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             throw $ex;
         }
     }
 
-    /** Pesanan beserta meja, pembayaran, dan detailnya; null bila tidak ada. */
+    /**
+     * Simpan midtrans_order_id dan JSON qris_data setelah panggilan Core API QRIS berhasil.
+     */
+    public static function simpanQris(int $pemesananId, string $midtransOrderId, string $qrisDataJson): void
+    {
+        db()->prepare(
+            "UPDATE pembayaran
+                SET midtrans_order_id = ?,
+                    qris_data         = ?,
+                    metode_pembayaran = 'qris'
+              WHERE pemesanan_id = ?"
+        )->execute([$midtransOrderId, $qrisDataJson, $pemesananId]);
+    }
+
+    /**
+     * Tandai pesanan 'batal' dan pembayaran 'failure' bila pembuatan QRIS ke Midtrans gagal.
+     */
+    public static function tandaiGagalQris(int $pemesananId): void
+    {
+        $db = db();
+        $db->beginTransaction();
+        try {
+            $db->prepare("UPDATE pemesanan SET status_pemesanan = 'batal' WHERE id = ?")
+               ->execute([$pemesananId]);
+            $db->prepare("UPDATE pembayaran SET status_pembayaran = 'failure' WHERE pemesanan_id = ?")
+               ->execute([$pemesananId]);
+            $db->commit();
+        } catch (Throwable $ex) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $ex;
+        }
+    }
+
+    /** Pesanan beserta meja, pembayaran (termasuk qris_data), dan detailnya; null bila tidak ada. */
     public static function find(int $id): ?array
     {
         $s = db()->prepare(
-            "SELECT p.id, p.nama_pelanggan, p.email_pelanggan, p.total_harga, p.status_pemesanan,
-                    p.waktu_pemesanan, m.no_meja, b.metode_pembayaran, b.status_pembayaran
+            "SELECT p.id, p.nama_pelanggan, p.email_pelanggan, p.catatan, p.total_harga,
+                    p.status_pemesanan, p.waktu_pemesanan, m.no_meja,
+                    b.metode_pembayaran, b.status_pembayaran, b.midtrans_order_id, b.qris_data
                FROM pemesanan p
                JOIN meja m ON m.id = p.meja_id
                LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
@@ -238,16 +272,6 @@ final class PemesananModel
         $order['items'] = array_map(static fn (array $row): array => $row + [
             'image' => MenuModel::image($row['gambar'], $row['nama_menu']),
         ], $s->fetchAll());
-
-        // Pisahkan catatan umum dari catatan item pertama
-        $order['catatan'] = null;
-        if ($order['items']) {
-            $parts = explode(self::NOTE_MARKER, (string) $order['items'][0]['catatan'], 2);
-            if (count($parts) === 2) {
-                $order['items'][0]['catatan'] = $parts[0] !== '' ? $parts[0] : null;
-                $order['catatan']             = $parts[1];
-            }
-        }
 
         // Pilihan minuman untuk ringkasan: ukuran di nama, tipe | gula | es, dan add-on
         foreach ($order['items'] as &$item) {
