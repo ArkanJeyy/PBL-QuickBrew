@@ -1,14 +1,28 @@
 <?php
+require_once APP_ROOT . '/app/Helpers/QrSvg.php';
+require_once APP_ROOT . '/app/Services/PembayaranService.php';
+
 /**
  * Controller halaman pelanggan: beranda, menu, keranjang, checkout, pembayaran, QR meja.
  */
 final class PelangganController
 {
+    /** Interval minimal sinkronisasi status QRIS ke Midtrans per sesi (detik). */
+    private const QRIS_SYNC_THROTTLE_SECONDS = 5;
+
     /** Meja aktif (dari QR ?meja=<kode_qr>, disimpan di session). */
     private ?array $meja;
 
-    public function __construct()
+    private ?PembayaranService $pembayaranService;
+
+    /** @var callable|null */
+    private $redirector;
+
+    public function __construct(?PembayaranService $pembayaranService = null, ?callable $redirector = null)
     {
+        $this->pembayaranService = $pembayaranService;
+        $this->redirector        = $redirector;
+
         if (isset($_GET['meja'])) {
             $raw = trim((string) $_GET['meja']);
             if ($raw === '' || strcasecmp($raw, 'reset') === 0) {
@@ -56,8 +70,10 @@ final class PelangganController
 
     /**
      * Checkout. GET: form (ringkasan diisi checkout.js dari keranjang).
-     * POST: validasi, hitung ulang harga & stok di server, simpan, lalu redirect ke konfirmasi (Post/Redirect/Get).
-     * Wajib sudah scan QR meja (meja_id di tabel pemesanan NOT NULL).
+     * POST: validasi, hitung ulang harga & stok di server, simpan pesanan, lalu:
+     *   - Tunai: langsung redirect ke halaman pembayaran (tanpa memanggil Midtrans).
+     *   - QRIS : panggil Core API Midtrans di luar transaksi DB; jika gagal -> tandai pesanan 'batal'
+     *            dan pembayaran 'failure', tampilkan pesan error tanpa mengosongkan keranjang.
      */
     public function checkout(): void
     {
@@ -102,8 +118,51 @@ final class PelangganController
                         'total'   => $priced['total'],
                         'lines'   => $priced['lines'],
                     ]);
-                    $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
-                    redirect(url('pembayaran', ['id' => $id, 't' => tok($id)]));
+
+                    if ($old['metode'] === 'tunai') {
+                        $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
+                        $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
+                        if ($this->redirector !== null) {
+                            ($this->redirector)($targetUrl);
+                            return;
+                        }
+                        redirect($targetUrl);
+                    }
+
+                    // Metode QRIS: panggil Midtrans Core API di luar transaksi database
+                    try {
+                        $service = $this->pembayaranService ??= new PembayaranService();
+                        $qris    = $service->buatQris([
+                            'id'              => $id,
+                            'nama_pelanggan'  => $old['nama'],
+                            'email_pelanggan' => $old['email'],
+                            'total_harga'     => $priced['total'],
+                            'pajak'           => $priced['tax'],
+                        ], $priced['lines']);
+
+                        $qrisJson = (string) json_encode([
+                            'qr_string' => $qris['qr_string'],
+                            'qr_url'    => $qris['qr_url'] ?? '',
+                        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+                        PemesananModel::simpanQris($id, $qris['midtrans_order_id'], $qrisJson);
+
+                        $_SESSION['pesanan_baru'] = $id;
+                        $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
+                        if ($this->redirector !== null) {
+                            ($this->redirector)($targetUrl);
+                            return;
+                        }
+                        redirect($targetUrl);
+                    } catch (Throwable $e) {
+                        try {
+                            PemesananModel::tandaiGagalQris($id);
+                        } catch (Throwable $dbErr) {
+                            error_log(sprintf('[QuickBrew Checkout QRIS] Gagal menandai batal pemesanan_id=%d: %s', $id, $dbErr->getMessage()));
+                        }
+                        error_log(sprintf('[QuickBrew Checkout QRIS] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
+                        $errors['form'] = 'Pembayaran QRIS sedang bermasalah, coba lagi atau pilih Tunai';
+                    }
                 }
             }
         }
@@ -123,7 +182,8 @@ final class PelangganController
     /**
      * Halaman Pembayaran setelah Checkout: ?page=pembayaran&id=<id>&t=<tok(id)>
      * (token mencegah membuka pesanan orang lain). Tampilan berbeda untuk QRIS & Tunai;
-     * "Lihat Status Pembayaran" memuat ulang halaman ini untuk membaca status terbaru dari database.
+     * "Lihat Status Pembayaran" memuat ulang halaman ini dan menjalankan sinkron() ber-throttle
+     * sebagai cadangan bila notifikasi webhook belum diterima.
      */
     public function pembayaran(): void
     {
@@ -135,15 +195,90 @@ final class PelangganController
             http_response_code(404);
         }
 
+        // Cadangan webhook: sinkronkan status QRIS maksimal sekali per 5 detik per sesi
+        if (
+            $order
+            && (string) $order['metode_pembayaran'] === 'qris'
+            && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
+            && !empty($order['midtrans_order_id'])
+        ) {
+            $now    = time();
+            $lastAt = (int) ($_SESSION['qris_sync_last_at'] ?? 0);
+            if (($now - $lastAt) >= self::QRIS_SYNC_THROTTLE_SECONDS) {
+                $_SESSION['qris_sync_last_at'] = $now;
+                try {
+                    $service    = $this->pembayaranService ??= new PembayaranService();
+                    $syncStatus = $service->sinkron((string) $order['midtrans_order_id']);
+                    if ($syncStatus !== null) {
+                        $order = PemesananModel::find($id);
+                    }
+                } catch (Throwable $e) {
+                    error_log(sprintf('[QuickBrew Sinkron QRIS] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
+                }
+            }
+        }
+
+        // Siapkan SVG inline & data URI dari qr_string; bila gagal, gunakan qr_url sebagai cadangan <img>
+        $qrSvg          = null;
+        $qrImgSrc       = null;
+        $qrDownloadHref = null;
+        $qrDownloadName = null;
+
+        if ($order && (string) $order['metode_pembayaran'] === 'qris') {
+            $rawQris  = trim((string) ($order['qris_data'] ?? ''));
+            $qrString = '';
+            $qrUrl    = '';
+
+            if ($rawQris !== '') {
+                $decoded = json_decode($rawQris, true);
+                if (is_array($decoded)) {
+                    $qrString = trim((string) ($decoded['qr_string'] ?? ''));
+                    $qrUrl    = trim((string) ($decoded['qr_url'] ?? ''));
+                } else {
+                    $qrString = $rawQris;
+                }
+            }
+
+            $nomorFile = ltrim((string) $order['number'], '#');
+
+            if ($qrString !== '') {
+                try {
+                    $rawSvg  = QrSvg::svg($qrString);
+                    $altText = e('Kode QRIS untuk membayar ' . format_rupiah($order['total_harga']));
+                    $qrSvg   = preg_replace(
+                        '/^<svg\b([^>]*)\baria-label="QR Code"/',
+                        '<svg class="pay-qr"$1aria-label="' . $altText . '"',
+                        $rawSvg,
+                        1
+                    );
+                    $qrDownloadHref = QrSvg::dataUri($qrString);
+                    $qrDownloadName = 'qris-quickbrew-' . $nomorFile . '.svg';
+                } catch (Throwable $e) {
+                    error_log(sprintf('[QuickBrew QR SVG] pemesanan_id=%d gagal merender SVG: %s', $id, $e->getMessage()));
+                    $qrSvg = null;
+                }
+            }
+
+            if ($qrSvg === null && $qrUrl !== '' && preg_match('#^https?://#i', $qrUrl)) {
+                $qrImgSrc       = $qrUrl;
+                $qrDownloadHref = $qrUrl;
+                $qrDownloadName = 'qris-quickbrew-' . $nomorFile . '.png';
+            }
+        }
+
         $justOrdered = $order && ($_SESSION['pesanan_baru'] ?? null) === $id;
         unset($_SESSION['pesanan_baru']);
 
         view('pelanggan/public/pembayaran', [
-            'order'        => $order,
-            'justOrdered'  => $justOrdered,
-            'statusUrl'    => $order ? url('pembayaran', ['id' => $id, 't' => $token]) : url('menu'),
-            'tableNumber'  => $this->tableNumber(),
-            'paymentLabel' => PemesananModel::PAYMENT_LABEL,
+            'order'          => $order,
+            'justOrdered'    => $justOrdered,
+            'statusUrl'      => $order ? url('pembayaran', ['id' => $id, 't' => $token]) : url('menu'),
+            'tableNumber'    => $this->tableNumber(),
+            'paymentLabel'   => PemesananModel::PAYMENT_LABEL,
+            'qrSvg'          => $qrSvg,
+            'qrImgSrc'       => $qrImgSrc,
+            'qrDownloadHref' => $qrDownloadHref,
+            'qrDownloadName' => $qrDownloadName,
         ]);
     }
 
@@ -160,4 +295,3 @@ final class PelangganController
         ]);
     }
 }
-

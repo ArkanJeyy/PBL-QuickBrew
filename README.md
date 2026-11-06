@@ -111,13 +111,13 @@ Sistem memisahkan hak akses operasional harian (Kasir & Barista) dari fungsi pen
 **✅ Dikerjakan**
 - Pemindaian QR Code meja tanpa login
 - Katalog menu digital dengan kustomisasi variasi minuman (*sugar level*, *ice level*, *add-ons*)
-- Pemesanan mandiri (*self-service checkout*)
+- Pemesanan mandiri (*self-service checkout*) dengan pembayaran **QRIS Midtrans Core API** dan **Tunai**
 - Dashboard antrean pesanan *real-time* untuk barista/kasir
 - Manajemen status ketersediaan menu (CRUD sederhana)
 - Laporan rekapitulasi penjualan harian
 
 **❌ Tidak Dikerjakan**
-- Integrasi *payment gateway* otomatis (pembayaran memakai QRIS statis atau bayar di kasir)
+- Integrasi *payment gateway* otomatis sudah dikerjakan khusus metode **QRIS Midtrans Core API** + **Tunai** (metode kartu kredit/VA/e-wallet terpisah tidak termasuk)
 - Sistem akun/registrasi pelanggan (*membership*)
 - Notifikasi WhatsApp/email otomatis
 - Manajemen stok bahan baku (takaran gramasi/mililiter)
@@ -138,7 +138,7 @@ Sistem memisahkan hak akses operasional harian (Kasir & Barista) dari fungsi pen
 ### Batasan
 - **Tidak mengelola stok bahan mentah:** hanya stok produk jadi (mis. cup kopi atau porsi makanan), bukan biji kopi, sirup, atau susu bubuk.
 - **Tidak ada catatan pengeluaran:** hanya mencatat uang masuk dari pesanan.
-- **Tanpa payment gateway otomatis:** tidak memakai API Midtrans/QRIS otomatis; data dummy digunakan untuk pengujian.
+- **Metode pembayaran QRIS & Tunai:** pembayaran nontunai terintegrasi dengan **QRIS Midtrans Core API** dan pembayaran tunai dikonfirmasi di kasir.
 - **Aplikasi *standalone*:** tidak terhubung ke mesin kasir POS lain maupun printer struk fisik.
 - **Tanpa pelacakan GPS:** hanya membaca kode QR meja tanpa mengecek lokasi HP pelanggan.
 
@@ -264,7 +264,7 @@ Rancangan awal berupa sketsa *wireframe*; detail visual (warna, tipografi, ikono
 | Basis data | Relasional (skema pada bagian [Rancangan Basis Data](#-rancangan-basis-data)) |
 | Email receipt | PHPMailer (pengiriman struk pesanan otomatis ke email pelanggan) |
 | Akses meja | QR Code berbasis token unik per meja |
-| Pembayaran | QRIS statis / bayar di kasir (tanpa payment gateway) |
+| Pembayaran | QRIS Midtrans Core API + Tunai (bayar di kasir) |
 | Backend | _PHP Native_ |
 | Frontend | _PHP Native_ |
 | Desain | (Figma) https://bit.ly/3TOH4sS |

@@ -118,6 +118,7 @@ CREATE TABLE pembayaran (
     pengguna_id       INT          NULL,
     midtrans_order_id VARCHAR(64)  UNIQUE,
     snap_token        VARCHAR(255),
+    qris_data         TEXT         NULL, -- JSON {"qr_string":"...","qr_url":"..."}
     waktu_pembayaran  TIMESTAMP    NULL,
     status_pembayaran VARCHAR(30)  NOT NULL DEFAULT 'pending'
                       CHECK (status_pembayaran IN (
