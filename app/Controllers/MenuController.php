@@ -24,7 +24,16 @@ final class MenuController
         }
 
         try {
-            $menus = MenuModel::allForApi();
+            if (isset($_GET['id'])) {
+                $id = (int) $_GET['id'];
+                $menus = MenuModel::findByIds([$id]);
+            } elseif (isset($_GET['category'])) {
+                $categorySlug = slugify($_GET['category']);
+                $allMenus = MenuModel::allForApi();
+                $menus = array_values(array_filter($allMenus, fn($m) => $m['category'] === $categorySlug));
+            } else {
+                $menus = MenuModel::allForApi();
+            }
 
             http_response_code(200);
 

@@ -31,23 +31,13 @@ final class MenuModel
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $s = db()->prepare(
-            "SELECT m.id, m.nama_menu, m.harga, m.stok, m.aktif, k.nama_kategori
-               FROM menu m
-               JOIN kategori k ON k.id = m.kategori_id
-              WHERE m.id IN ($placeholders)"
+            "SELECT m.id, m.nama_menu, m.harga, m.gambar, m.deskripsi, m.stok, m.aktif, k.nama_kategori\n               FROM menu m\r\n               JOIN kategori k ON k.id = m.kategori_id\r\n              WHERE m.id IN ($placeholders)"
         );
         $s->execute($ids);
 
         $menus = [];
         foreach ($s->fetchAll() as $row) {
-            $menus[(int) $row['id']] = [
-                'id'           => (int) $row['id'],
-                'name'         => $row['nama_menu'],
-                'price'        => (int) $row['harga'],
-                'stock'        => (int) $row['stok'],
-                'active'       => (bool) $row['aktif'],
-                'customizable' => in_array(slugify($row['nama_kategori']), self::CUSTOMIZABLE_CATEGORIES, true),
-            ];
+            $menus[(int) $row['id']] = self::map($row);
         }
         return $menus;
     }
