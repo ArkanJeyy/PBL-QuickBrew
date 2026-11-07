@@ -4,6 +4,7 @@
  * Variabel dari PelangganController::home():
  *   $favorites   array        Menu favorit (MenuModel::favorites)
  *   $tableNumber string|null  Nomor meja dari QR (?meja=<kode_qr>)
+ *   $lastOrder   array|null   Pesanan terakhir di sesi ini: number (#A0012), url (halaman Status Pesanan)
  */
 require_once __DIR__ . '/../component/favorite-card.php';
 require_once __DIR__ . '/../component/feature-card.php';
@@ -40,6 +41,17 @@ require __DIR__ . '/../../layouts/header.php';
         </a>
       </div>
     </section>
+
+<?php if (!empty($lastOrder)): ?>
+    <!-- Pintasan ke Status Pesanan terakhir (session). [Asumsi] tidak ada di desain beranda. -->
+    <a class="order-shortcut" href="<?= e($lastOrder['url']) ?>">
+      <span class="order-shortcut__text">
+        <span class="order-shortcut__label">Pesanan Saya</span>
+        <span class="order-shortcut__number"><?= e($lastOrder['number']) ?></span>
+      </span>
+      <span class="order-shortcut__action">Lihat Status</span>
+    </a>
+<?php endif; ?>
 
     <section class="features" aria-labelledby="features-title">
       <h2 class="features__title" id="features-title">Kenapa pilih <?= e(APP_NAME) ?>?</h2>

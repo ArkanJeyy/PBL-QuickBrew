@@ -53,6 +53,9 @@ final class PemesananModel
     /** Batas waktu pembayaran QRIS (menit), mengacu pada satu sumber di PembayaranService. */
     public const PAYMENT_MINUTES = PembayaranService::EXPIRY_MINUTES;
 
+    /** Estimasi pesanan siap setelah dibayar (teks tetap di halaman Status Pesanan). */
+    public const ESTIMATE_TEXT = '10 - 15 menit';
+
     private const MAX_LINES    = 50;
     private const MAX_QUANTITY = 99;
 
@@ -250,8 +253,9 @@ final class PemesananModel
     {
         $s = db()->prepare(
             "SELECT p.id, p.nama_pelanggan, p.email_pelanggan, p.catatan, p.total_harga,
-                    p.status_pemesanan, p.waktu_pemesanan, m.no_meja,
-                    b.metode_pembayaran, b.status_pembayaran, b.midtrans_order_id, b.qris_data
+                    p.status_pemesanan, p.waktu_pemesanan, p.diperbarui_pada, m.no_meja,
+                    b.metode_pembayaran, b.status_pembayaran, b.midtrans_order_id, b.qris_data,
+                    b.waktu_pembayaran
                FROM pemesanan p
                JOIN meja m ON m.id = p.meja_id
                LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
@@ -285,5 +289,72 @@ final class PemesananModel
         $order['number']   = self::displayNumber((int) $order['id']);
         $order['deadline'] = self::paymentDeadline((string) $order['waktu_pemesanan']);
         return $order;
+    }
+
+    /** Sudah lewat tahap pembayaran? (lunas atau status pesanan sudah maju) */
+    public static function isPaid(array $order): bool
+    {
+        return ($order['status_pembayaran'] ?? '') === 'paid'
+            || in_array($order['status_pemesanan'], ['dibayar', 'diproses', 'siap', 'selesai'], true);
+    }
+
+    /**
+     * Data halaman Status Pesanan: judul, teks, keadaan halaman, dan 4 langkah stepper.
+     *
+     * Database hanya menyimpan jam pesan (waktu_pemesanan), jam bayar (pembayaran.waktu_pembayaran),
+     * dan jam perubahan status terakhir (diperbarui_pada, diisi trigger). Jadi jam "Diproses"/"Selesai"
+     * hanya tampil pada langkah yang menjadi perubahan TERAKHIR; langkah lain tanpa jam.
+     * Status 'siap' (tidak ada di desain 4 langkah) dianggap bagian dari "Diproses".
+     *
+     * @return array{state:string, title:string, desc:string, steps:array}
+     *         state: unpaid | progress | done | cancel
+     *         steps[]: label, icon, status (done|current|todo), time
+     */
+    public static function statusView(array $order): array
+    {
+        $time = static fn ($ts): string => ($ts && ($t = strtotime((string) $ts))) ? date('H.i', $t) : '';
+        $status  = (string) $order['status_pemesanan'];
+        $paid    = self::isPaid($order);
+        $updated = $time($order['diperbarui_pada'] ?? null);
+        $meja    = (string) $order['no_meja'];
+
+        $steps = [
+            ['label' => 'Pesanan Diterima', 'icon' => 'order', 'status' => 'done', 'time' => $time($order['waktu_pemesanan'])],
+            ['label' => $paid ? 'Pembayaran Diterima' : 'Menunggu Pembayaran', 'icon' => 'pay',
+             'status' => $paid ? 'done' : 'current', 'time' => $paid ? $time($order['waktu_pembayaran'] ?? null) : ''],
+            ['label' => 'Diproses', 'icon' => 'process', 'status' => 'todo', 'time' => ''],
+            ['label' => 'Selesai', 'icon' => 'done', 'status' => 'todo', 'time' => ''],
+        ];
+
+        switch ($status) {
+            case 'batal':
+                $steps[1] = ['label' => 'Dibatalkan', 'icon' => 'pay', 'status' => 'todo', 'time' => $updated];
+                return ['state' => 'cancel', 'title' => 'Pesanan Dibatalkan',
+                        'desc' => 'Pesanan ini dibatalkan. Silakan hubungi kasir bila ada pertanyaan.', 'steps' => $steps];
+            case 'selesai':
+                $steps[2]['status'] = 'done';
+                $steps[3] = ['status' => 'done', 'time' => $updated] + $steps[3];
+                return ['state' => 'done', 'title' => 'Selamat Menikmati',
+                        'desc' => 'Pesananmu telah di antar ke Meja ' . $meja . '. Terima kasih sudah memilih ' . APP_NAME, 'steps' => $steps];
+            case 'siap':
+                $steps[2] = ['status' => 'done', 'time' => $updated] + $steps[2];
+                $steps[3]['status'] = 'current';
+                return ['state' => 'progress', 'title' => 'Pesanan Siap',
+                        'desc' => 'Pesanan siap diantar ke Meja ' . $meja . '.', 'steps' => $steps];
+            case 'diproses':
+                $steps[2] = ['status' => 'current', 'time' => $updated] + $steps[2];
+                return ['state' => 'progress', 'title' => 'Pesanan Diproses',
+                        'desc' => 'Pesananmu sedang dibuat oleh barista.', 'steps' => $steps];
+        }
+
+        if ($paid) { // 'dibayar' (atau pembayaran sudah 'paid')
+            $steps[2]['status'] = 'current';
+            return ['state' => 'progress', 'title' => 'Pembayaran Diterima',
+                    'desc' => 'Pesananmu akan segera diproses.', 'steps' => $steps];
+        }
+
+        $steps[1]['time'] = $updated;
+        return ['state' => 'unpaid', 'title' => 'Menunggu Pembayaran',
+                'desc' => 'Pesanan belum diproses. Silakan selesaikan pembayaran.', 'steps' => $steps];
     }
 }

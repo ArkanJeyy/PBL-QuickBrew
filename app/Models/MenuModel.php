@@ -160,6 +160,9 @@ final class MenuModel
             'image'        => self::image($row['gambar'], $row['nama_menu']),
             'dim'          => false,
             'customizable' => in_array($category, self::CUSTOMIZABLE_CATEGORIES, true),
+            // Dipakai Checkout (PemesananModel::price) untuk menolak menu nonaktif. Query all()/favorites()
+            // sudah memfilter "WHERE m.aktif" dan data seed tidak punya kolom ini, jadi default true.
+            'active'       => (bool) ($row['aktif'] ?? true),
         ];
     }
 
