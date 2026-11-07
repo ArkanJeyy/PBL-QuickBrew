@@ -41,6 +41,7 @@ define('DB_PASS', env('DB_PASS', ''));
 define('MIDTRANS_SERVER_KEY', env('MIDTRANS_SERVER_KEY', ''));
 define('MIDTRANS_CLIENT_KEY', env('MIDTRANS_CLIENT_KEY', ''));
 define('MIDTRANS_PROD',       env('MIDTRANS_PROD', 'false') === 'true'); // true untuk production
+define('ENABLE_PAYMENT_SIMULATION', env('ENABLE_PAYMENT_SIMULATION', 'false') === 'true'); // simulasi bayar demo; hanya berlaku bila MIDTRANS_PROD false
 define('APP_SECRET',          env('APP_SECRET', ''));
 
 foreach (['MIDTRANS_SERVER_KEY', 'MIDTRANS_CLIENT_KEY', 'APP_SECRET'] as $k) {

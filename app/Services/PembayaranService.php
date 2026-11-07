@@ -30,6 +30,12 @@ final class PembayaranService
     private string $serverKey;
     private bool   $production;
 
+    /** Simulasi pembayaran demo aktif: ENABLE_PAYMENT_SIMULATION=true DAN bukan Production. */
+    private bool   $simulasiAktif;
+
+    /** Base URL simulator pembayaran Midtrans Sandbox. */
+    private const SIMULATOR_URL = 'https://simulator.sandbox.midtrans.com';
+
     /**
      * Transport HTTP opsional untuk pengujian otomatis (tanpa memanggil jaringan Midtrans).
      * Signature: fn(string $method, string $url, ?array $body): array{httpCode:int, raw?:string|false, body?:array, errno?:int, error?:string}
@@ -38,15 +44,31 @@ final class PembayaranService
      */
     private $httpTransport;
 
-    public function __construct(?callable $httpTransport = null)
+    /**
+     * Transport opsional untuk simulator Midtrans Sandbox (form POST, respons HTML) agar dapat di-stub.
+     * Signature: fn(string $url, array $form): array{httpCode:int, raw:string|false, errno?:int, error?:string}
+     *
+     * @var callable|null
+     */
+    private $simulatorTransport;
+
+    public function __construct(?callable $httpTransport = null, ?callable $simulatorTransport = null)
     {
-        $this->serverKey     = (string) env('MIDTRANS_SERVER_KEY', '');
-        $this->production    = env('MIDTRANS_PROD', 'false') === 'true';
-        $this->httpTransport = $httpTransport;
+        $this->serverKey          = (string) env('MIDTRANS_SERVER_KEY', '');
+        $this->production         = env('MIDTRANS_PROD', 'false') === 'true';
+        $this->simulasiAktif      = !$this->production && env('ENABLE_PAYMENT_SIMULATION', 'false') === 'true';
+        $this->httpTransport      = $httpTransport;
+        $this->simulatorTransport = $simulatorTransport;
 
         if ($this->serverKey === '') {
             throw new RuntimeException('MIDTRANS_SERVER_KEY belum diisi di config/.env.');
         }
+    }
+
+    /** True bila simulasi pembayaran demo diizinkan (flag aktif dan lingkungan Sandbox). */
+    public function simulasiAktif(): bool
+    {
+        return $this->simulasiAktif;
     }
 
     // ------------------------------------------------------------------
@@ -243,101 +265,132 @@ final class PembayaranService
     }
 
     /**
-     * Khusus lingkungan Sandbox (MIDTRANS_PROD === false):
-     * Simulasikan pembayaran QRIS sukses langsung ke simulator Midtrans Sandbox,
-     * lalu sinkronkan statusnya. Bila simulator Midtrans tidak dapat dijangkau,
-     * gunakan fallback pelunasan lokal agar proses demo tidak pernah gagal.
+     * Simulasi pembayaran QRIS untuk demo (HANYA bila simulasiAktif(): ENABLE_PAYMENT_SIMULATION=true
+     * dan MIDTRANS_PROD=false).
+     *
+     * Jalur utama: simulator resmi Midtrans Sandbox (pindai QR -> bayar via GoPay), lalu status diterapkan
+     * lewat sinkron() sehingga alur status Midtrans/webhook ikut teruji.
+     * Fallback lokal (tandaiLunas) HANYA bila simulator Midtrans tidak terjangkau (gangguan jaringan/5xx).
+     * Bila simulator terjangkau tetapi tidak melunasi -> TIDAK ada fallback, kembalikan false.
+     *
+     * @return bool True bila pesanan berhasil dilunasi oleh simulasi.
      */
-    public function simulasiQrisSandbox(int $pemesananId, ?string $rawQrisData = null): bool
+    public function simulasiQrisSandbox(int $pemesananId): bool
     {
-        if (MIDTRANS_PROD) {
-            throw new RuntimeException('Simulasi pembayaran hanya diizinkan pada lingkungan Sandbox.');
+        if (!$this->simulasiAktif) {
+            error_log(sprintf('[SIMULASI DITOLAK] pemesanan_id=%d: simulasi pembayaran tidak aktif', $pemesananId));
+            return false;
         }
 
-        $qrUrl = '';
-        if ($rawQrisData !== null && $rawQrisData !== '') {
-            $decoded = json_decode($rawQrisData, true);
-            if (is_array($decoded)) {
-                $qrUrl = trim((string) ($decoded['qr_url'] ?? ''));
-            }
-        }
-
-        if ($qrUrl === '') {
-            $p = db()->prepare('SELECT qris_data, midtrans_order_id FROM pembayaran WHERE pemesanan_id = ?');
-            $p->execute([$pemesananId]);
-            $row = $p->fetch(PDO::FETCH_ASSOC);
-            if ($row) {
-                $decoded = json_decode((string) ($row['qris_data'] ?? ''), true);
-                if (is_array($decoded)) {
-                    $qrUrl = trim((string) ($decoded['qr_url'] ?? ''));
-                }
-            }
-        }
-
-        $simulasiBerhasil = false;
-        if ($qrUrl !== '') {
-            try {
-                // Tahap 1: Pindai QR di simulator Midtrans untuk mendapatkan form payload
-                $ch = curl_init('https://simulator.sandbox.midtrans.com/v2/qris/payment');
-                curl_setopt_array($ch, [
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST           => true,
-                    CURLOPT_POSTFIELDS     => http_build_query(['qrCodeUrl' => $qrUrl]),
-                    CURLOPT_TIMEOUT        => 5,
-                    CURLOPT_SSL_VERIFYPEER => true,
-                ]);
-                $resp1 = (string) curl_exec($ch);
-                curl_close($ch);
-
-                // Ekstrak referenceId dan exploreData
-                if (
-                    preg_match('/name="referenceId"\s+type="hidden"\s+value="([^"]+)"/', $resp1, $mRef)
-                    && preg_match('/name="exploreData"\s+type="hidden"\s+value="([^"]+)"/', $resp1, $mExp)
-                ) {
-                    $refId   = html_entity_decode($mRef[1], ENT_QUOTES, 'UTF-8');
-                    $expData = html_entity_decode($mExp[1], ENT_QUOTES, 'UTF-8');
-
-                    // Tahap 2: Kirim instruksi Pay ke simulator GoPay
-                    $ch2 = curl_init('https://simulator.sandbox.midtrans.com/v2/qris/payment/gopay');
-                    curl_setopt_array($ch2, [
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_POST           => true,
-                        CURLOPT_POSTFIELDS     => http_build_query([
-                            'referenceId' => $refId,
-                            'exploreData' => $expData,
-                            'issuer'      => 'gopay',
-                        ]),
-                        CURLOPT_TIMEOUT        => 5,
-                        CURLOPT_SSL_VERIFYPEER => true,
-                    ]);
-                    $resp2 = (string) curl_exec($ch2);
-                    curl_close($ch2);
-
-                    if (stripos($resp2, 'PAID') !== false || stripos($resp2, 'Success') !== false) {
-                        $simulasiBerhasil = true;
-                    }
-                }
-            } catch (Throwable $e) {
-                error_log('[QuickBrew Sandbox Simulator] ' . $e->getMessage());
-            }
-        }
-
-        // Ambil midtrans_order_id untuk sinkronisasi
-        $stmt = db()->prepare('SELECT midtrans_order_id FROM pembayaran WHERE pemesanan_id = ?');
+        $stmt = db()->prepare('SELECT qris_data, midtrans_order_id FROM pembayaran WHERE pemesanan_id = ?');
         $stmt->execute([$pemesananId]);
-        $orderId = (string) $stmt->fetchColumn();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($simulasiBerhasil && $orderId !== '') {
-            try {
-                $this->sinkron($orderId);
-                return true;
-            } catch (Throwable $e) {
-                error_log('[QuickBrew Sandbox Simulator Sinkron Gagal] ' . $e->getMessage());
-            }
+        $decoded = is_array($row) ? json_decode((string) ($row['qris_data'] ?? ''), true) : null;
+        $qrUrl   = is_array($decoded) ? trim((string) ($decoded['qr_url'] ?? '')) : '';
+        $orderId = is_array($row) ? trim((string) ($row['midtrans_order_id'] ?? '')) : '';
+
+        if ($qrUrl === '' || $orderId === '') {
+            error_log(sprintf('[SIMULASI] pemesanan_id=%d gagal: qr_url atau midtrans_order_id tidak tersedia', $pemesananId));
+            return false;
         }
 
-        // Fallback tangguh: pastikan pesanan selalu lunas di DB lokal
+        // Tahap 1: pindai QR di simulator Midtrans untuk memperoleh form pembayaran
+        $scan = $this->kirimKeSimulator(self::SIMULATOR_URL . '/v2/qris/payment', ['qrCodeUrl' => $qrUrl]);
+        if (!$scan['terjangkau']) {
+            return $this->simulasiLokal($pemesananId, $scan['error']);
+        }
+
+        if (
+            !preg_match('/name="referenceId"\s+type="hidden"\s+value="([^"]+)"/', $scan['raw'], $mRef)
+            || !preg_match('/name="exploreData"\s+type="hidden"\s+value="([^"]+)"/', $scan['raw'], $mExp)
+        ) {
+            error_log(sprintf('[SIMULASI] pemesanan_id=%d gagal: simulator tidak mengembalikan form pembayaran (HTTP %d)', $pemesananId, $scan['httpCode']));
+            return false;
+        }
+
+        // Tahap 2: kirim instruksi bayar (issuer GoPay) ke simulator
+        $bayar = $this->kirimKeSimulator(self::SIMULATOR_URL . '/v2/qris/payment/gopay', [
+            'referenceId' => html_entity_decode($mRef[1], ENT_QUOTES, 'UTF-8'),
+            'exploreData' => html_entity_decode($mExp[1], ENT_QUOTES, 'UTF-8'),
+            'issuer'      => 'gopay',
+        ]);
+        if (!$bayar['terjangkau']) {
+            return $this->simulasiLokal($pemesananId, $bayar['error']);
+        }
+
+        if (!preg_match('/name="status"\s+type="hidden"\s+value="PAID"/i', $bayar['raw'])) {
+            error_log(sprintf('[SIMULASI] pemesanan_id=%d gagal: simulator tidak melunasi transaksi (HTTP %d)', $pemesananId, $bayar['httpCode']));
+            return false;
+        }
+
+        error_log(sprintf('[SIMULASI] pemesanan_id=%d jalur=simulator', $pemesananId));
+
+        // Terapkan status settlement dari Midtrans (jalur yang sama dengan cadangan webhook)
+        try {
+            $this->sinkron($orderId);
+        } catch (Throwable $e) {
+            error_log(sprintf('[SIMULASI] pemesanan_id=%d sinkron setelah simulator gagal: %s', $pemesananId, $e->getMessage()));
+            return false;
+        }
+
+        $cek = db()->prepare('SELECT status_pemesanan FROM pemesanan WHERE id = ?');
+        $cek->execute([$pemesananId]);
+        return (string) $cek->fetchColumn() === 'diproses';
+    }
+
+    /** Fallback simulasi: lunasi di database lokal karena simulator Midtrans tidak terjangkau. */
+    private function simulasiLokal(int $pemesananId, string $alasan): bool
+    {
+        error_log(sprintf('[SIMULASI LOKAL] pemesanan_id=%d simulator Midtrans tidak terjangkau (%s); pelunasan dilakukan di database lokal', $pemesananId, $alasan));
+        error_log(sprintf('[SIMULASI] pemesanan_id=%d jalur=lokal', $pemesananId));
         return $this->tandaiLunas($pemesananId, 'qris');
+    }
+
+    /**
+     * Kirim form POST ke simulator Midtrans Sandbox (transport terinjeksi atau cURL native).
+     * "Tidak terjangkau" = error koneksi/cURL, tanpa respons (HTTP 0), atau HTTP 5xx.
+     *
+     * @return array{terjangkau: bool, httpCode: int, raw: string, error: string}
+     */
+    private function kirimKeSimulator(string $url, array $form): array
+    {
+        if ($this->simulatorTransport !== null) {
+            $res = ($this->simulatorTransport)($url, $form);
+        } else {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                return ['terjangkau' => false, 'httpCode' => 0, 'raw' => '', 'error' => 'Tidak dapat menginisialisasi cURL'];
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => http_build_query($form),
+                CURLOPT_CONNECTTIMEOUT => 5,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+            $res = [
+                'raw'      => curl_exec($ch),
+                'errno'    => curl_errno($ch),
+                'error'    => curl_error($ch),
+                'httpCode' => (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
+            ];
+            curl_close($ch);
+        }
+
+        $raw      = $res['raw'] ?? false;
+        $errno    = (int) ($res['errno'] ?? 0);
+        $httpCode = (int) ($res['httpCode'] ?? 0);
+        $error    = (string) ($res['error'] ?? '');
+
+        if ($raw === false || $errno !== 0) {
+            return ['terjangkau' => false, 'httpCode' => $httpCode, 'raw' => '', 'error' => sprintf('cURL error #%d: %s', $errno, $error !== '' ? $error : 'tidak diketahui')];
+        }
+        if ($httpCode === 0 || $httpCode >= 500) {
+            return ['terjangkau' => false, 'httpCode' => $httpCode, 'raw' => (string) $raw, 'error' => 'HTTP ' . $httpCode];
+        }
+        return ['terjangkau' => true, 'httpCode' => $httpCode, 'raw' => (string) $raw, 'error' => ''];
     }
 
     // ------------------------------------------------------------------

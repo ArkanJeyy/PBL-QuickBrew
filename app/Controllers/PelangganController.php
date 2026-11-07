@@ -195,28 +195,31 @@ final class PelangganController
             http_response_code(404);
         }
 
-        // Aksi simulasi pembayaran khusus environment Sandbox (untuk keperluan demo dosen & pengujian)
-        if (
-            $_SERVER['REQUEST_METHOD'] === 'POST'
-            && isset($_POST['simulasi_bayar'])
-            && !MIDTRANS_PROD
-            && $order
-            && (string) $order['metode_pembayaran'] === 'qris'
-            && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
-        ) {
-            $service = $this->pembayaranService ??= new PembayaranService();
-            try {
-                $service->simulasiQrisSandbox($id, (string) ($order['qris_data'] ?? ''));
-            } catch (Throwable $e) {
-                error_log(sprintf('[QuickBrew Simulasi QRIS] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
-            }
+        // Simulasi pembayaran demo: aktif HANYA bila ENABLE_PAYMENT_SIMULATION=true DAN MIDTRANS_PROD=false
+        $simulasiAktif = $order !== null && $this->simulasiAktif();
 
-            $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
-            if ($this->redirector !== null) {
-                ($this->redirector)($targetUrl);
-                return;
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['simulasi_bayar'])) {
+            if (!$simulasiAktif) {
+                // Tolak tanpa mengubah status pesanan apa pun
+                http_response_code(403);
+                error_log(sprintf('[SIMULASI DITOLAK] pemesanan_id=%d: simulasi pembayaran tidak aktif', $id));
+            } elseif (
+                (string) $order['metode_pembayaran'] === 'qris'
+                && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
+            ) {
+                try {
+                    $this->pembayaranService->simulasiQrisSandbox($id);
+                } catch (Throwable $e) {
+                    error_log(sprintf('[SIMULASI] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
+                }
+
+                $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
+                if ($this->redirector !== null) {
+                    ($this->redirector)($targetUrl);
+                    return;
+                }
+                redirect($targetUrl);
             }
-            redirect($targetUrl);
         }
 
         // Cadangan webhook: sinkronkan status QRIS maksimal sekali per 5 detik per sesi
@@ -303,7 +306,25 @@ final class PelangganController
             'qrImgSrc'       => $qrImgSrc,
             'qrDownloadHref' => $qrDownloadHref,
             'qrDownloadName' => $qrDownloadName,
+            'simulasiAktif'  => $simulasiAktif,
         ]);
+    }
+
+    /**
+     * Simulasi pembayaran demo diizinkan bila flag config aktif, bukan Production,
+     * dan PembayaranService juga mengonfirmasi (pemeriksaan berlapis).
+     */
+    private function simulasiAktif(): bool
+    {
+        if (!ENABLE_PAYMENT_SIMULATION || MIDTRANS_PROD) {
+            return false;
+        }
+        try {
+            return ($this->pembayaranService ??= new PembayaranService())->simulasiAktif();
+        } catch (Throwable $e) {
+            error_log('[SIMULASI] Gagal memeriksa status simulasi: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function qr(): void
