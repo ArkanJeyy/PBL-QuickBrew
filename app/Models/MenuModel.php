@@ -156,6 +156,7 @@ final class MenuModel
             'description'  => (string) $row['deskripsi'],
             'status'       => (int) $row['stok'] > 0 ? 'available' : 'soldout',
             'stock'        => (int) $row['stok'],
+            'active'       => isset($row['aktif']) ? (bool) $row['aktif'] : true,
             'category'     => $category,
             'image'        => self::image($row['gambar'], $row['nama_menu']),
             'dim'          => false,
