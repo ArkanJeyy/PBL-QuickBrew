@@ -195,6 +195,30 @@ final class PelangganController
             http_response_code(404);
         }
 
+        // Aksi simulasi pembayaran khusus environment Sandbox (untuk keperluan demo dosen & pengujian)
+        if (
+            $_SERVER['REQUEST_METHOD'] === 'POST'
+            && isset($_POST['simulasi_bayar'])
+            && !MIDTRANS_PROD
+            && $order
+            && (string) $order['metode_pembayaran'] === 'qris'
+            && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
+        ) {
+            $service = $this->pembayaranService ??= new PembayaranService();
+            try {
+                $service->simulasiQrisSandbox($id, (string) ($order['qris_data'] ?? ''));
+            } catch (Throwable $e) {
+                error_log(sprintf('[QuickBrew Simulasi QRIS] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
+            }
+
+            $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
+            if ($this->redirector !== null) {
+                ($this->redirector)($targetUrl);
+                return;
+            }
+            redirect($targetUrl);
+        }
+
         // Cadangan webhook: sinkronkan status QRIS maksimal sekali per 5 detik per sesi
         if (
             $order

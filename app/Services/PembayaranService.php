@@ -242,6 +242,104 @@ final class PembayaranService
         return $status;
     }
 
+    /**
+     * Khusus lingkungan Sandbox (MIDTRANS_PROD === false):
+     * Simulasikan pembayaran QRIS sukses langsung ke simulator Midtrans Sandbox,
+     * lalu sinkronkan statusnya. Bila simulator Midtrans tidak dapat dijangkau,
+     * gunakan fallback pelunasan lokal agar proses demo tidak pernah gagal.
+     */
+    public function simulasiQrisSandbox(int $pemesananId, ?string $rawQrisData = null): bool
+    {
+        if (MIDTRANS_PROD) {
+            throw new RuntimeException('Simulasi pembayaran hanya diizinkan pada lingkungan Sandbox.');
+        }
+
+        $qrUrl = '';
+        if ($rawQrisData !== null && $rawQrisData !== '') {
+            $decoded = json_decode($rawQrisData, true);
+            if (is_array($decoded)) {
+                $qrUrl = trim((string) ($decoded['qr_url'] ?? ''));
+            }
+        }
+
+        if ($qrUrl === '') {
+            $p = db()->prepare('SELECT qris_data, midtrans_order_id FROM pembayaran WHERE pemesanan_id = ?');
+            $p->execute([$pemesananId]);
+            $row = $p->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $decoded = json_decode((string) ($row['qris_data'] ?? ''), true);
+                if (is_array($decoded)) {
+                    $qrUrl = trim((string) ($decoded['qr_url'] ?? ''));
+                }
+            }
+        }
+
+        $simulasiBerhasil = false;
+        if ($qrUrl !== '') {
+            try {
+                // Tahap 1: Pindai QR di simulator Midtrans untuk mendapatkan form payload
+                $ch = curl_init('https://simulator.sandbox.midtrans.com/v2/qris/payment');
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => http_build_query(['qrCodeUrl' => $qrUrl]),
+                    CURLOPT_TIMEOUT        => 5,
+                    CURLOPT_SSL_VERIFYPEER => true,
+                ]);
+                $resp1 = (string) curl_exec($ch);
+                curl_close($ch);
+
+                // Ekstrak referenceId dan exploreData
+                if (
+                    preg_match('/name="referenceId"\s+type="hidden"\s+value="([^"]+)"/', $resp1, $mRef)
+                    && preg_match('/name="exploreData"\s+type="hidden"\s+value="([^"]+)"/', $resp1, $mExp)
+                ) {
+                    $refId   = html_entity_decode($mRef[1], ENT_QUOTES, 'UTF-8');
+                    $expData = html_entity_decode($mExp[1], ENT_QUOTES, 'UTF-8');
+
+                    // Tahap 2: Kirim instruksi Pay ke simulator GoPay
+                    $ch2 = curl_init('https://simulator.sandbox.midtrans.com/v2/qris/payment/gopay');
+                    curl_setopt_array($ch2, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST           => true,
+                        CURLOPT_POSTFIELDS     => http_build_query([
+                            'referenceId' => $refId,
+                            'exploreData' => $expData,
+                            'issuer'      => 'gopay',
+                        ]),
+                        CURLOPT_TIMEOUT        => 5,
+                        CURLOPT_SSL_VERIFYPEER => true,
+                    ]);
+                    $resp2 = (string) curl_exec($ch2);
+                    curl_close($ch2);
+
+                    if (stripos($resp2, 'PAID') !== false || stripos($resp2, 'Success') !== false) {
+                        $simulasiBerhasil = true;
+                    }
+                }
+            } catch (Throwable $e) {
+                error_log('[QuickBrew Sandbox Simulator] ' . $e->getMessage());
+            }
+        }
+
+        // Ambil midtrans_order_id untuk sinkronisasi
+        $stmt = db()->prepare('SELECT midtrans_order_id FROM pembayaran WHERE pemesanan_id = ?');
+        $stmt->execute([$pemesananId]);
+        $orderId = (string) $stmt->fetchColumn();
+
+        if ($simulasiBerhasil && $orderId !== '') {
+            try {
+                $this->sinkron($orderId);
+                return true;
+            } catch (Throwable $e) {
+                error_log('[QuickBrew Sandbox Simulator Sinkron Gagal] ' . $e->getMessage());
+            }
+        }
+
+        // Fallback tangguh: pastikan pesanan selalu lunas di DB lokal
+        return $this->tandaiLunas($pemesananId, 'qris');
+    }
+
     // ------------------------------------------------------------------
     //  3. Satu fungsi pelunasan terpusat (QRIS webhook/sinkron & Tunai kasir)
     // ------------------------------------------------------------------
