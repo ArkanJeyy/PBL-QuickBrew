@@ -3,7 +3,7 @@ require_once APP_ROOT . '/app/Helpers/QrSvg.php';
 require_once APP_ROOT . '/app/Services/PembayaranService.php';
 
 /**
- * Controller halaman pelanggan: beranda, menu, keranjang, checkout, pembayaran, QR meja.
+ * Controller halaman pelanggan: beranda, menu, keranjang, checkout, pembayaran, status pesanan, QR meja.
  */
 final class PelangganController
 {
@@ -42,11 +42,45 @@ final class PelangganController
         return $this->meja['no_meja'] ?? null;
     }
 
+    /** Ambil pesanan dari ?id=&t= (token tok() mencegah membuka pesanan orang lain); null bila tidak cocok. */
+    private function orderFromRequest(): ?array
+    {
+        $id    = (int) ($_GET['id'] ?? 0);
+        $token = (string) ($_GET['t'] ?? '');
+        return ($id > 0 && hash_equals(tok($id), $token)) ? PemesananModel::find($id) : null;
+    }
+
+    /** Simpan pesanan terakhir di session agar bisa dibuka lagi dari tombol "Pesanan Saya" di Beranda. */
+    private function rememberOrder(int $id): void
+    {
+        $_SESSION['pesanan_terakhir'] = $id;
+    }
+
+    /** Tautan halaman Status Pesanan untuk sebuah pesanan. */
+    private function statusUrl(int $id): string
+    {
+        return url('status', ['id' => $id, 't' => tok($id)]);
+    }
+
+    /** Redirect lewat $redirector (dipakai tests/pembayaran_test.php) atau redirect() biasa. */
+    private function redirectTo(string $url): void
+    {
+        if ($this->redirector !== null) {
+            ($this->redirector)($url);
+            return;
+        }
+        redirect($url);
+    }
+
     public function home(): void
     {
+        $lastId = (int) ($_SESSION['pesanan_terakhir'] ?? 0);
         view('pelanggan/public/index', [
             'favorites'   => MenuModel::favorites(6),
             'tableNumber' => $this->tableNumber(),
+            'lastOrder'   => $lastId > 0
+                ? ['number' => PemesananModel::displayNumber($lastId), 'url' => $this->statusUrl($lastId)]
+                : null,
         ]);
     }
 
@@ -118,6 +152,7 @@ final class PelangganController
                         'total'   => $priced['total'],
                         'lines'   => $priced['lines'],
                     ]);
+                    $this->rememberOrder($id); // kartu "Pesanan Saya" di Beranda
 
                     if ($old['metode'] === 'tunai') {
                         $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
@@ -181,18 +216,26 @@ final class PelangganController
 
     /**
      * Halaman Pembayaran setelah Checkout: ?page=pembayaran&id=<id>&t=<tok(id)>
-     * (token mencegah membuka pesanan orang lain). Tampilan berbeda untuk QRIS & Tunai;
-     * "Lihat Status Pembayaran" memuat ulang halaman ini dan menjalankan sinkron() ber-throttle
-     * sebagai cadangan bila notifikasi webhook belum diterima.
+     * (token mencegah membuka pesanan orang lain). Tampilan berbeda untuk QRIS & Tunai.
+     * Selama menunggu pembayaran QRIS, halaman ini menjalankan sinkron() ber-throttle sebagai
+     * cadangan bila notifikasi webhook belum diterima. Tombol bawah membuka halaman Status Pesanan;
+     * bila pesanan SUDAH dibayar/maju/batal saat halaman dibuka, langsung berpindah ke Status Pesanan
+     * (pelunasan yang baru terjadi lewat sinkron() di request ini tetap menampilkan "Pembayaran Diterima").
      */
     public function pembayaran(): void
     {
-        $id    = (int) ($_GET['id'] ?? 0);
-        $token = (string) ($_GET['t'] ?? '');
-        $order = ($id > 0 && hash_equals(tok($id), $token)) ? PemesananModel::find($id) : null;
+        $order = $this->orderFromRequest();
+        $id    = $order ? (int) $order['id'] : 0;
 
         if (!$order) {
             http_response_code(404);
+        } else {
+            $this->rememberOrder($id);
+            if (PemesananModel::isPaid($order) || $order['status_pemesanan'] === 'batal') {
+                unset($_SESSION['pesanan_baru']);
+                $this->redirectTo($this->statusUrl($id));
+                return;
+            }
         }
 
         // Aksi simulasi pembayaran khusus environment Sandbox (untuk keperluan demo dosen & pengujian)
@@ -296,13 +339,37 @@ final class PelangganController
         view('pelanggan/public/pembayaran', [
             'order'          => $order,
             'justOrdered'    => $justOrdered,
-            'statusUrl'      => $order ? url('pembayaran', ['id' => $id, 't' => $token]) : url('menu'),
+            'statusUrl'      => $order ? $this->statusUrl($id) : url('menu'), // tombol bawah -> Status Pesanan
             'tableNumber'    => $this->tableNumber(),
             'paymentLabel'   => PemesananModel::PAYMENT_LABEL,
             'qrSvg'          => $qrSvg,
             'qrImgSrc'       => $qrImgSrc,
             'qrDownloadHref' => $qrDownloadHref,
             'qrDownloadName' => $qrDownloadName,
+        ]);
+    }
+
+    /**
+     * Halaman Status Pesanan: ?page=status&id=<id>&t=<tok(id)>
+     * Stepper 4 langkah + ringkasan; tombol bawah sesuai keadaan (bayar / muat ulang / ke beranda).
+     */
+    public function status(): void
+    {
+        $order = $this->orderFromRequest();
+        if (!$order) {
+            http_response_code(404);
+        } else {
+            $this->rememberOrder((int) $order['id']);
+        }
+        $id = $order ? (int) $order['id'] : 0;
+
+        view('pelanggan/public/status', [
+            'order'        => $order,
+            'view'         => $order ? PemesananModel::statusView($order) : null,
+            'statusUrl'    => $order ? $this->statusUrl($id) : url('menu'),
+            'paymentUrl'   => $order ? url('pembayaran', ['id' => $id, 't' => tok($id)]) : url('menu'),
+            'estimate'     => PemesananModel::ESTIMATE_TEXT,
+            'tableNumber'  => $this->tableNumber(),
         ]);
     }
 

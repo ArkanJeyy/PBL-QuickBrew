@@ -1,0 +1,161 @@
+/* ==========================================================================
+   Halaman Status Pesanan - sumber: 3 screenshot desain Status Pesanan
+   [Asumsi] ukuran dibaca dari screenshot (belum ada node Figma); memakai token yang ada.
+   Kartu & daftar item memakai checkout.css; header memakai cart.css.
+   ========================================================================== */
+
+/* Latar abu-abu di bagian atas, kartu status "menimpa" latar ini (sesuai desain) */
+.status-main {
+  padding-top: 40px;
+  background: linear-gradient(var(--color-placeholder) 0 170px, transparent 170px);
+}
+
+/* ===== Kartu status ===== */
+.status-card {
+  position: relative;
+  padding: 40px var(--space-page) 18px;
+  border-radius: 28px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.status-card__icon {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--color-brand-dark);
+  color: var(--color-white);
+}
+
+.status-card__icon svg { width: 28px; height: 28px; }
+
+.status-card__title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-extrabold);
+  line-height: 26px;
+  color: var(--color-brand-dark);
+}
+
+.status-card__desc {
+  max-width: 260px;
+  margin: 8px auto 0;
+  padding-bottom: 14px;
+  font-size: var(--fs-caption);
+  line-height: 17px;
+  color: var(--color-text-dark);
+  /* garis putus-putus di bawah teks (sesuai desain) */
+  background: linear-gradient(90deg, var(--color-divider) 70%, transparent 70%) bottom / 25% 1px repeat-x;
+}
+
+/* ===== Stepper 4 langkah ===== */
+.status-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 16px;
+  list-style: none;
+}
+
+.status-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Garis penghubung ke langkah sebelumnya (di belakang lingkaran) */
+.status-step + .status-step::before {
+  content: "";
+  position: absolute;
+  top: 19px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--color-disabled);
+}
+
+.status-step + .status-step--done::before,
+.status-step + .status-step--current::before { background: var(--color-brand-dark); }
+
+.status-step__icon {
+  position: relative; /* di atas garis */
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--color-disabled);
+  border-radius: 50%;
+  background: var(--color-white);
+  color: var(--color-disabled);
+}
+
+.status-step__icon svg { width: 20px; height: 20px; }
+
+.status-step--done .status-step__icon {
+  border-color: var(--color-brand-dark);
+  background: var(--color-brand-dark);
+  color: var(--color-white);
+}
+
+.status-step--current .status-step__icon {
+  border-color: var(--color-brand-dark);
+  color: var(--color-brand-dark);
+}
+
+.status-step__label {
+  padding: 0 2px;
+  font-size: var(--fs-badge);
+  line-height: 12px;
+  color: var(--color-disabled);
+}
+
+.status-step--done .status-step__label,
+.status-step--current .status-step__label { color: var(--color-black); }
+
+.status-step__time {
+  font-size: var(--fs-badge);
+  line-height: 12px;
+  color: var(--color-black);
+}
+
+/* Pesanan dibatalkan: stepper berhenti abu-abu */
+.status-card--cancel .status-card__icon { background: var(--color-error); }
+
+/* ===== Kartu estimasi ===== */
+.status-estimate {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-estimate__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-brand-dark);
+  color: var(--color-white);
+}
+
+.status-estimate__icon svg { width: 26px; height: 26px; }
+
+.status-estimate__label {
+  font-size: var(--fs-caption);
+  color: var(--color-text-dark);
+}
+
+.status-estimate__value {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-bold);
+  color: var(--color-black);
+}
