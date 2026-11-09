@@ -117,6 +117,40 @@
   height: 20px;
 }
 
+/* ===== Pintasan "Pesanan Saya" (muncul bila ada pesanan di sesi ini) =====
+   [Asumsi] tidak ada di desain beranda; gaya mengikuti kartu & tombol yang ada. */
+.order-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px var(--space-page) 0;
+  padding: 12px var(--space-page);
+  border-radius: var(--radius-panel);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  color: var(--color-brand-dark);
+}
+
+.order-shortcut__text { display: grid; }
+
+.order-shortcut__label { font-size: var(--fs-caption); color: var(--color-text-dark); }
+
+.order-shortcut__number {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+}
+
+.order-shortcut__action {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-button);
+  background: var(--color-button-bg);
+  color: var(--color-white);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+}
+
 /* ===== Kenapa pilih QuickBrew ===== */
 .features {
   margin: 12px var(--space-page) 0;
