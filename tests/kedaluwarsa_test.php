@@ -251,11 +251,10 @@ check(
 // =========================================================================
 // 4. Uji Opsi --tunai-menit=25 lewat Skrip CLI bin/kedaluwarsa.php (Exit Code & Tanpa PII)
 // =========================================================================
-$cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/bin/kedaluwarsa.php') . ' --tunai-menit=25';
-$cliOutput = [];
-$cliCode   = -1;
-exec($cmd, $cliOutput, $cliCode);
-$cliText = implode("\n", $cliOutput);
+require_once $root . '/bin/kedaluwarsa.php';
+ob_start();
+$cliCode = jalankan_cli_kedaluwarsa(['bin/kedaluwarsa.php', '--tunai-menit=25']);
+$cliText = (string) ob_get_clean();
 
 $rowTunaiBaruSetelahCli = PemesananModel::detail($tunaiBaru['id']);
 check(
