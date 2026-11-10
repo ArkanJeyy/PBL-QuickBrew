@@ -67,3 +67,61 @@ curl -X GET "http://localhost:8000/public/api/menu?category=minuman"
 | `500` | Kesalahan server (mis. DB tidak terhubung) | ```json {"success":false,"message":"Terjadi kesalahan pada server.","debug":"<pesan error>","data":null}``` |
 
 ---
+
+## 2. Endpoint Status Pesanan JSON (Polling Pelanggan)
+
+### URL
+`GET /public/?page=status-json&id=<id>&t=<token_hmac>`
+
+### Deskripsi
+Mengembalikan status terkini satu pesanan dalam format JSON untuk kebutuhan *polling* otomatis halaman Pembayaran dan Status Pesanan di sisi front-end (disarankan interval **4–5 detik**).
+
+- Mengirim header `Content-Type: application/json; charset=utf-8` dan `Cache-Control: no-store`.
+- Bila metode pembayaran adalah **QRIS** dan status masih `menunggu_pembayaran`, endpoint ini otomatis memanggil sinkronisasi cadangan `PembayaranService::sinkron()` dengan *throttle* sesi **5 detik** di dalam blok `try/catch` (gangguan jaringan ke Midtrans dicatat di log dan tidak merusak respons JSON).
+- Dibatasi **30 permintaan per 60 detik per (IP + ID pesanan)**.
+
+### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|-----------|------|-------|------------|
+| `page` | string | ya | Nilai tetap: `status-json` |
+| `id` | integer | ya | ID pesanan (`pemesanan.id`) |
+| `t` | string | ya | Token HMAC 16 karakter dari `tok($id)` |
+
+### Contoh Request
+```bash
+curl -X GET "http://localhost/PBL/PBL-QuickBrew/public/?page=status-json&id=12&t=a1b2c3d4e5f60718"
+```
+
+### Respons Berhasil (`200 OK`)
+```json
+{
+  "ok": true,
+  "data": {
+    "id": 12,
+    "nomor": "#A0012",
+    "status": "diproses",
+    "label": "Pesanan Diproses",
+    "lunas": true,
+    "metode": "qris",
+    "kedaluwarsa": "18.20",
+    "diperbarui": "2026-11-10 18:06:12"
+  }
+}
+```
+
+### Nilai `data.status` & `data.label`
+| `status` | `lunas` | `label` |
+|----------|---------|---------|
+| `menunggu_pembayaran` | `false` | `Menunggu Pembayaran` |
+| `diproses` | `true` | `Pesanan Diproses` |
+| `siap` | `true` | `Pesanan Siap` |
+| `selesai` | `true` | `Selamat Menikmati` |
+| `batal` | `false` | `Pesanan Dibatalkan` |
+
+### Respons Error
+| Kode | Kondisi | Contoh Body |
+|------|---------|-------------|
+| `404` | Parameter `id` atau token `t` tidak valid / pesanan tidak ditemukan | `{"ok":false,"error":"Pesanan tidak ditemukan."}` |
+| `429` | Melebihi batas 30 permintaan / 60 detik per (IP + ID pesanan) | `{"ok":false,"error":"Terlalu banyak permintaan. Silakan coba lagi sebentar."}` |
+
+---
