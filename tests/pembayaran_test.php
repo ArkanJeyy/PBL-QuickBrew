@@ -68,11 +68,14 @@ if ($activeDb !== 'quickbrew_test') {
     exit(1);
 }
 
-// Muat ulang skema bersih + jalankan migrasi 001 (uji idempotensi migrasi)
+// Muat ulang skema bersih + jalankan migrasi 001 & 002 (uji idempotensi migrasi)
 $pdo->exec((string) file_get_contents(APP_ROOT . '/SQL/QuickBrew.sql'));
 $migrationSql = (string) file_get_contents(APP_ROOT . '/SQL/migrations/001_add_pembayaran_qris_data.sql');
 $pdo->exec($migrationSql);
 $pdo->exec($migrationSql);
+$migration002Sql = (string) file_get_contents(APP_ROOT . '/SQL/migrations/002_pembatasan_laju.sql');
+$pdo->exec($migration002Sql);
+$pdo->exec($migration002Sql);
 
 // -------------------------------------------------------------------------
 // Helper assertion & utilitas uji
@@ -293,12 +296,13 @@ check(
 PemesananModel::simpanQris($qrisOrderId, (string) $qrisOrder['midtrans_order_id'], json_encode($qrisDecoded, JSON_UNESCAPED_SLASHES));
 
 // =========================================================================
-// 2. Checkout Tunai (Tanpa Panggilan Midtrans)
+// 2. Checkout Tunai (Tanpa Panggilan Midtrans) + Idempotensi Nonce
 // =========================================================================
 $httpCalls   = [];
 $redirectUrl = null;
+$csrfTunai   = csrf_token(); // token baru setelah checkout pertama berhasil
 $_POST = [
-    'csrf_token' => $csrf,
+    'csrf_token' => $csrfTunai,
     'nama'       => 'Siti Aminah',
     'email'      => 'siti@example.com',
     'metode'     => 'tunai',
@@ -322,6 +326,53 @@ check(
     'Pesanan Tunai tetap menunggu_pembayaran tanpa midtrans_order_id'
 );
 
+// 2b. Double-submit dengan token lama ($csrfTunai) -> TIDAK membuat pesanan baru, redirect ke pesanan yang sama
+$countSebelumDup = (int) $pdo->query('SELECT COUNT(*) FROM pemesanan')->fetchColumn();
+$redirectUrlDup  = null;
+$ctrlDup = new PelangganController($service, static function (string $to) use (&$redirectUrlDup): void {
+    $redirectUrlDup = $to;
+});
+ob_start();
+$ctrlDup->checkout(); // $_POST masih memakai $csrfTunai yang sudah pernah berhasil
+ob_end_clean();
+$countSesudahDup = (int) $pdo->query('SELECT COUNT(*) FROM pemesanan')->fetchColumn();
+check(
+    $countSesudahDup === $countSebelumDup
+    && $redirectUrlDup === url('pembayaran', ['id' => $tunaiOrderId, 't' => tok($tunaiOrderId)]),
+    'Double-submit dengan token CSRF yang sama tidak membuat pesanan baru & redirect ke pesanan yang sama'
+);
+
+// 2c. Dua pesanan identik berturut-turut dengan csrf_token() baru -> menjadi dua pesanan berbeda
+$csrfIdentik1 = csrf_token();
+$_POST['csrf_token'] = $csrfIdentik1;
+$redirectIdentik1 = null;
+$ctrlIdentik1 = new PelangganController($service, static function (string $to) use (&$redirectIdentik1): void {
+    $redirectIdentik1 = $to;
+});
+ob_start();
+$ctrlIdentik1->checkout();
+ob_end_clean();
+$idIdentik1 = (int) ($_SESSION['pesanan_baru'] ?? 0);
+
+$csrfIdentik2 = csrf_token();
+$_POST['csrf_token'] = $csrfIdentik2;
+$redirectIdentik2 = null;
+$ctrlIdentik2 = new PelangganController($service, static function (string $to) use (&$redirectIdentik2): void {
+    $redirectIdentik2 = $to;
+});
+ob_start();
+$ctrlIdentik2->checkout();
+ob_end_clean();
+$idIdentik2 = (int) ($_SESSION['pesanan_baru'] ?? 0);
+
+check(
+    $csrfIdentik1 !== $csrfIdentik2
+    && $idIdentik1 > $tunaiOrderId
+    && $idIdentik2 > $idIdentik1
+    && $redirectIdentik1 !== $redirectIdentik2,
+    'Dua pesanan identik berturut-turut dengan token CSRF baru menghasilkan dua pesanan berbeda'
+);
+
 // =========================================================================
 // 3. Checkout QRIS Gagal (Midtrans Error) -> Pesanan Batal + Keranjang Aman
 // =========================================================================
@@ -338,6 +389,7 @@ $stubHandler = static function (): array {
 unset($_SESSION['pesanan_baru']);
 $redirectUrl = null;
 $countBefore = (int) $pdo->query('SELECT COUNT(*) FROM pemesanan')->fetchColumn();
+$csrf        = csrf_token(); // token baru setelah checkout sebelumnya berhasil
 
 $_POST = [
     'csrf_token' => $csrf,
