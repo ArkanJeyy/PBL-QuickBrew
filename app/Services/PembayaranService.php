@@ -265,6 +265,79 @@ final class PembayaranService
     }
 
     /**
+     * Batalkan transaksi di Midtrans Core API (POST /v2/{order_id}/cancel) lalu terapkan hasilnya.
+     *   - Bila Midtrans mengembalikan 404 (transaksi belum terdaftar) -> kembalikan null.
+     *   - Bila transaksi sudah berstatus final di Midtrans (mis. 412 / sudah settlement / expire / cancel) ->
+     *     terapkan status aktual tersebut via terapkanStatus() atau sinkron().
+     *
+     * @return array|null Data status/pembatalan Midtrans, atau null bila 404.
+     * @throws InvalidArgumentException bila midtransOrderId kosong.
+     * @throws RuntimeException         bila panggilan ke Midtrans gagal karena gangguan jaringan/5xx.
+     */
+    public function batalkan(string $midtransOrderId): ?array
+    {
+        $midtransOrderId = trim($midtransOrderId);
+        if ($midtransOrderId === '') {
+            throw new InvalidArgumentException('midtrans_order_id kosong.');
+        }
+
+        try {
+            $res = $this->request(
+                'POST',
+                $this->apiUrl() . '/' . rawurlencode($midtransOrderId) . '/cancel',
+                null,
+                true
+            );
+        } catch (RuntimeException $e) {
+            throw new RuntimeException('Gagal membatalkan transaksi Midtrans: ' . $e->getMessage(), 0, $e);
+        }
+
+        $httpCode = $res['httpCode'];
+        $data     = $res['data'];
+        $code     = (string) ($data['status_code'] ?? '');
+
+        if ($httpCode === 404 || $code === '404') {
+            return null;
+        }
+
+        // Bila transaksi sudah berstatus final di Midtrans (mis. 412 Merchant cannot modify status of the transaction)
+        if ($httpCode === 412 || $code === '412') {
+            if (!empty($data['transaction_status']) && !empty($data['order_id'])) {
+                $this->terapkanStatus($data);
+                return $data;
+            }
+            return $this->sinkron($midtransOrderId);
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            $pesan = (string) ($data['status_message'] ?? 'Permintaan pembatalan ditolak.');
+            throw new RuntimeException(sprintf('HTTP %d dari Midtrans: %s', $httpCode, $pesan));
+        }
+
+        if ($code !== '' && $code[0] !== '2') {
+            throw new RuntimeException(sprintf(
+                'Status batal Midtrans %s: %s',
+                $code,
+                $data['status_message'] ?? 'tidak diketahui'
+            ));
+        }
+
+        if (empty($data['order_id'])) {
+            $data['order_id'] = $midtransOrderId;
+        }
+        if (!isset($data['gross_amount']) && ($data['transaction_status'] ?? '') === 'cancel') {
+            $stmtTotal = db()->prepare('SELECT total_bayar FROM pembayaran WHERE midtrans_order_id = ?');
+            $stmtTotal->execute([$midtransOrderId]);
+            $totalDb = $stmtTotal->fetchColumn();
+            if ($totalDb !== false) {
+                $data['gross_amount'] = (string) $totalDb;
+            }
+        }
+        $this->terapkanStatus($data);
+        return $data;
+    }
+
+    /**
      * Simulasi pembayaran QRIS untuk demo (HANYA bila simulasiAktif(): ENABLE_PAYMENT_SIMULATION=true
      * dan MIDTRANS_PROD=false).
      *
@@ -801,8 +874,8 @@ final class PembayaranService
 
         $data = json_decode((string) $raw, true);
 
-        if ($allowNotFound && $httpCode === 404) {
-            return ['httpCode' => 404, 'data' => is_array($data) ? $data : ['status_code' => '404']];
+        if ($allowNotFound && ($httpCode === 404 || $httpCode === 412)) {
+            return ['httpCode' => $httpCode, 'data' => is_array($data) ? $data : ['status_code' => (string) $httpCode]];
         }
 
         if ($httpCode < 200 || $httpCode >= 300) {
