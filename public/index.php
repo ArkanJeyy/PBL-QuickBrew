@@ -10,7 +10,9 @@ kirim_header_keamanan();
 require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
+require_once APP_ROOT . '/app/Models/PenggunaModel.php';
 require_once APP_ROOT . '/app/Controllers/PelangganController.php';
+require_once APP_ROOT . '/app/Controllers/AuthController.php';
 
 // page => [Controller, method]
 $routes = [
@@ -21,6 +23,8 @@ $routes = [
     'pembayaran' => [PelangganController::class, 'pembayaran'], // setelah checkout: ?page=pembayaran&id=..&t=..
     'status'     => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
     'qr'       => [PelangganController::class, 'qr'],
+    'login'    => [AuthController::class, 'login'],
+    'logout'   => [AuthController::class, 'logout'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');
