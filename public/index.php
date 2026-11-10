@@ -21,7 +21,8 @@ $routes = [
     'cart'     => [PelangganController::class, 'cart'],
     'checkout' => [PelangganController::class, 'checkout'], // GET form, POST buat pesanan
     'pembayaran' => [PelangganController::class, 'pembayaran'], // setelah checkout: ?page=pembayaran&id=..&t=..
-    'status'     => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
+    'status'      => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
+    'status-json' => [PelangganController::class, 'statusJson'], // polling status pesanan JSON: ?page=status-json&id=..&t=..
     'qr'       => [PelangganController::class, 'qr'],
     'login'    => [AuthController::class, 'login'],
     'logout'   => [AuthController::class, 'logout'],

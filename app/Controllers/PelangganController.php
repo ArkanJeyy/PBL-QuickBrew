@@ -406,6 +406,85 @@ final class PelangganController
     }
 
     /**
+     * Endpoint JSON polling status pesanan: ?page=status-json&id=<id>&t=<tok(id)>
+     *   - Header: Content-Type: application/json; charset=utf-8 & Cache-Control: no-store
+     *   - Pembatasan laju: 30 permintaan / 60 detik per (IP + ID pesanan) -> HTTP 429 JSON
+     *   - Validasi id + tok(id) -> HTTP 404 JSON bila tidak valid / tidak ditemukan
+     *   - Untuk QRIS menunggu_pembayaran, panggil sinkron() dengan throttle sesi 5 detik di dalam try/catch
+     */
+    public function statusJson(): void
+    {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-store');
+        }
+
+        $id = max(0, (int) ($_GET['id'] ?? 0));
+        $kunciRate = 'status_json:' . ip_klien() . ':' . $id;
+
+        if (!batasi_laju($kunciRate, 30, 60)) {
+            http_response_code(429);
+            echo json_encode([
+                'ok'    => false,
+                'error' => 'Terlalu banyak permintaan. Silakan coba lagi sebentar.',
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $order = $this->orderFromRequest();
+        if (!$order) {
+            http_response_code(404);
+            echo json_encode([
+                'ok'    => false,
+                'error' => 'Pesanan tidak ditemukan.',
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $id = (int) $order['id'];
+
+        // Sinkronisasi cadangan Midtrans untuk QRIS menunggu_pembayaran (throttle sesi 5 detik)
+        if (
+            (string) ($order['metode_pembayaran'] ?? '') === 'qris'
+            && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
+            && !empty($order['midtrans_order_id'])
+        ) {
+            $lastSync = (int) ($_SESSION['qris_sync_last_at'] ?? 0);
+            $now      = time();
+
+            if (($now - $lastSync) >= self::QRIS_SYNC_THROTTLE_SECONDS) {
+                $_SESSION['qris_sync_last_at'] = $now;
+                try {
+                    ($this->pembayaranService ??= new PembayaranService())->sinkron((string) $order['midtrans_order_id']);
+                    $order = PemesananModel::find($id) ?? $order;
+                } catch (Throwable $e) {
+                    error_log(sprintf(
+                        '[QuickBrew StatusJSON] Sinkronisasi QRIS gagal untuk pemesanan_id=%d: %s',
+                        $id,
+                        $e->getMessage()
+                    ));
+                }
+            }
+        }
+
+        $statusView = PemesananModel::statusView($order);
+        http_response_code(200);
+        echo json_encode([
+            'ok'   => true,
+            'data' => [
+                'id'          => $id,
+                'nomor'       => (string) $order['number'],
+                'status'      => (string) $order['status_pemesanan'],
+                'label'       => (string) $statusView['title'],
+                'lunas'       => PemesananModel::isPaid($order),
+                'metode'      => (string) ($order['metode_pembayaran'] ?? ''),
+                'kedaluwarsa' => (string) ($order['deadline'] ?? ''),
+                'diperbarui'  => (string) ($order['diperbarui_pada'] ?? $order['waktu_pemesanan'] ?? ''),
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * Simulasi pembayaran demo diizinkan bila flag config aktif, bukan Production,
      * dan PembayaranService juga mengonfirmasi (pemeriksaan berlapis).
      */
