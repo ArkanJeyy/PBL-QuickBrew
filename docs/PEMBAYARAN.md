@@ -86,6 +86,8 @@ Agar server Midtrans Sandbox dapat mengirim webhook ke lingkungan Laragon lokal:
 
 > **Tips SSL di Windows/Laragon:** `PembayaranService` selalu mengaktifkan `CURLOPT_SSL_VERIFYPEER = true`. Jika muncul `cURL error #60: SSL certificate problem`, unduh berkas `cacert.pem` resmi dari `curl.se/ca/cacert.pem` lalu arahkan `curl.cainfo = "C:/laragon/etc/ssl/cacert.pem"` pada `php.ini` Laragon.
 
+> **Penting saat Demo via `ngrok` (`TRUSTED_PROXY`):** Karena seluruh trafik `ngrok` diteruskan ke web server lokal dari `127.0.0.1`, set `TRUSTED_PROXY=true` di `config/.env` saat demo menggunakan `ngrok`. Dengan `TRUSTED_PROXY=true`, fungsi `ip_klien()` akan membaca IP asli pengunjung dari entri **paling kanan** `X-Forwarded-For` (yang ditambahkan oleh proxy `ngrok`), sehingga seluruh pengunjung demo tidak berbagi satu kuota pembatasan laju (*rate limit*) yang sama. Batas percobaan checkout per IP (default `10` per 10 menit) juga dapat disesuaikan lewat variabel env `CHECKOUT_RATE_MAX`.
+
 ---
 
 ## 5. Cara Menguji dengan Simulator QRIS Sandbox Midtrans

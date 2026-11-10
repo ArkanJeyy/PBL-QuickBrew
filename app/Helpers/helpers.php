@@ -87,3 +87,108 @@ function csrf_check($token): bool
     return is_string($token) && !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+/**
+ * Kirim header keamanan HTTP standar (tanpa CSP agar tidak merusak skrip/gaya inline front-end).
+ * Mengembalikan daftar header yang diterapkan.
+ */
+function kirim_header_keamanan(): array
+{
+    $headers = [
+        'X-Frame-Options'        => 'SAMEORIGIN',
+        'X-Content-Type-Options' => 'nosniff',
+        'Referrer-Policy'        => 'strict-origin-when-cross-origin',
+        'Permissions-Policy'     => 'camera=(), microphone=(), geolocation=()',
+    ];
+    if (!headers_sent()) {
+        foreach ($headers as $nama => $nilai) {
+            header($nama . ': ' . $nilai);
+        }
+    }
+    return $headers;
+}
+
+/**
+ * Ambil alamat IP klien.
+ * Jika TRUSTED_PROXY=true (mis. di balik reverse proxy / ngrok), gunakan entri PALING KANAN
+ * dari X-Forwarded-For yang ditambahkan oleh proxy tepercaya. Validasi dengan filter_var();
+ * jika tidak valid, kembali ke REMOTE_ADDR.
+ */
+function ip_klien(): string
+{
+    $remote = trim((string) ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'));
+    if (filter_var($remote, FILTER_VALIDATE_IP) === false) {
+        $remote = '127.0.0.1';
+    }
+
+    if (defined('TRUSTED_PROXY') && TRUSTED_PROXY) {
+        $xff = trim((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
+        if ($xff !== '') {
+            $bagian   = explode(',', $xff);
+            $kandidat = trim((string) end($bagian));
+            if (filter_var($kandidat, FILTER_VALIDATE_IP) !== false) {
+                return $kandidat;
+            }
+        }
+    }
+
+    return $remote;
+}
+
+/** Hapus baris pembatasan_laju yang sudah lewat 1 jam secara probabilistik (~1%). */
+function bersihkan_laju_lama_probabilistik(): void
+{
+    if (random_int(1, 100) === 1) {
+        db()->exec("DELETE FROM pembatasan_laju WHERE waktu < CURRENT_TIMESTAMP - INTERVAL '1 hour'");
+    }
+}
+
+/** Cek apakah jumlah hit untuk $kunci dalam $detik terakhir sudah mencapai/melebihi $maks (tanpa mencatat hit). */
+function laju_terlampaui(string $kunci, int $maks, int $detik): bool
+{
+    $kunci = substr($kunci, 0, 120);
+    $stmt  = db()->prepare(
+        "SELECT COUNT(*) FROM pembatasan_laju
+          WHERE kunci = :kunci
+            AND waktu >= CURRENT_TIMESTAMP - (:detik * INTERVAL '1 second')"
+    );
+    $stmt->execute([
+        ':kunci' => $kunci,
+        ':detik' => max(1, $detik),
+    ]);
+    return ((int) $stmt->fetchColumn()) >= $maks;
+}
+
+/** Catat satu hit baru untuk $kunci pada tabel pembatasan_laju. */
+function catat_laju(string $kunci, bool $jalankanGc = true): void
+{
+    if ($jalankanGc) {
+        bersihkan_laju_lama_probabilistik();
+    }
+    $kunci = substr($kunci, 0, 120);
+    $stmt  = db()->prepare('INSERT INTO pembatasan_laju (kunci) VALUES (?)');
+    $stmt->execute([$kunci]);
+}
+
+/** Hapus seluruh catatan hit untuk $kunci (mis. setelah login berhasil untuk kunci username+IP). */
+function reset_laju(string $kunci): void
+{
+    $kunci = substr($kunci, 0, 120);
+    $stmt  = db()->prepare('DELETE FROM pembatasan_laju WHERE kunci = ?');
+    $stmt->execute([$kunci]);
+}
+
+/**
+ * Pembatas laju (rate limiter) berbasis tabel pembatasan_laju.
+ * Mengembalikan true bila masih diizinkan (sekaligus mencatat hit), atau false bila batas terlampaui.
+ */
+function batasi_laju(string $kunci, int $maks, int $detik): bool
+{
+    bersihkan_laju_lama_probabilistik();
+    if (laju_terlampaui($kunci, $maks, $detik)) {
+        return false;
+    }
+    catat_laju($kunci, false);
+    return true;
+}
+
+
