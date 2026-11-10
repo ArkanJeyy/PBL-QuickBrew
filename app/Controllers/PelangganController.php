@@ -103,6 +103,26 @@ final class PelangganController
     }
 
     /**
+     * Catat nonce idempotensi (maksimal 20 entri terbaru), rotasi csrf_token,
+     * lalu alihkan pelanggan ke halaman pembayaran pesanan yang baru dibuat.
+     */
+    private function selesaikanCheckoutBerhasil(string $tokenForm, int $id): void
+    {
+        $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
+        if ($tokenForm !== '') {
+            if (!isset($_SESSION['checkout_idempotensi']) || !is_array($_SESSION['checkout_idempotensi'])) {
+                $_SESSION['checkout_idempotensi'] = [];
+            }
+            $_SESSION['checkout_idempotensi'][$tokenForm] = $id;
+            if (count($_SESSION['checkout_idempotensi']) > 20) {
+                $_SESSION['checkout_idempotensi'] = array_slice($_SESSION['checkout_idempotensi'], -20, 20, true);
+            }
+        }
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $this->redirectTo(url('pembayaran', ['id' => $id, 't' => tok($id)]));
+    }
+
+    /**
      * Checkout. GET: form (ringkasan diisi checkout.js dari keranjang).
      * POST: validasi, hitung ulang harga & stok di server, simpan pesanan, lalu:
      *   - Tunai: langsung redirect ke halaman pembayaran (tanpa memanggil Midtrans).
@@ -122,20 +142,38 @@ final class PelangganController
                 'catatan' => trim((string) ($_POST['catatan'] ?? '')),
             ];
 
-            if (!csrf_check($_POST['csrf_token'] ?? null)) {
-                $errors['form'] = 'Sesi formulir sudah kedaluwarsa. Silakan coba lagi.';
+            $tokenForm = is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '';
+
+            // Idempotensi: jika token form sudah pernah berhasil membuat pesanan, alihkan ke pesanan tersebut
+            if ($tokenForm !== '' && isset($_SESSION['checkout_idempotensi'][$tokenForm])) {
+                $idLama = (int) $_SESSION['checkout_idempotensi'][$tokenForm];
+                if ($idLama > 0) {
+                    $this->redirectTo(url('pembayaran', ['id' => $idLama, 't' => tok($idLama)]));
+                    return;
+                }
             }
-            if ($old['nama'] === '' || text_length($old['nama']) > 100) {
-                $errors['nama'] = 'Nama wajib diisi (maksimal 100 karakter).';
-            }
-            if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || text_length($old['email']) > 150) {
-                $errors['email'] = 'Masukkan alamat email yang valid.';
-            }
-            if (!isset(PemesananModel::METODE[$old['metode']])) {
-                $errors['metode'] = 'Pilih metode pembayaran.';
-            }
-            if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
-                $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
+
+            // Pembatasan laju: default 10 percobaan per 10 menit (600 detik) per IP klien
+            $maksCheckout = max(1, (int) env('CHECKOUT_RATE_MAX', '10'));
+            if (!batasi_laju('checkout:' . ip_klien(), $maksCheckout, 600)) {
+                http_response_code(429);
+                $errors['form'] = 'Terlalu banyak percobaan pemesanan. Silakan tunggu beberapa menit lalu coba lagi.';
+            } else {
+                if (!csrf_check($tokenForm)) {
+                    $errors['form'] = 'Sesi formulir sudah kedaluwarsa. Silakan coba lagi.';
+                }
+                if ($old['nama'] === '' || text_length($old['nama']) > 100) {
+                    $errors['nama'] = 'Nama wajib diisi (maksimal 100 karakter).';
+                }
+                if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || text_length($old['email']) > 150) {
+                    $errors['email'] = 'Masukkan alamat email yang valid.';
+                }
+                if (!isset(PemesananModel::METODE[$old['metode']])) {
+                    $errors['metode'] = 'Pilih metode pembayaran.';
+                }
+                if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
+                    $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
+                }
             }
 
             if (!$errors) {
@@ -155,13 +193,8 @@ final class PelangganController
                     $this->rememberOrder($id); // kartu "Pesanan Saya" di Beranda
 
                     if ($old['metode'] === 'tunai') {
-                        $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
-                        $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
-                        if ($this->redirector !== null) {
-                            ($this->redirector)($targetUrl);
-                            return;
-                        }
-                        redirect($targetUrl);
+                        $this->selesaikanCheckoutBerhasil($tokenForm, $id);
+                        return;
                     }
 
                     // Metode QRIS: panggil Midtrans Core API di luar transaksi database
@@ -182,13 +215,8 @@ final class PelangganController
 
                         PemesananModel::simpanQris($id, $qris['midtrans_order_id'], $qrisJson);
 
-                        $_SESSION['pesanan_baru'] = $id;
-                        $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
-                        if ($this->redirector !== null) {
-                            ($this->redirector)($targetUrl);
-                            return;
-                        }
-                        redirect($targetUrl);
+                        $this->selesaikanCheckoutBerhasil($tokenForm, $id);
+                        return;
                     } catch (Throwable $e) {
                         try {
                             PemesananModel::tandaiGagalQris($id);
