@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/../config/config.php';
 require_once APP_ROOT . '/app/Helpers/helpers.php';
+kirim_header_keamanan();
 require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
