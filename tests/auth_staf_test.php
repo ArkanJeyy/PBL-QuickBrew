@@ -6,6 +6,7 @@
 declare(strict_types=1);
 
 ini_set('session.save_path', sys_get_temp_dir());
+ob_start(); // Pertahankan headers_sent() === false di CLI agar session_regenerate_id(true) berfungsi penuh
 
 $logFile = sys_get_temp_dir() . '/quickbrew_auth_test_' . getmypid() . '.log';
 @unlink($logFile);
@@ -113,12 +114,14 @@ check(
     http_response_code() === 403
     && $redirectTo === null
     && empty($_SESSION['staf'])
-    && str_contains($prodDefaultHtml, 'Password default belum diganti. Jalankan bin/ganti_password.php'),
+    && str_contains($prodDefaultHtml, 'Password default harus diganti')
+    && str_contains($prodDefaultHtml, 'docs/DEPLOY_CHECKLIST.md'),
     'APP_ENV=production menolak login dengan password literal "password"'
 );
 
-// Di APP_ENV=development (untuk demo Sandbox), password default tidak diblokir
+// Di APP_ENV=development (untuk demo Sandbox), password default tidak diblokir dan ID sesi berubah setelah login
 putenv('APP_ENV=development');
+$sidBefore = session_id();
 $_POST = [
     'csrf_token' => csrf_token(),
     'username'   => 'kasir',
@@ -129,12 +132,14 @@ $redirectTo = null;
 ob_start();
 $authCtrl->login();
 ob_end_clean();
+$sidAfter = session_id();
 
 check(
     $redirectTo === '/PBL/PBL-QuickBrew/public/?page=menu'
     && ($_SESSION['staf']['username'] ?? $_SESSION['staf']['role'] ?? '') === 'kasir',
     'APP_ENV=development mengizinkan login demo dan mengarahkan ke path internal'
 );
+check($sidBefore !== '' && $sidAfter !== '' && $sidBefore !== $sidAfter, 'session_regenerate_id(true) mengganti ID sesi setelah login berhasil');
 
 // Kembalikan ke production & ganti password kasir + admin ke password kuat
 putenv('APP_ENV=production');
@@ -265,6 +270,9 @@ $_POST = ['csrf_token' => $tokenLogout];
 $redirectTo = null;
 $authCtrl->logout();
 check($redirectTo === url('login') && empty($_SESSION['staf']), 'Logout POST ber-CSRF menghancurkan sesi staf dan redirect ke login');
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 // =========================================================================
 // 6. Throttle Login: 5/15m per (username+IP) & 20/15m per IP

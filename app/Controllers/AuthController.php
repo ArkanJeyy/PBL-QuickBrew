@@ -93,7 +93,7 @@ final class AuthController
         if ($appEnv === 'production' && $password === 'password') {
             http_response_code(403);
             $this->renderForm(
-                'Password default belum diganti. Jalankan bin/ganti_password.php',
+                'Password default harus diganti (lihat docs/DEPLOY_CHECKLIST.md / jalankan bin/ganti_password.php).',
                 $username,
                 $amanBack ?? ''
             );
