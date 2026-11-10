@@ -191,4 +191,71 @@ function batasi_laju(string $kunci, int $maks, int $detik): bool
     return true;
 }
 
+/**
+ * Validasi path tujuan balik agar hanya menerima path internal relatif (anti Open Redirect).
+ * Menolak URL eksternal (http/https), protocol-relative (//), backslash (\), maupun karakter kontrol.
+ */
+function tujuan_balik_aman(?string $target): ?string
+{
+    if ($target === null) {
+        return null;
+    }
+    $target = trim($target);
+    if ($target === '' || preg_match('/[\r\n\0\\\\]/', $target)) {
+        return null;
+    }
+    if (str_starts_with($target, '//') || preg_match('#^[a-zA-Z][a-zA-Z0-9+.-]*:#', $target)) {
+        return null;
+    }
+    $parsed = parse_url($target);
+    if ($parsed === false || isset($parsed['scheme']) || isset($parsed['host']) || isset($parsed['user'])) {
+        return null;
+    }
+    if (!str_starts_with($target, '/') && !str_starts_with($target, '?')) {
+        return null;
+    }
+    return $target;
+}
+
+/**
+ * Guard halaman/aksi staf (default role: ['kasir', 'admin']).
+ * Role 'admin' otomatis memiliki seluruh hak akses 'kasir'.
+ *
+ * - Belum login -> redirect ke halaman login (menyertakan parameter redirect hanya bila path internal aman).
+ * - Role tidak mencukupi -> HTTP 403 Forbidden.
+ *
+ * @param  string[]      $role       Daftar role yang diizinkan
+ * @param  callable|null $redirector Callback redirect opsional untuk pengujian otomatis
+ * @return array{id:int, nama:string, role:string}|array{} Data staf bila diizinkan
+ */
+function wajib_staf(array $role = ['kasir', 'admin'], ?callable $redirector = null): array
+{
+    $staf = $_SESSION['staf'] ?? null;
+    if (!is_array($staf) || empty($staf['id']) || empty($staf['role'])) {
+        $reqUri   = isset($_SERVER['REQUEST_URI']) ? tujuan_balik_aman((string) $_SERVER['REQUEST_URI']) : null;
+        $loginUrl = $reqUri !== null ? url('login', ['redirect' => $reqUri]) : url('login');
+        if ($redirector !== null) {
+            ($redirector)($loginUrl);
+            return [];
+        }
+        redirect($loginUrl);
+    }
+
+    $stafRole  = (string) $staf['role'];
+    $diizinkan = in_array($stafRole, $role, true)
+        || ($stafRole === 'admin' && in_array('kasir', $role, true));
+
+    if (!$diizinkan) {
+        http_response_code(403);
+        echo '<h1>403 Forbidden</h1><p>Akses ditolak: peran akun Anda tidak mencukupi.</p>';
+        return [];
+    }
+
+    return [
+        'id'   => (int) $staf['id'],
+        'nama' => (string) ($staf['nama'] ?? ''),
+        'role' => $stafRole,
+    ];
+}
+
 
