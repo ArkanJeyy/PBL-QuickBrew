@@ -164,5 +164,41 @@ Seluruh pengujian otomatis berjalan melalui CLI menggunakan database khusus **`q
 php tests/qr_svg_test.php
 php tests/pembayaran_test.php
 php tests/simulasi_pembayaran_test.php
+php tests/kedaluwarsa_test.php
 ```
+
+---
+
+## 8. Penjadwalan Otomatis Pembersih Pesanan Kedaluwarsa (`bin/kedaluwarsa.php`)
+
+Skrip `bin/kedaluwarsa.php` membersihkan pesanan berstatus `menunggu_pembayaran` yang telah melewati batas waktu:
+- **QRIS:** Lewat `PembayaranService::EXPIRY_MINUTES + 5` menit (`20` menit). Skrip memanggil `sinkron()` terlebih dahulu (jika pelanggan ternyata sudah membayar, status otomatis dilunasi menjadi `diproses` dan **tidak** dibatalkan). Bila masih menggantung, transaksi dibatalkan secara *best-effort* via `batalkan()` lalu status lokal diubah menjadi `batal` + `pembayaran.status_pembayaran = 'expire'`.
+- **Tunai:** Lewat `TUNAI_EXPIRY_MINUTES` (default `60` menit, atau dioverride lewat `--tunai-menit=N`) -> diubah menjadi `batal` + `pembayaran.status_pembayaran = 'cancel'`.
+
+### 8.1. Penggunaan Manual / Simulasi (`--dry-run`)
+```bash
+# Simulasi tanpa mengubah database
+php bin/kedaluwarsa.php --dry-run
+
+# Eksekusi dengan batas pesanan tunai 45 menit
+php bin/kedaluwarsa.php --tunai-menit=45
+```
+
+### 8.2. Contoh Jadwal Windows Task Scheduler (XAMPP / Laragon — Tiap 5 Menit)
+Jalankan perintah berikut di **Command Prompt / PowerShell** untuk mendaftarkan tugas terjadwal tiap 5 menit:
+
+```bat
+REM Contoh dengan path PHP XAMPP:
+schtasks /Create /SC MINUTE /MO 5 /TN "QuickBrew_Kedaluwarsa" /TR "\"C:\xampp\php\php.exe\" \"C:\xampp\htdocs\PBL-QuickBrew\bin\kedaluwarsa.php\"" /F
+
+REM Contoh dengan path PHP Laragon:
+schtasks /Create /SC MINUTE /MO 5 /TN "QuickBrew_Kedaluwarsa" /TR "\"C:\laragon\bin\php\php-8.1.10-Win32-vs16-x64\php.exe\" \"C:\laragon\www\PBL\PBL-QuickBrew\bin\kedaluwarsa.php\"" /F
+```
+
+### 8.3. Contoh Jadwal Cron di Linux (Tiap 5 Menit)
+Tambahkan baris berikut melalui `crontab -e`:
+```cron
+*/5 * * * * /usr/bin/php /var/www/quickbrew/bin/kedaluwarsa.php >> /var/log/quickbrew-kedaluwarsa.log 2>&1
+```
+
 
