@@ -86,6 +86,8 @@ Agar server Midtrans Sandbox dapat mengirim webhook ke lingkungan Laragon lokal:
 
 > **Tips SSL di Windows/Laragon:** `PembayaranService` selalu mengaktifkan `CURLOPT_SSL_VERIFYPEER = true`. Jika muncul `cURL error #60: SSL certificate problem`, unduh berkas `cacert.pem` resmi dari `curl.se/ca/cacert.pem` lalu arahkan `curl.cainfo = "C:/laragon/etc/ssl/cacert.pem"` pada `php.ini` Laragon.
 
+> **Penting saat Demo via `ngrok` (`TRUSTED_PROXY`):** Karena seluruh trafik `ngrok` diteruskan ke web server lokal dari `127.0.0.1`, set `TRUSTED_PROXY=true` di `config/.env` saat demo menggunakan `ngrok`. Dengan `TRUSTED_PROXY=true`, fungsi `ip_klien()` akan membaca IP asli pengunjung dari entri **paling kanan** `X-Forwarded-For` (yang ditambahkan oleh proxy `ngrok`), sehingga seluruh pengunjung demo tidak berbagi satu kuota pembatasan laju (*rate limit*) yang sama. Batas percobaan checkout per IP (default `10` per 10 menit) juga dapat disesuaikan lewat variabel env `CHECKOUT_RATE_MAX`.
+
 ---
 
 ## 5. Cara Menguji dengan Simulator QRIS Sandbox Midtrans
@@ -100,6 +102,17 @@ Agar server Midtrans Sandbox dapat mengirim webhook ke lingkungan Laragon lokal:
    - Klik tombol **Lihat Status Pembayaran** di halaman pelanggan -> badge berubah menjadi **Sudah Dibayar** (*Pembayaran Diterima*), `pemesanan.status_pemesanan` berubah menjadi `'diproses'`, dan `menu.stok` berkurang sesuai jumlah item.
 5. Jika `ngrok` sedang tidak aktif:
    - Klik tombol **Lihat Status Pembayaran** setelah jeda minimal 5 detik -> mekanisme cadangan `PembayaranService::sinkron()` akan menarik status `settlement` langsung dari `GET /v2/{order_id}/status` dan melunasi pesanan secara identik.
+
+### 5.1. Mode Demo: Tombol Simulasi Pembayaran Sandbox (`ENABLE_PAYMENT_SIMULATION`)
+
+Untuk keperluan demonstrasi di lingkungan Sandbox, tersedia fitur simulasi pembayaran satu klik yang **secara default nonaktif** demi keamanan:
+
+- **Syarat Aktif:** Fitur simulasi **hanya aktif** apabila di `config/.env` diset `ENABLE_PAYMENT_SIMULATION=true` (tanpa komentar di belakang nilai) **DAN** `MIDTRANS_PROD=false`. Jika salah satu tidak terpenuhi, banner dan tombol simulasi tidak ditampilkan, serta request `POST` simulasi ditolak (`HTTP 403`) tanpa mengubah status pesanan.
+- **Tampilan Halaman Pembayaran:** Saat simulasi aktif, halaman pembayaran menampilkan banner `"MODE DEMO: simulasi pembayaran aktif"` beserta tombol **Simulasikan Pembayaran Berhasil (Sandbox)**.
+- **Alur Eksekusi (`PembayaranService::simulasiQrisSandbox()`):**
+  1. **Jalur Utama (Simulator Midtrans Asli):** Mengirim `qr_url` ke `https://simulator.sandbox.midtrans.com/v2/qris/payment` lalu menyelesaikan pembayaran via `/v2/qris/payment/gopay`, kemudian memanggil `sinkron()` agar alur status Midtrans ikut teruji. Mencatat log `[SIMULASI] pemesanan_id=<id> jalur=simulator`.
+  2. **Simulator Terjangkau tetapi Tidak Melunasi:** Tidak melakukan fallback lokal dan mengembalikan `false` (status pesanan tetap `menunggu_pembayaran`).
+  3. **Fallback Lokal (Hanya Bila Simulator Tidak Terjangkau):** Jika simulator Midtrans gagal dihubungi (error koneksi cURL / HTTP 5xx), pesanan dilunasi secara lokal melalui `tandaiLunas()` dengan catatan log `[SIMULASI LOKAL]` dan `[SIMULASI] pemesanan_id=<id> jalur=lokal`.
 
 ---
 
@@ -150,5 +163,6 @@ Seluruh pengujian otomatis berjalan melalui CLI menggunakan database khusus **`q
 ```bash
 php tests/qr_svg_test.php
 php tests/pembayaran_test.php
+php tests/simulasi_pembayaran_test.php
 ```
 
