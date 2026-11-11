@@ -6,10 +6,13 @@
  */
 require_once __DIR__ . '/../config/config.php';
 require_once APP_ROOT . '/app/Helpers/helpers.php';
+kirim_header_keamanan();
 require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
+require_once APP_ROOT . '/app/Models/PenggunaModel.php';
 require_once APP_ROOT . '/app/Controllers/PelangganController.php';
+require_once APP_ROOT . '/app/Controllers/AuthController.php';
 
 // page => [Controller, method]
 $routes = [
@@ -18,8 +21,11 @@ $routes = [
     'cart'     => [PelangganController::class, 'cart'],
     'checkout' => [PelangganController::class, 'checkout'], // GET form, POST buat pesanan
     'pembayaran' => [PelangganController::class, 'pembayaran'], // setelah checkout: ?page=pembayaran&id=..&t=..
-    'status'     => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
+    'status'      => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
+    'status-json' => [PelangganController::class, 'statusJson'], // polling status pesanan JSON: ?page=status-json&id=..&t=..
     'qr'       => [PelangganController::class, 'qr'],
+    'login'    => [AuthController::class, 'login'],
+    'logout'   => [AuthController::class, 'logout'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');

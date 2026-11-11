@@ -14,7 +14,7 @@ BEGIN;
 
 -- Hapus objek lama agar script bisa dieksekusi berulang tanpa error
 DROP VIEW     IF EXISTS v_rekap_harian, v_rekap_menu_harian;
-DROP TABLE    IF EXISTS pembayaran, detail_pemesanan, pemesanan, pengguna, meja, menu, kategori CASCADE;
+DROP TABLE    IF EXISTS pembatasan_laju, pembayaran, detail_pemesanan, pemesanan, pengguna, meja, menu, kategori CASCADE;
 DROP FUNCTION IF EXISTS set_diperbarui_pada() CASCADE;
 
 -- ---------------------------------------------------------------------
@@ -133,6 +133,15 @@ CREATE TABLE pembayaran (
 );
 
 -- ---------------------------------------------------------------------
+-- 8. pembatasan_laju (rate limiting checkout, login, status-json)
+-- ---------------------------------------------------------------------
+CREATE TABLE pembatasan_laju (
+    id    SERIAL PRIMARY KEY,
+    kunci VARCHAR(120) NOT NULL,
+    waktu TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ---------------------------------------------------------------------
 -- Index untuk query yang sering dipakai
 -- ---------------------------------------------------------------------
 CREATE INDEX idx_menu_kategori          ON menu (kategori_id);
@@ -141,6 +150,7 @@ CREATE INDEX idx_pemesanan_meja         ON pemesanan (meja_id);
 CREATE INDEX idx_detail_pemesanan       ON detail_pemesanan (pemesanan_id);
 CREATE INDEX idx_detail_menu            ON detail_pemesanan (menu_id);
 CREATE INDEX idx_pembayaran_status      ON pembayaran (status_pembayaran, waktu_pembayaran); -- rekap harian
+CREATE INDEX idx_pembatasan_laju_kunci_waktu ON pembatasan_laju (kunci, waktu);
 
 -- ---------------------------------------------------------------------
 -- Trigger: isi otomatis pemesanan.diperbarui_pada setiap ada UPDATE

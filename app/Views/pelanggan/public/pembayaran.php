@@ -42,6 +42,9 @@ require __DIR__ . '/../component/cart-header.php';
 ?>
 
   <main class="checkout-main pay-main main-panel"<?= $justOrdered ? ' data-clear-cart' : '' ?>>
+<?php if (!empty($simulasiAktif)): ?>
+    <p class="pay-demo-banner" role="status" style="margin: 0 0 12px; padding: 6px 10px; border-radius: 8px; background: #fff3cd; color: #7a5b00; font-size: 12px; font-weight: 600; text-align: center;">MODE DEMO: simulasi pembayaran aktif</p>
+<?php endif; ?>
 <?php if (!$order): ?>
     <section class="checkout-card checkout-notice">
       <h2 class="checkout-card__title">Pesanan tidak ditemukan</h2>
@@ -81,7 +84,7 @@ require __DIR__ . '/../component/cart-header.php';
 <?php endif; ?>
       <a class="btn btn--block btn--outline pay-amount__save" href="<?= e($qrDownloadHref ?? asset('images/qris-placeholder.svg')) ?>"
          download="<?= e($qrDownloadName ?? ('qris-quickbrew-' . ltrim($order['number'], '#') . '.svg')) ?>">Simpan QR</a>
-<?php if (!MIDTRANS_PROD): ?>
+<?php if (!empty($simulasiAktif)): ?>
       <form method="post" style="margin-top: 10px;">
         <input type="hidden" name="simulasi_bayar" value="1">
         <button type="submit" class="btn btn--block" style="background: #2e7d32; color: #fff; font-size: 13px; font-weight: 600; padding: 10px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">

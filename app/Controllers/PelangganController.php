@@ -103,6 +103,26 @@ final class PelangganController
     }
 
     /**
+     * Catat nonce idempotensi (maksimal 20 entri terbaru), rotasi csrf_token,
+     * lalu alihkan pelanggan ke halaman pembayaran pesanan yang baru dibuat.
+     */
+    private function selesaikanCheckoutBerhasil(string $tokenForm, int $id): void
+    {
+        $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
+        if ($tokenForm !== '') {
+            if (!isset($_SESSION['checkout_idempotensi']) || !is_array($_SESSION['checkout_idempotensi'])) {
+                $_SESSION['checkout_idempotensi'] = [];
+            }
+            $_SESSION['checkout_idempotensi'][$tokenForm] = $id;
+            if (count($_SESSION['checkout_idempotensi']) > 20) {
+                $_SESSION['checkout_idempotensi'] = array_slice($_SESSION['checkout_idempotensi'], -20, 20, true);
+            }
+        }
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $this->redirectTo(url('pembayaran', ['id' => $id, 't' => tok($id)]));
+    }
+
+    /**
      * Checkout. GET: form (ringkasan diisi checkout.js dari keranjang).
      * POST: validasi, hitung ulang harga & stok di server, simpan pesanan, lalu:
      *   - Tunai: langsung redirect ke halaman pembayaran (tanpa memanggil Midtrans).
@@ -122,20 +142,38 @@ final class PelangganController
                 'catatan' => trim((string) ($_POST['catatan'] ?? '')),
             ];
 
-            if (!csrf_check($_POST['csrf_token'] ?? null)) {
-                $errors['form'] = 'Sesi formulir sudah kedaluwarsa. Silakan coba lagi.';
+            $tokenForm = is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '';
+
+            // Idempotensi: jika token form sudah pernah berhasil membuat pesanan, alihkan ke pesanan tersebut
+            if ($tokenForm !== '' && isset($_SESSION['checkout_idempotensi'][$tokenForm])) {
+                $idLama = (int) $_SESSION['checkout_idempotensi'][$tokenForm];
+                if ($idLama > 0) {
+                    $this->redirectTo(url('pembayaran', ['id' => $idLama, 't' => tok($idLama)]));
+                    return;
+                }
             }
-            if ($old['nama'] === '' || text_length($old['nama']) > 100) {
-                $errors['nama'] = 'Nama wajib diisi (maksimal 100 karakter).';
-            }
-            if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || text_length($old['email']) > 150) {
-                $errors['email'] = 'Masukkan alamat email yang valid.';
-            }
-            if (!isset(PemesananModel::METODE[$old['metode']])) {
-                $errors['metode'] = 'Pilih metode pembayaran.';
-            }
-            if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
-                $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
+
+            // Pembatasan laju: default 10 percobaan per 10 menit (600 detik) per IP klien
+            $maksCheckout = max(1, (int) env('CHECKOUT_RATE_MAX', '10'));
+            if (!batasi_laju('checkout:' . ip_klien(), $maksCheckout, 600)) {
+                http_response_code(429);
+                $errors['form'] = 'Terlalu banyak percobaan pemesanan. Silakan tunggu beberapa menit lalu coba lagi.';
+            } else {
+                if (!csrf_check($tokenForm)) {
+                    $errors['form'] = 'Sesi formulir sudah kedaluwarsa. Silakan coba lagi.';
+                }
+                if ($old['nama'] === '' || text_length($old['nama']) > 100) {
+                    $errors['nama'] = 'Nama wajib diisi (maksimal 100 karakter).';
+                }
+                if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || text_length($old['email']) > 150) {
+                    $errors['email'] = 'Masukkan alamat email yang valid.';
+                }
+                if (!isset(PemesananModel::METODE[$old['metode']])) {
+                    $errors['metode'] = 'Pilih metode pembayaran.';
+                }
+                if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
+                    $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
+                }
             }
 
             if (!$errors) {
@@ -155,13 +193,8 @@ final class PelangganController
                     $this->rememberOrder($id); // kartu "Pesanan Saya" di Beranda
 
                     if ($old['metode'] === 'tunai') {
-                        $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
-                        $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
-                        if ($this->redirector !== null) {
-                            ($this->redirector)($targetUrl);
-                            return;
-                        }
-                        redirect($targetUrl);
+                        $this->selesaikanCheckoutBerhasil($tokenForm, $id);
+                        return;
                     }
 
                     // Metode QRIS: panggil Midtrans Core API di luar transaksi database
@@ -182,13 +215,8 @@ final class PelangganController
 
                         PemesananModel::simpanQris($id, $qris['midtrans_order_id'], $qrisJson);
 
-                        $_SESSION['pesanan_baru'] = $id;
-                        $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
-                        if ($this->redirector !== null) {
-                            ($this->redirector)($targetUrl);
-                            return;
-                        }
-                        redirect($targetUrl);
+                        $this->selesaikanCheckoutBerhasil($tokenForm, $id);
+                        return;
                     } catch (Throwable $e) {
                         try {
                             PemesananModel::tandaiGagalQris($id);
@@ -238,28 +266,31 @@ final class PelangganController
             }
         }
 
-        // Aksi simulasi pembayaran khusus environment Sandbox (untuk keperluan demo dosen & pengujian)
-        if (
-            $_SERVER['REQUEST_METHOD'] === 'POST'
-            && isset($_POST['simulasi_bayar'])
-            && !MIDTRANS_PROD
-            && $order
-            && (string) $order['metode_pembayaran'] === 'qris'
-            && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
-        ) {
-            $service = $this->pembayaranService ??= new PembayaranService();
-            try {
-                $service->simulasiQrisSandbox($id, (string) ($order['qris_data'] ?? ''));
-            } catch (Throwable $e) {
-                error_log(sprintf('[QuickBrew Simulasi QRIS] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
-            }
+        // Simulasi pembayaran demo: aktif HANYA bila ENABLE_PAYMENT_SIMULATION=true DAN MIDTRANS_PROD=false
+        $simulasiAktif = $order !== null && $this->simulasiAktif();
 
-            $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
-            if ($this->redirector !== null) {
-                ($this->redirector)($targetUrl);
-                return;
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['simulasi_bayar'])) {
+            if (!$simulasiAktif) {
+                // Tolak tanpa mengubah status pesanan apa pun
+                http_response_code(403);
+                error_log(sprintf('[SIMULASI DITOLAK] pemesanan_id=%d: simulasi pembayaran tidak aktif', $id));
+            } elseif (
+                (string) $order['metode_pembayaran'] === 'qris'
+                && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
+            ) {
+                try {
+                    $this->pembayaranService->simulasiQrisSandbox($id);
+                } catch (Throwable $e) {
+                    error_log(sprintf('[SIMULASI] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
+                }
+
+                $targetUrl = url('pembayaran', ['id' => $id, 't' => tok($id)]);
+                if ($this->redirector !== null) {
+                    ($this->redirector)($targetUrl);
+                    return;
+                }
+                redirect($targetUrl);
             }
-            redirect($targetUrl);
         }
 
         // Cadangan webhook: sinkronkan status QRIS maksimal sekali per 5 detik per sesi
@@ -346,6 +377,7 @@ final class PelangganController
             'qrImgSrc'       => $qrImgSrc,
             'qrDownloadHref' => $qrDownloadHref,
             'qrDownloadName' => $qrDownloadName,
+            'simulasiAktif'  => $simulasiAktif,
         ]);
     }
 
@@ -371,6 +403,102 @@ final class PelangganController
             'estimate'     => PemesananModel::ESTIMATE_TEXT,
             'tableNumber'  => $this->tableNumber(),
         ]);
+    }
+
+    /**
+     * Endpoint JSON polling status pesanan: ?page=status-json&id=<id>&t=<tok(id)>
+     *   - Header: Content-Type: application/json; charset=utf-8 & Cache-Control: no-store
+     *   - Pembatasan laju: 30 permintaan / 60 detik per (IP + ID pesanan) -> HTTP 429 JSON
+     *   - Validasi id + tok(id) -> HTTP 404 JSON bila tidak valid / tidak ditemukan
+     *   - Untuk QRIS menunggu_pembayaran, panggil sinkron() dengan throttle sesi 5 detik di dalam try/catch
+     */
+    public function statusJson(): void
+    {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-store');
+        }
+
+        $id = max(0, (int) ($_GET['id'] ?? 0));
+        $kunciRate = 'status_json:' . ip_klien() . ':' . $id;
+
+        if (!batasi_laju($kunciRate, 30, 60)) {
+            http_response_code(429);
+            echo json_encode([
+                'ok'    => false,
+                'error' => 'Terlalu banyak permintaan. Silakan coba lagi sebentar.',
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $order = $this->orderFromRequest();
+        if (!$order) {
+            http_response_code(404);
+            echo json_encode([
+                'ok'    => false,
+                'error' => 'Pesanan tidak ditemukan.',
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $id = (int) $order['id'];
+
+        // Sinkronisasi cadangan Midtrans untuk QRIS menunggu_pembayaran (throttle sesi 5 detik)
+        if (
+            (string) ($order['metode_pembayaran'] ?? '') === 'qris'
+            && (string) $order['status_pemesanan'] === 'menunggu_pembayaran'
+            && !empty($order['midtrans_order_id'])
+        ) {
+            $lastSync = (int) ($_SESSION['qris_sync_last_at'] ?? 0);
+            $now      = time();
+
+            if (($now - $lastSync) >= self::QRIS_SYNC_THROTTLE_SECONDS) {
+                $_SESSION['qris_sync_last_at'] = $now;
+                try {
+                    ($this->pembayaranService ??= new PembayaranService())->sinkron((string) $order['midtrans_order_id']);
+                    $order = PemesananModel::find($id) ?? $order;
+                } catch (Throwable $e) {
+                    error_log(sprintf(
+                        '[QuickBrew StatusJSON] Sinkronisasi QRIS gagal untuk pemesanan_id=%d: %s',
+                        $id,
+                        $e->getMessage()
+                    ));
+                }
+            }
+        }
+
+        $statusView = PemesananModel::statusView($order);
+        http_response_code(200);
+        echo json_encode([
+            'ok'   => true,
+            'data' => [
+                'id'          => $id,
+                'nomor'       => (string) $order['number'],
+                'status'      => (string) $order['status_pemesanan'],
+                'label'       => (string) $statusView['title'],
+                'lunas'       => PemesananModel::isPaid($order),
+                'metode'      => (string) ($order['metode_pembayaran'] ?? ''),
+                'kedaluwarsa' => (string) ($order['deadline'] ?? ''),
+                'diperbarui'  => (string) ($order['diperbarui_pada'] ?? $order['waktu_pemesanan'] ?? ''),
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Simulasi pembayaran demo diizinkan bila flag config aktif, bukan Production,
+     * dan PembayaranService juga mengonfirmasi (pemeriksaan berlapis).
+     */
+    private function simulasiAktif(): bool
+    {
+        if (!ENABLE_PAYMENT_SIMULATION || MIDTRANS_PROD) {
+            return false;
+        }
+        try {
+            return ($this->pembayaranService ??= new PembayaranService())->simulasiAktif();
+        } catch (Throwable $e) {
+            error_log('[SIMULASI] Gagal memeriksa status simulasi: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function qr(): void

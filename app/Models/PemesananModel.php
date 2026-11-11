@@ -357,4 +357,518 @@ final class PemesananModel
         return ['state' => 'unpaid', 'title' => 'Menunggu Pembayaran',
                 'desc' => 'Pesanan belum diproses. Silakan selesaikan pembayaran.', 'steps' => $steps];
     }
+
+    // =====================================================================
+    //  Fondasi Kasir: Transisi Status, Pembayaran Tunai/QRIS, & Query Kasir
+    // =====================================================================
+
+    /** Peta transisi status pesanan yang diizinkan untuk kasir. */
+    public const PETA_TRANSISI = [
+        'menunggu_pembayaran' => ['batal'],
+        'diproses'            => ['siap'],
+        'siap'                => ['selesai'],
+    ];
+
+    /**
+     * Ubah status pesanan oleh kasir/staf sesuai peta transisi resmi:
+     *   - diproses -> siap
+     *   - siap -> selesai
+     *   - menunggu_pembayaran -> batal (QRIS: batalkan di Midtrans dulu via PembayaranService::batalkan();
+     *     Tunai: lokal saja, status_pembayaran = 'cancel'; pesanan yang sudah lunas tidak bisa dibatalkan).
+     *
+     * Mencatat audit ke error_log (id pesanan, status lama->baru, id staf; tanpa data pribadi).
+     *
+     * @return string 'ok' | 'tidak_ditemukan' | 'transisi_tidak_valid'
+     */
+    public static function ubahStatus(
+        int $id,
+        string $ke,
+        ?int $penggunaId = null,
+        ?PembayaranService $service = null
+    ): string {
+        if ($id <= 0) {
+            return 'tidak_ditemukan';
+        }
+
+        $db = db();
+
+        // Jika target adalah 'batal', periksa metode QRIS terlebih dahulu di luar lock DB
+        // agar panggilan jaringan ke Midtrans tidak menahan transaksi database.
+        if ($ke === 'batal') {
+            $stmtAwal = $db->prepare(
+                "SELECT p.status_pemesanan, b.metode_pembayaran, b.status_pembayaran, b.midtrans_order_id
+                   FROM pemesanan p
+                   LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+                  WHERE p.id = ?"
+            );
+            $stmtAwal->execute([$id]);
+            $awal = $stmtAwal->fetch();
+            if (!$awal) {
+                return 'tidak_ditemukan';
+            }
+
+            if (
+                (string) $awal['status_pemesanan'] !== 'menunggu_pembayaran'
+                || (string) ($awal['status_pembayaran'] ?? '') === 'paid'
+            ) {
+                return 'transisi_tidak_valid';
+            }
+
+            $midtransOrderId = trim((string) ($awal['midtrans_order_id'] ?? ''));
+            if ((string) ($awal['metode_pembayaran'] ?? '') === 'qris' && $midtransOrderId !== '') {
+                try {
+                    ($service ?? new PembayaranService())->batalkan($midtransOrderId);
+                } catch (Throwable $e) {
+                    error_log(sprintf(
+                        '[QuickBrew Kasir] Gagal membatalkan QRIS di Midtrans untuk pemesanan_id=%d: %s',
+                        $id,
+                        $e->getMessage()
+                    ));
+                }
+            }
+
+            $db->beginTransaction();
+            try {
+                $stmtLock = $db->prepare(
+                    "SELECT p.status_pemesanan, b.status_pembayaran
+                       FROM pemesanan p
+                       LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+                      WHERE p.id = ?
+                        FOR UPDATE OF p"
+                );
+                $stmtLock->execute([$id]);
+                $locked = $stmtLock->fetch();
+                if (!$locked) {
+                    $db->rollBack();
+                    return 'tidak_ditemukan';
+                }
+
+                $statusSaatIni = (string) $locked['status_pemesanan'];
+                $statusBayar   = (string) ($locked['status_pembayaran'] ?? '');
+
+                // Bila saat sinkron/batalkan ternyata sudah lunas, tolak pembatalan
+                if ($statusBayar === 'paid' || in_array($statusSaatIni, ['diproses', 'siap', 'selesai', 'dibayar'], true)) {
+                    $db->rollBack();
+                    return 'transisi_tidak_valid';
+                }
+
+                // Izinkan bila masih 'menunggu_pembayaran' atau baru saja menjadi 'batal' akibat terapkanStatus() di batalkan()
+                if (!in_array($statusSaatIni, ['menunggu_pembayaran', 'batal'], true)) {
+                    $db->rollBack();
+                    return 'transisi_tidak_valid';
+                }
+
+                $db->prepare(
+                    "UPDATE pemesanan
+                        SET status_pemesanan = 'batal'
+                      WHERE id = ?"
+                )->execute([$id]);
+
+                $db->prepare(
+                    "UPDATE pembayaran
+                        SET status_pembayaran = CASE WHEN status_pembayaran = 'pending' THEN 'cancel' ELSE status_pembayaran END,
+                            pengguna_id       = COALESCE(?, pengguna_id)
+                      WHERE pemesanan_id = ?"
+                )->execute([$penggunaId, $id]);
+
+                $db->commit();
+
+                error_log(sprintf(
+                    '[AUDIT STATUS] pemesanan_id=%d status=menunggu_pembayaran->batal pengguna_id=%s',
+                    $id,
+                    $penggunaId !== null ? (string) $penggunaId : '-'
+                ));
+                return 'ok';
+            } catch (Throwable $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                throw $e;
+            }
+        }
+
+        // Transisi selain 'batal' (diproses -> siap, siap -> selesai)
+        $db->beginTransaction();
+        try {
+            $stmtLock = $db->prepare('SELECT status_pemesanan FROM pemesanan WHERE id = ? FOR UPDATE');
+            $stmtLock->execute([$id]);
+            $row = $stmtLock->fetch();
+            if (!$row) {
+                $db->rollBack();
+                return 'tidak_ditemukan';
+            }
+
+            $statusLama = (string) $row['status_pemesanan'];
+            $diizinkan  = self::PETA_TRANSISI[$statusLama] ?? [];
+            if (!in_array($ke, $diizinkan, true)) {
+                $db->rollBack();
+                return 'transisi_tidak_valid';
+            }
+
+            $db->prepare('UPDATE pemesanan SET status_pemesanan = ? WHERE id = ?')
+               ->execute([$ke, $id]);
+
+            if ($penggunaId !== null) {
+                $db->prepare('UPDATE pembayaran SET pengguna_id = COALESCE(?, pengguna_id) WHERE pemesanan_id = ?')
+                   ->execute([$penggunaId, $id]);
+            }
+
+            $db->commit();
+
+            error_log(sprintf(
+                '[AUDIT STATUS] pemesanan_id=%d status=%s->%s pengguna_id=%s',
+                $id,
+                $statusLama,
+                $ke,
+                $penggunaId !== null ? (string) $penggunaId : '-'
+            ));
+            return 'ok';
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Konfirmasi pembayaran tunai oleh kasir secara idempotent.
+     * Hanya untuk pesanan bermetode 'tunai'. Memanggil PembayaranService::tandaiLunas($id, 'tunai', $kasirId)
+     * sehingga stok berkurang tepat satu kali dan status berubah menjadi 'diproses'.
+     *
+     * @return array{ok:bool, kode:string, pesan:string}
+     *         kode: 'lunas' | 'sudah_lunas' | 'tidak_ditemukan' | 'bukan_tunai' | 'status_tidak_valid'
+     */
+    public static function bayarTunai(int $id, int $kasirId, ?PembayaranService $service = null): array
+    {
+        if ($id <= 0) {
+            return ['ok' => false, 'kode' => 'tidak_ditemukan', 'pesan' => 'Pesanan tidak ditemukan.'];
+        }
+
+        $s = db()->prepare(
+            "SELECT p.id, p.status_pemesanan, b.metode_pembayaran, b.status_pembayaran
+               FROM pemesanan p
+               LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+              WHERE p.id = ?"
+        );
+        $s->execute([$id]);
+        $row = $s->fetch();
+        if (!$row) {
+            return ['ok' => false, 'kode' => 'tidak_ditemukan', 'pesan' => 'Pesanan tidak ditemukan.'];
+        }
+
+        if ((string) ($row['metode_pembayaran'] ?? '') !== 'tunai') {
+            return ['ok' => false, 'kode' => 'bukan_tunai', 'pesan' => 'Pesanan ini tidak menggunakan metode pembayaran tunai.'];
+        }
+
+        $statusPesanan = (string) $row['status_pemesanan'];
+        $statusBayar   = (string) ($row['status_pembayaran'] ?? '');
+
+        if ($statusBayar === 'paid' || in_array($statusPesanan, ['diproses', 'siap', 'selesai', 'dibayar'], true)) {
+            return ['ok' => true, 'kode' => 'sudah_lunas', 'pesan' => 'Pembayaran tunai sudah dikonfirmasi sebelumnya.'];
+        }
+
+        if ($statusPesanan !== 'menunggu_pembayaran') {
+            return ['ok' => false, 'kode' => 'status_tidak_valid', 'pesan' => 'Pesanan tidak dalam status menunggu pembayaran.'];
+        }
+
+        $berhasil = ($service ?? new PembayaranService())->tandaiLunas($id, 'tunai', $kasirId);
+        if ($berhasil) {
+            error_log(sprintf('[AUDIT TUNAI] pemesanan_id=%d status=menunggu_pembayaran->diproses pengguna_id=%d', $id, $kasirId));
+            return ['ok' => true, 'kode' => 'lunas', 'pesan' => 'Pembayaran tunai berhasil dikonfirmasi.'];
+        }
+
+        // Cek ulang bila terjadi balapan (race condition)
+        $s->execute([$id]);
+        $ulang = $s->fetch();
+        if ($ulang && ((string) ($ulang['status_pembayaran'] ?? '') === 'paid')) {
+            return ['ok' => true, 'kode' => 'sudah_lunas', 'pesan' => 'Pembayaran tunai sudah dikonfirmasi sebelumnya.'];
+        }
+
+        return ['ok' => false, 'kode' => 'status_tidak_valid', 'pesan' => 'Pesanan tidak dapat dilunasi.'];
+    }
+
+    /**
+     * Pengecekan manual status QRIS oleh kasir: mencari midtrans_order_id dari tabel pembayaran,
+     * lalu memanggil PembayaranService::sinkron($midtransOrderId).
+     * Bila Midtrans mengembalikan null (404), dikembalikan sebagai 'belum_dibayar'.
+     *
+     * @return array{ok:bool, status:string, pesan:string}
+     *         status: 'lunas' | 'belum_dibayar' | 'expire' | 'cancel' | 'deny' | 'failure' | 'tidak_ditemukan' | 'bukan_qris'
+     */
+    public static function cekQris(int $id, ?PembayaranService $service = null): array
+    {
+        if ($id <= 0) {
+            return ['ok' => false, 'status' => 'tidak_ditemukan', 'pesan' => 'Pesanan tidak ditemukan.'];
+        }
+
+        $s = db()->prepare(
+            "SELECT p.id, p.status_pemesanan, b.metode_pembayaran, b.status_pembayaran, b.midtrans_order_id
+               FROM pemesanan p
+               LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+              WHERE p.id = ?"
+        );
+        $s->execute([$id]);
+        $row = $s->fetch();
+        if (!$row) {
+            return ['ok' => false, 'status' => 'tidak_ditemukan', 'pesan' => 'Pesanan tidak ditemukan.'];
+        }
+
+        if ((string) ($row['metode_pembayaran'] ?? '') !== 'qris') {
+            return ['ok' => false, 'status' => 'bukan_qris', 'pesan' => 'Pesanan bukan metode pembayaran QRIS.'];
+        }
+
+        $statusPesanan = (string) $row['status_pemesanan'];
+        $statusBayar   = (string) ($row['status_pembayaran'] ?? '');
+
+        if ($statusBayar === 'paid' || in_array($statusPesanan, ['diproses', 'siap', 'selesai', 'dibayar'], true)) {
+            return ['ok' => true, 'status' => 'lunas', 'pesan' => 'Pembayaran QRIS sudah lunas.'];
+        }
+
+        if ($statusPesanan !== 'menunggu_pembayaran' || $statusBayar !== 'pending') {
+            $kodeAkhir = $statusBayar !== '' && $statusBayar !== 'pending' ? $statusBayar : $statusPesanan;
+            return ['ok' => true, 'status' => $kodeAkhir, 'pesan' => 'Transaksi QRIS sudah tidak dalam status menunggu pembayaran.'];
+        }
+
+        $midtransOrderId = trim((string) ($row['midtrans_order_id'] ?? ''));
+        if ($midtransOrderId === '') {
+            return ['ok' => true, 'status' => 'belum_dibayar', 'pesan' => 'Transaksi QRIS belum memiliki ID Midtrans.'];
+        }
+
+        $hasilSinkron = ($service ?? new PembayaranService())->sinkron($midtransOrderId);
+        if ($hasilSinkron === null) {
+            return ['ok' => true, 'status' => 'belum_dibayar', 'pesan' => 'Transaksi QRIS belum dibayar (404 di Midtrans).'];
+        }
+
+        $s->execute([$id]);
+        $setelah = $s->fetch();
+        $bayarBaru   = (string) ($setelah['status_pembayaran'] ?? 'pending');
+        $pesananBaru = (string) ($setelah['status_pemesanan'] ?? 'menunggu_pembayaran');
+
+        if ($bayarBaru === 'paid' || in_array($pesananBaru, ['diproses', 'siap', 'selesai', 'dibayar'], true)) {
+            return ['ok' => true, 'status' => 'lunas', 'pesan' => 'Pembayaran QRIS berhasil diterima.'];
+        }
+
+        if ($pesananBaru === 'batal' || in_array($bayarBaru, ['expire', 'cancel', 'deny', 'failure'], true)) {
+            return ['ok' => true, 'status' => $bayarBaru !== 'pending' ? $bayarBaru : 'batal', 'pesan' => 'Transaksi QRIS tidak berhasil (' . $bayarBaru . ').'];
+        }
+
+        return ['ok' => true, 'status' => 'belum_dibayar', 'pesan' => 'Pembayaran QRIS masih menunggu penyelesaian pelanggan.'];
+    }
+
+    /**
+     * Daftar pesanan masuk yang masih berstatus 'menunggu_pembayaran' (tanpa N+1 query).
+     * Mengembalikan: id, nomor, no_meja, nama_pelanggan, metode_pembayaran, status_pembayaran,
+     * ringkasan_item ("Menu A + Menu B"), jumlah_item, total_harga, waktu_pemesanan, menit_sejak_dipesan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function daftarMasuk(): array
+    {
+        $sql = "
+            SELECT p.id,
+                   m.no_meja,
+                   p.nama_pelanggan,
+                   p.total_harga,
+                   p.waktu_pemesanan,
+                   COALESCE(b.metode_pembayaran, 'tunai') AS metode_pembayaran,
+                   COALESCE(b.status_pembayaran, 'pending') AS status_pembayaran,
+                   COALESCE(agg.ringkasan_item, '') AS ringkasan_item,
+                   COALESCE(agg.jumlah_item, 0) AS jumlah_item,
+                   GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.waktu_pemesanan)) / 60))::int AS menit_sejak_dipesan
+              FROM pemesanan p
+              JOIN meja m ON m.id = p.meja_id
+              LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+              LEFT JOIN (
+                   SELECT d.pemesanan_id,
+                          STRING_AGG(mn.nama_menu, ' + ' ORDER BY d.id) AS ringkasan_item,
+                          SUM(d.jumlah)::int AS jumlah_item
+                     FROM detail_pemesanan d
+                     JOIN menu mn ON mn.id = d.menu_id
+                    GROUP BY d.pemesanan_id
+              ) agg ON agg.pemesanan_id = p.id
+             WHERE p.status_pemesanan = 'menunggu_pembayaran'
+             ORDER BY p.waktu_pemesanan ASC, p.id ASC
+        ";
+
+        $rows = db()->query($sql)->fetchAll();
+        return array_map(static fn (array $r): array => [
+            'id'                  => (int) $r['id'],
+            'nomor'               => self::displayNumber((int) $r['id']),
+            'no_meja'             => (string) $r['no_meja'],
+            'nama_pelanggan'      => (string) $r['nama_pelanggan'],
+            'metode_pembayaran'   => (string) $r['metode_pembayaran'],
+            'status_pembayaran'   => (string) $r['status_pembayaran'],
+            'ringkasan_item'      => (string) $r['ringkasan_item'],
+            'jumlah_item'         => (int) $r['jumlah_item'],
+            'total_harga'         => (int) $r['total_harga'],
+            'waktu_pemesanan'     => (string) $r['waktu_pemesanan'],
+            'menit_sejak_dipesan' => (int) $r['menit_sejak_dipesan'],
+        ], $rows);
+    }
+
+    /**
+     * Daftar antrean pesanan untuk dashboard kasir (tanpa N+1 query), diurutkan terbaru dulu.
+     * Bila $status diisi (mis. 'diproses', 'siap', 'selesai', 'batal', 'menunggu_pembayaran'),
+     * hanya mengembalikan pesanan dengan status tersebut.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function daftarAntrean(?string $status = null, int $limit = 50, int $offset = 0): array
+    {
+        $limit  = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+        $status = $status !== null ? trim($status) : null;
+        if ($status === '') {
+            $status = null;
+        }
+
+        $where = $status !== null ? 'WHERE p.status_pemesanan = :status' : '';
+        $sql = "
+            SELECT p.id,
+                   m.no_meja,
+                   p.nama_pelanggan,
+                   p.catatan,
+                   p.total_harga,
+                   p.status_pemesanan,
+                   p.waktu_pemesanan,
+                   p.diperbarui_pada,
+                   b.pengguna_id,
+                   u.nama AS nama_kasir,
+                   COALESCE(b.metode_pembayaran, 'tunai') AS metode_pembayaran,
+                   COALESCE(b.status_pembayaran, 'pending') AS status_pembayaran,
+                   b.waktu_pembayaran,
+                   COALESCE(agg.ringkasan_item, '') AS ringkasan_item,
+                   COALESCE(agg.jumlah_item, 0) AS jumlah_item,
+                   GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.waktu_pemesanan)) / 60))::int AS menit_sejak_dipesan
+              FROM pemesanan p
+              JOIN meja m ON m.id = p.meja_id
+              LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+              LEFT JOIN pengguna u ON u.id = b.pengguna_id
+              LEFT JOIN (
+                   SELECT d.pemesanan_id,
+                          STRING_AGG(mn.nama_menu, ' + ' ORDER BY d.id) AS ringkasan_item,
+                          SUM(d.jumlah)::int AS jumlah_item
+                     FROM detail_pemesanan d
+                     JOIN menu mn ON mn.id = d.menu_id
+                    GROUP BY d.pemesanan_id
+              ) agg ON agg.pemesanan_id = p.id
+             {$where}
+             ORDER BY p.waktu_pemesanan DESC, p.id DESC
+             LIMIT :limit OFFSET :offset
+        ";
+
+        $stmt = db()->prepare($sql);
+        if ($status !== null) {
+            $stmt->bindValue(':status', $status, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(static fn (array $r): array => [
+            'id'                  => (int) $r['id'],
+            'nomor'               => self::displayNumber((int) $r['id']),
+            'no_meja'             => (string) $r['no_meja'],
+            'nama_pelanggan'      => (string) $r['nama_pelanggan'],
+            'catatan'             => $r['catatan'],
+            'total_harga'         => (int) $r['total_harga'],
+            'status_pemesanan'    => (string) $r['status_pemesanan'],
+            'label_status'        => self::STATUS_LABEL[(string) $r['status_pemesanan']] ?? (string) $r['status_pemesanan'],
+            'metode_pembayaran'   => (string) $r['metode_pembayaran'],
+            'status_pembayaran'   => (string) $r['status_pembayaran'],
+            'waktu_pembayaran'    => $r['waktu_pembayaran'],
+            'waktu_pemesanan'     => (string) $r['waktu_pemesanan'],
+            'diperbarui_pada'     => (string) $r['diperbarui_pada'],
+            'pengguna_id'         => $r['pengguna_id'] !== null ? (int) $r['pengguna_id'] : null,
+            'nama_kasir'          => $r['nama_kasir'],
+            'ringkasan_item'      => (string) $r['ringkasan_item'],
+            'jumlah_item'         => (int) $r['jumlah_item'],
+            'menit_sejak_dipesan' => (int) $r['menit_sejak_dipesan'],
+        ], $stmt->fetchAll());
+    }
+
+    /**
+     * Hitung ringkasan metrik pesanan untuk kartu statistik dashboard kasir dalam 1 query:
+     *   - belum_bayar: jumlah pesanan berstatus menunggu_pembayaran
+     *   - lunas_hari_ini: jumlah pembayaran 'paid' dengan waktu_pembayaran hari ini (WIB)
+     *   - pendapatan_hari_ini: total nominal pembayaran 'paid' hari ini (WIB)
+     *   - per_status: jumlah pesanan untuk masing-masing status_pemesanan
+     *
+     * @return array{belum_bayar:int, lunas_hari_ini:int, pendapatan_hari_ini:int, per_status:array<string,int>}
+     */
+    public static function hitungRingkas(): array
+    {
+        $row = db()->query("
+            SELECT COUNT(*) FILTER (WHERE p.status_pemesanan = 'menunggu_pembayaran')::int AS belum_bayar,
+                   COUNT(*) FILTER (WHERE p.status_pemesanan = 'diproses')::int            AS cnt_diproses,
+                   COUNT(*) FILTER (WHERE p.status_pemesanan = 'siap')::int                AS cnt_siap,
+                   COUNT(*) FILTER (WHERE p.status_pemesanan = 'selesai')::int             AS cnt_selesai,
+                   COUNT(*) FILTER (WHERE p.status_pemesanan = 'batal')::int               AS cnt_batal,
+                   COUNT(*) FILTER (
+                       WHERE b.status_pembayaran = 'paid'
+                         AND b.waktu_pembayaran::date = CURRENT_DATE
+                   )::int AS lunas_hari_ini,
+                   COALESCE(SUM(b.total_bayar) FILTER (
+                       WHERE b.status_pembayaran = 'paid'
+                         AND b.waktu_pembayaran::date = CURRENT_DATE
+                   ), 0)::int AS pendapatan_hari_ini
+              FROM pemesanan p
+              LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+        ")->fetch() ?: [];
+
+        $belumBayar = (int) ($row['belum_bayar'] ?? 0);
+        return [
+            'belum_bayar'         => $belumBayar,
+            'lunas_hari_ini'      => (int) ($row['lunas_hari_ini'] ?? 0),
+            'pendapatan_hari_ini' => (int) ($row['pendapatan_hari_ini'] ?? 0),
+            'per_status'          => [
+                'menunggu_pembayaran' => $belumBayar,
+                'diproses'            => (int) ($row['cnt_diproses'] ?? 0),
+                'siap'                => (int) ($row['cnt_siap'] ?? 0),
+                'selesai'             => (int) ($row['cnt_selesai'] ?? 0),
+                'batal'               => (int) ($row['cnt_batal'] ?? 0),
+            ],
+        ];
+    }
+
+    /**
+     * Detail lengkap satu pesanan untuk tampilan kasir (mencakup item + kustomisasi terurai +
+     * catatan umum + informasi pembayaran + kasir pemroses).
+     */
+    public static function detail(int $id): ?array
+    {
+        $order = self::find($id);
+        if (!$order) {
+            return null;
+        }
+
+        $s = db()->prepare(
+            "SELECT b.pengguna_id,
+                    u.nama AS nama_kasir,
+                    b.id AS pembayaran_id,
+                    b.total_bayar,
+                    b.pengguna_id AS kasir_pembayaran_id
+               FROM pemesanan p
+               LEFT JOIN pembayaran b ON b.pemesanan_id = p.id
+               LEFT JOIN pengguna u ON u.id = b.pengguna_id
+              WHERE p.id = ?"
+        );
+        $s->execute([$id]);
+        $extra = $s->fetch() ?: [];
+
+        $statusPesanan = (string) $order['status_pemesanan'];
+        $statusBayar   = (string) ($order['status_pembayaran'] ?? 'pending');
+
+        $order['label_status']        = self::STATUS_LABEL[$statusPesanan] ?? $statusPesanan;
+        $order['label_pembayaran']    = self::PAYMENT_LABEL[$statusBayar] ?? $statusBayar;
+        $order['lunas']               = self::isPaid($order);
+        $order['pengguna_id']         = isset($extra['pengguna_id']) && $extra['pengguna_id'] !== null ? (int) $extra['pengguna_id'] : null;
+        $order['nama_kasir']          = $extra['nama_kasir'] ?? null;
+        $order['pembayaran_id']       = isset($extra['pembayaran_id']) && $extra['pembayaran_id'] !== null ? (int) $extra['pembayaran_id'] : null;
+        $order['total_bayar']         = isset($extra['total_bayar']) ? (int) $extra['total_bayar'] : (int) $order['total_harga'];
+        $order['kasir_pembayaran_id'] = isset($extra['kasir_pembayaran_id']) && $extra['kasir_pembayaran_id'] !== null ? (int) $extra['kasir_pembayaran_id'] : null;
+
+        return $order;
+    }
 }
