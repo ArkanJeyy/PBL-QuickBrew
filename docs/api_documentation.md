@@ -315,3 +315,51 @@ GET http://localhost:8000/public/api/pemesanan.php?action=show&id=1&t=abc123def4
 | `500` | Kesalahan server |
 
 ---
+
+## 3. Endpoint Status Pesanan
+
+**Base URL**: `http://localhost:8000/public/api/status.php`
+
+### URL
+`GET /status.php?id={id}&t={token}`
+
+### Deskripsi
+Mengembalikan status terkini pesanan beserta data tahapan/stepper (unpaid, progress, done, cancel). Dirancang ringan untuk dipanggil berkala (polling) oleh halaman pelanggan.
+
+### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|-----------|------|-------|------------|
+| `id` | integer | ✅ | ID pesanan |
+| `t` | string | ✅ | Token rahasia pesanan (didapat saat checkout/POST pemesanan) |
+
+### Contoh Request
+```bash
+GET http://localhost:8000/public/api/status.php?id=1&t=091778a481317fdb
+```
+
+### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Status pesanan berhasil diambil.",
+  "data": {
+    "id": 1,
+    "nomor": "#A0001",
+    "no_meja": "1",
+    "status_pemesanan": "menunggu_pembayaran",
+    "status_pembayaran": "pending",
+    "diperbarui_pada": "2026-11-11 08:13:55.889171",
+    "view": {
+      "state": "unpaid",
+      "title": "Menunggu Pembayaran",
+      "desc": "Pesanan belum diproses. Silakan selesaikan pembayaran.",
+      "steps": [
+        { "label": "Pesanan Diterima", "icon": "order", "status": "done", "time": "08.13" },
+        { "label": "Menunggu Pembayaran", "icon": "pay", "status": "current", "time": "" },
+        { "label": "Diproses", "icon": "process", "status": "todo", "time": "" },
+        { "label": "Selesai", "icon": "done", "status": "todo", "time": "" }
+      ]
+    }
+  }
+}
+```
