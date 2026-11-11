@@ -363,3 +363,123 @@ GET http://localhost:8000/public/api/status.php?id=1&t=091778a481317fdb
   }
 }
 ```
+
+---
+
+## 4. Endpoint Autentikasi Staf (Kasir & Admin)
+
+**Base URL**: `http://localhost:8000/public/api/auth.php`
+
+Endpoint ini digunakan untuk autentikasi staf (kasir dan admin/owner) berbasis sesi (PHP Session).
+
+---
+
+### 4.1 Login Staf
+
+#### URL
+`POST /auth.php?action=login`  
+*(atau tanpa query param: `POST /auth.php`)*
+
+#### Deskripsi
+Memverifikasi kredensial username dan password staf, lalu membuat sesi login.
+
+#### Request Body (JSON)
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `username` | string | ✅ | Username akun staf (misal: `"kasir"` atau `"admin"`) |
+| `password` | string | ✅ | Password akun staf |
+
+#### Contoh Request
+```bash
+curl -X POST "http://localhost:8000/public/api/auth.php?action=login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "kasir",
+    "password": "password"
+  }'
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Login berhasil.",
+  "data": {
+    "id": 2,
+    "nama": "Kasir 1",
+    "username": "kasir",
+    "role": "kasir"
+  }
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `405` | Method selain POST | `{"success": false, "message": "Method tidak diizinkan. Gunakan POST.", "data": null}` |
+| `422` | Username atau password kosong | `{"success": false, "message": "Username dan password wajib diisi.", "data": null}` |
+| `401` | Username atau password salah | `{"success": false, "message": "Username atau password salah.", "data": null}` |
+| `500` | Kesalahan server | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
+
+---
+
+### 4.2 Cek Sesi Staf Aktif
+
+#### URL
+`GET /auth.php?action=me`
+
+#### Deskripsi
+Mengembalikan informasi akun staf yang sedang login saat ini (berdasarkan cookie session). Berguna untuk proteksi halaman / guard di frontend.
+
+#### Contoh Request
+```bash
+curl -X GET "http://localhost:8000/public/api/auth.php?action=me"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Sesi aktif.",
+  "data": {
+    "id": 2,
+    "nama": "Kasir 1",
+    "username": "kasir",
+    "role": "kasir"
+  }
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `401` | Belum login atau sesi telah kedaluwarsa | `{"success": false, "message": "Belum login atau sesi telah berakhir.", "data": null}` |
+
+---
+
+### 4.3 Logout Staf
+
+#### URL
+`POST /auth.php?action=logout`
+
+#### Deskripsi
+Menghapus sesi login staf dan menghancurkan sesi di server.
+
+#### Contoh Request
+```bash
+curl -X POST "http://localhost:8000/public/api/auth.php?action=logout"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Logout berhasil. Sesi telah dihapus.",
+  "data": null
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `405` | Method selain POST | `{"success": false, "message": "Method tidak diizinkan. Gunakan POST.", "data": null}` |
