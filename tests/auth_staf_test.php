@@ -359,5 +359,51 @@ check(
     'Setelah 20 gagal dari 1 IP (kuota per-IP tidak direset saat login sukses), percobaan ke-21 ditolak HTTP 429'
 );
 
+// =========================================================================
+// 7. Endpoint API JSON (?action=login, ?action=me, ?action=logout) via AuthController
+// =========================================================================
+$_GET    = ['action' => 'login'];
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$_POST   = ['username' => 'kasir', 'password' => $strongPassKasir];
+
+ob_start();
+$authCtrl->login();
+$jsonLogin = json_decode((string) ob_get_clean(), true);
+
+check(
+    is_array($jsonLogin)
+    && ($jsonLogin['success'] ?? false) === true
+    && ($jsonLogin['data']['username'] ?? '') === 'kasir'
+    && ($jsonLogin['data']['role'] ?? '') === 'kasir',
+    'AuthController->login() mode API (?action=login) mengembalikan JSON login berhasil'
+);
+
+$_GET = ['action' => 'me'];
+$_SERVER['REQUEST_METHOD'] = 'GET';
+ob_start();
+$authCtrl->me();
+$jsonMe = json_decode((string) ob_get_clean(), true);
+
+check(
+    is_array($jsonMe)
+    && ($jsonMe['success'] ?? false) === true
+    && ($jsonMe['data']['username'] ?? '') === 'kasir',
+    'AuthController->me() mengembalikan JSON sesi staf aktif'
+);
+
+$_GET = ['action' => 'logout'];
+$_SERVER['REQUEST_METHOD'] = 'POST';
+ob_start();
+$authCtrl->logout();
+$jsonLogout = json_decode((string) ob_get_clean(), true);
+
+check(
+    is_array($jsonLogout)
+    && ($jsonLogout['success'] ?? false) === true
+    && empty($_SESSION['staf']),
+    'AuthController->logout() mode API (?action=logout) menghapus sesi dan mengembalikan JSON logout berhasil'
+);
+$_GET = [];
+
 echo "\nRingkasan Paket 2 (Auth Staf): {$passed} lulus, {$failed} gagal.\n";
 exit($failed === 0 ? 0 : 1);

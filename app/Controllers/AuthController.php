@@ -1,7 +1,9 @@
 <?php
 /**
  * Controller autentikasi staf (kasir & admin).
- * Menyediakan halaman/aksi login (GET/POST) dan logout (POST ber-CSRF).
+ * Menyediakan:
+ *   - Halaman/aksi web: login (GET/POST) dan logout (POST ber-CSRF) via public/index.php
+ *   - Endpoint API JSON: login (POST), logout (POST), dan me (GET) via public/api/auth.php
  */
 final class AuthController
 {
@@ -27,9 +29,15 @@ final class AuthController
 
     /**
      * Tampilkan form login staf (GET) atau proses kredensial login (POST).
+     * Bila dipanggil melalui endpoint API (/api/auth.php), jalankan logika API JSON.
      */
     public function login(): void
     {
+        if ($this->isPermintaanApi()) {
+            $this->apiLogin();
+            return;
+        }
+
         $method   = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
         $rawBack  = (string) ($method === 'POST' ? ($_POST['redirect'] ?? $_GET['redirect'] ?? '') : ($_GET['redirect'] ?? ''));
         $amanBack = tujuan_balik_aman($rawBack);
@@ -124,11 +132,16 @@ final class AuthController
     }
 
     /**
-     * Proses logout staf (wajib POST + token CSRF valid).
-     * Menghancurkan sesi dan menghapus cookie sesi.
+     * Proses logout staf.
+     * Bila dipanggil melalui endpoint API (/api/auth.php), jalankan logika API JSON.
      */
     public function logout(): void
     {
+        if ($this->isPermintaanApi()) {
+            $this->apiLogout();
+            return;
+        }
+
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             http_response_code(405);
             return;
@@ -164,6 +177,188 @@ final class AuthController
         $this->arahkan(url('login'));
     }
 
+    /**
+     * POST /api/auth.php?action=login
+     * Login staf (kasir / admin).
+     */
+    public function apiLogin(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Method tidak diizinkan. Gunakan POST.',
+                'data'    => null,
+            ]);
+            return;
+        }
+
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        if (str_contains($contentType, 'application/json')) {
+            $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        } else {
+            $input = $_POST;
+        }
+
+        $username = trim((string) ($input['username'] ?? ''));
+        $password = (string) ($input['password'] ?? '');
+
+        if ($username === '' || $password === '') {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Username dan password wajib diisi.',
+                'data'    => null,
+            ]);
+            return;
+        }
+
+        try {
+            // Menggunakan method bawaan PenggunaModel.php
+            $pengguna = PenggunaModel::cariUsername($username);
+
+            if (!$pengguna || !password_verify($password, $pengguna['password'])) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Username atau password salah.',
+                    'data'    => null,
+                ]);
+                return;
+            }
+
+            // Jika algoritma hash butuh rehash otomatis
+            if (password_needs_rehash($pengguna['password'], PASSWORD_DEFAULT)) {
+                $hashBaru = password_hash($password, PASSWORD_DEFAULT);
+                PenggunaModel::perbaruiPassword((int) $pengguna['id'], $hashBaru);
+            }
+
+            // Simpan sesi staf
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            session_regenerate_id(true);
+
+            $_SESSION['staf'] = [
+                'id'       => (int) $pengguna['id'],
+                'nama'     => (string) $pengguna['nama'],
+                'username' => (string) $pengguna['username'],
+                'role'     => (string) $pengguna['role'],
+            ];
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Login berhasil.',
+                'data'    => [
+                    'id'       => (int) $pengguna['id'],
+                    'nama'     => (string) $pengguna['nama'],
+                    'username' => (string) $pengguna['username'],
+                    'role'     => (string) $pengguna['role'],
+                ],
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        } catch (Throwable $e) {
+            error_log('[QuickBrew API Auth] ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'debug'   => $e->getMessage(),
+                'data'    => null,
+            ]);
+        }
+    }
+
+    /**
+     * POST /api/auth.php?action=logout
+     * Logout staf dan hancurkan sesi.
+     */
+    public function apiLogout(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Method tidak diizinkan. Gunakan POST.',
+                'data'    => null,
+            ]);
+            return;
+        }
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        unset($_SESSION['staf']);
+        session_destroy();
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Logout berhasil. Sesi telah dihapus.',
+            'data'    => null,
+        ]);
+    }
+
+    /**
+     * GET /api/auth.php?action=me
+     * Cek staf yang sedang login saat ini.
+     */
+    public function me(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $staf = $_SESSION['staf'] ?? null;
+
+        if (!$staf) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Belum login atau sesi telah berakhir.',
+                'data'    => null,
+            ]);
+            return;
+        }
+
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Sesi aktif.',
+            'data'    => $staf,
+        ]);
+    }
+
+    /**
+     * Deteksi apakah pemanggilan berasal dari endpoint API (/public/api/auth.php).
+     */
+    private function isPermintaanApi(): bool
+    {
+        if (isset($_GET['action'])) {
+            return true;
+        }
+
+        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
+        if (str_ends_with($script, '/api/auth.php')) {
+            return true;
+        }
+
+        $contentType = (string) ($_SERVER['CONTENT_TYPE'] ?? '');
+        if (str_contains($contentType, 'application/json')) {
+            return true;
+        }
+
+        return false;
+    }
+
     private function renderForm(?string $error, string $username, string $redirect): void
     {
         view('auth/login', [
@@ -182,4 +377,8 @@ final class AuthController
         }
         redirect($targetUrl);
     }
+}
+
+if (!class_exists('ApiAuthController', false)) {
+    class_alias(AuthController::class, 'ApiAuthController');
 }

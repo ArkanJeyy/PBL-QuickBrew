@@ -3,9 +3,9 @@
 require_once __DIR__ . '/../../config/config.php';
 require_once APP_ROOT . '/app/Helpers/helpers.php';
 require_once APP_ROOT . '/app/Models/PenggunaModel.php';
-require_once APP_ROOT . '/app/Controllers/ApiAuthController.php';
+require_once APP_ROOT . '/app/Controllers/AuthController.php';
 
-$controller = new ApiAuthController();
+$controller = new AuthController();
 
 $action = $_GET['action'] ?? 'login';
 
