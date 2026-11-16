@@ -10,9 +10,9 @@ $controller = new AuthController();
 $action = $_GET['action'] ?? 'login';
 
 if ($action === 'logout') {
-    $controller->logout();
+    $controller->apiLogout();
 } elseif ($action === 'me') {
     $controller->me();
 } else {
-    $controller->login();
+    $controller->apiLogin();
 }

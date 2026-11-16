@@ -2,8 +2,8 @@
 /**
  * Controller autentikasi staf (kasir & admin).
  * Menyediakan:
- *   - Halaman/aksi web: login (GET/POST) dan logout (POST ber-CSRF) via public/index.php
- *   - Endpoint API JSON: login (POST), logout (POST), dan me (GET) via public/api/auth.php
+ *   - Halaman/aksi web: login() (GET/POST) dan logout() (POST ber-CSRF) via public/index.php
+ *   - Endpoint API JSON: apiLogin() (POST), apiLogout() (POST), dan me() (GET) via public/api/auth.php
  */
 final class AuthController
 {
@@ -29,15 +29,9 @@ final class AuthController
 
     /**
      * Tampilkan form login staf (GET) atau proses kredensial login (POST).
-     * Bila dipanggil melalui endpoint API (/api/auth.php), jalankan logika API JSON.
      */
     public function login(): void
     {
-        if ($this->isPermintaanApi()) {
-            $this->apiLogin();
-            return;
-        }
-
         $method   = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
         $rawBack  = (string) ($method === 'POST' ? ($_POST['redirect'] ?? $_GET['redirect'] ?? '') : ($_GET['redirect'] ?? ''));
         $amanBack = tujuan_balik_aman($rawBack);
@@ -122,9 +116,10 @@ final class AuthController
         }
 
         $_SESSION['staf'] = [
-            'id'   => (int) $pengguna['id'],
-            'nama' => (string) $pengguna['nama'],
-            'role' => (string) $pengguna['role'],
+            'id'       => (int) $pengguna['id'],
+            'nama'     => (string) $pengguna['nama'],
+            'username' => (string) $pengguna['username'],
+            'role'     => (string) $pengguna['role'],
         ];
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
@@ -132,16 +127,11 @@ final class AuthController
     }
 
     /**
-     * Proses logout staf.
-     * Bila dipanggil melalui endpoint API (/api/auth.php), jalankan logika API JSON.
+     * Proses logout staf (wajib POST + token CSRF valid).
+     * Menghancurkan sesi dan menghapus cookie sesi.
      */
     public function logout(): void
     {
-        if ($this->isPermintaanApi()) {
-            $this->apiLogout();
-            return;
-        }
-
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             http_response_code(405);
             return;
@@ -179,13 +169,13 @@ final class AuthController
 
     /**
      * POST /api/auth.php?action=login
-     * Login staf (kasir / admin).
+     * Login staf (kasir / admin) via endpoint API JSON.
      */
     public function apiLogin(): void
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             http_response_code(405);
             echo json_encode([
                 'success' => false,
@@ -197,7 +187,7 @@ final class AuthController
 
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         if (str_contains($contentType, 'application/json')) {
-            $input = json_decode(file_get_contents('php://input'), true) ?? [];
+            $input = json_decode((string) file_get_contents('php://input'), true) ?? [];
         } else {
             $input = $_POST;
         }
@@ -216,10 +206,34 @@ final class AuthController
         }
 
         try {
-            // Menggunakan method bawaan PenggunaModel.php
-            $pengguna = PenggunaModel::cariUsername($username);
+            // Normalisasi username (trim, huruf kecil, maks 50 karakter) + IP klien -> SHA-256
+            $normUser    = strtolower(text_cut($username, 50));
+            $ip          = ip_klien();
+            $kunciUserIp = 'login_u:' . hash('sha256', $normUser . '|' . $ip);
+            $kunciIp     = 'login_ip:' . hash('sha256', $ip);
 
-            if (!$pengguna || !password_verify($password, $pengguna['password'])) {
+            // Cek kuota pembatasan laju SEBELUM verifikasi password
+            if (
+                laju_terlampaui($kunciUserIp, self::BATAS_GAGAL_USER_IP, self::JENDELA_DETIK)
+                || laju_terlampaui($kunciIp, self::BATAS_GAGAL_IP, self::JENDELA_DETIK)
+            ) {
+                http_response_code(429);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Terlalu banyak percobaan login yang gagal. Silakan coba lagi dalam 15 menit.',
+                    'data'    => null,
+                ]);
+                return;
+            }
+
+            // Menggunakan method bawaan PenggunaModel.php + anti-enumerasi/timing
+            $pengguna   = PenggunaModel::cariUsername($username);
+            $hashTarget = $pengguna !== null ? (string) $pengguna['password'] : self::DUMMY_BCRYPT_HASH;
+            $cocok      = password_verify($password, $hashTarget) && $pengguna !== null;
+
+            if (!$cocok) {
+                catat_laju($kunciUserIp);
+                catat_laju($kunciIp);
                 http_response_code(401);
                 echo json_encode([
                     'success' => false,
@@ -230,16 +244,21 @@ final class AuthController
             }
 
             // Jika algoritma hash butuh rehash otomatis
-            if (password_needs_rehash($pengguna['password'], PASSWORD_DEFAULT)) {
+            if (password_needs_rehash((string) $pengguna['password'], PASSWORD_DEFAULT)) {
                 $hashBaru = password_hash($password, PASSWORD_DEFAULT);
                 PenggunaModel::perbaruiPassword((int) $pengguna['id'], $hashBaru);
             }
 
+            // Login sukses: reset kuota hanya untuk kunci (username+IP); kunci per-IP tidak direset
+            reset_laju($kunciUserIp);
+
             // Simpan sesi staf
             if (session_status() === PHP_SESSION_NONE) {
-                session_start();
+                @session_start();
             }
-            session_regenerate_id(true);
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                @session_regenerate_id(true);
+            }
 
             $_SESSION['staf'] = [
                 'id'       => (int) $pengguna['id'],
@@ -274,13 +293,13 @@ final class AuthController
 
     /**
      * POST /api/auth.php?action=logout
-     * Logout staf dan hancurkan sesi.
+     * Logout staf dan hancurkan sesi via endpoint API JSON.
      */
     public function apiLogout(): void
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             http_response_code(405);
             echo json_encode([
                 'success' => false,
@@ -291,11 +310,13 @@ final class AuthController
         }
 
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            @session_start();
         }
 
         unset($_SESSION['staf']);
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            @session_destroy();
+        }
 
         http_response_code(200);
         echo json_encode([
@@ -314,7 +335,7 @@ final class AuthController
         header('Content-Type: application/json; charset=utf-8');
 
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            @session_start();
         }
 
         $staf = $_SESSION['staf'] ?? null;
@@ -337,28 +358,6 @@ final class AuthController
         ]);
     }
 
-    /**
-     * Deteksi apakah pemanggilan berasal dari endpoint API (/public/api/auth.php).
-     */
-    private function isPermintaanApi(): bool
-    {
-        if (isset($_GET['action'])) {
-            return true;
-        }
-
-        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
-        if (str_ends_with($script, '/api/auth.php')) {
-            return true;
-        }
-
-        $contentType = (string) ($_SERVER['CONTENT_TYPE'] ?? '');
-        if (str_contains($contentType, 'application/json')) {
-            return true;
-        }
-
-        return false;
-    }
-
     private function renderForm(?string $error, string $username, string $redirect): void
     {
         view('auth/login', [
@@ -377,8 +376,4 @@ final class AuthController
         }
         redirect($targetUrl);
     }
-}
-
-if (!class_exists('ApiAuthController', false)) {
-    class_alias(AuthController::class, 'ApiAuthController');
 }
