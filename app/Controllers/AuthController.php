@@ -166,7 +166,7 @@ final class AuthController
 
     private function renderForm(?string $error, string $username, string $redirect): void
     {
-        view('auth/login', [
+        view('kasir/login', [
             'error'     => $error,
             'username'  => $username,
             'redirect'  => $redirect,
