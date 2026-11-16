@@ -212,8 +212,9 @@ check(
     isset($_SESSION['staf'])
     && $_SESSION['staf']['id'] === (int) $kasir['id']
     && $_SESSION['staf']['nama'] === $kasir['nama']
+    && $_SESSION['staf']['username'] === $kasir['username']
     && $_SESSION['staf']['role'] === 'kasir',
-    '$_SESSION[staf] berisi [id, nama, role] setelah login sukses'
+    '$_SESSION[staf] berisi [id, nama, username, role] setelah web login sukses'
 );
 
 // =========================================================================
@@ -357,6 +358,79 @@ check(
     && empty($_SESSION['staf'])
     && str_contains($throttleIpHtml, 'Terlalu banyak percobaan login'),
     'Setelah 20 gagal dari 1 IP (kuota per-IP tidak direset saat login sukses), percobaan ke-21 ditolak HTTP 429'
+);
+
+// =========================================================================
+// 7. Endpoint API JSON (apiLogin, me, apiLogout) + Rate Limit di apiLogin()
+// =========================================================================
+$pdo->exec('TRUNCATE TABLE pembatasan_laju');
+$_SESSION = [];
+$_SERVER['REMOTE_ADDR']    = '198.51.100.88';
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$_POST = ['username' => 'kasir', 'password' => $strongPassKasir];
+
+ob_start();
+$authCtrl->apiLogin();
+$jsonLogin = json_decode((string) ob_get_clean(), true);
+
+check(
+    http_response_code() === 200
+    && is_array($jsonLogin)
+    && ($jsonLogin['success'] ?? false) === true
+    && ($jsonLogin['data']['username'] ?? '') === 'kasir'
+    && ($jsonLogin['data']['role'] ?? '') === 'kasir',
+    'AuthController->apiLogin() mengembalikan JSON login berhasil'
+);
+
+$_SERVER['REQUEST_METHOD'] = 'GET';
+ob_start();
+$authCtrl->me();
+$jsonMe = json_decode((string) ob_get_clean(), true);
+
+check(
+    http_response_code() === 200
+    && is_array($jsonMe)
+    && ($jsonMe['success'] ?? false) === true
+    && ($jsonMe['data']['username'] ?? '') === 'kasir',
+    'AuthController->me() mengembalikan JSON sesi staf aktif'
+);
+
+$_SERVER['REQUEST_METHOD'] = 'POST';
+ob_start();
+$authCtrl->apiLogout();
+$jsonLogout = json_decode((string) ob_get_clean(), true);
+
+check(
+    http_response_code() === 200
+    && is_array($jsonLogout)
+    && ($jsonLogout['success'] ?? false) === true
+    && empty($_SESSION['staf']),
+    'AuthController->apiLogout() menghapus sesi dan mengembalikan JSON logout berhasil'
+);
+
+// Uji Rate Limiting pada apiLogin(): 5 gagal -> percobaan ke-6 ditolak HTTP 429
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+for ($i = 1; $i <= 5; $i++) {
+    $_POST = ['username' => 'kasir', 'password' => 'SalahApi' . $i];
+    ob_start();
+    $authCtrl->apiLogin();
+    ob_end_clean();
+}
+check(http_response_code() === 401, 'apiLogin() percobaan gagal ke-5 masih mengembalikan HTTP 401');
+
+$_POST = ['username' => 'kasir', 'password' => $strongPassKasir];
+ob_start();
+$authCtrl->apiLogin();
+$jsonThrottle = json_decode((string) ob_get_clean(), true);
+
+check(
+    http_response_code() === 429
+    && is_array($jsonThrottle)
+    && ($jsonThrottle['success'] ?? true) === false
+    && str_contains((string) ($jsonThrottle['message'] ?? ''), 'Terlalu banyak percobaan login'),
+    'apiLogin() percobaan ke-6 untuk (username + IP) yang sama ditolak HTTP 429 JSON'
 );
 
 echo "\nRingkasan Paket 2 (Auth Staf): {$passed} lulus, {$failed} gagal.\n";

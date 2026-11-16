@@ -419,6 +419,7 @@ curl -X POST "http://localhost:8000/public/api/auth.php?action=login" \
 | `405` | Method selain POST | `{"success": false, "message": "Method tidak diizinkan. Gunakan POST.", "data": null}` |
 | `422` | Username atau password kosong | `{"success": false, "message": "Username dan password wajib diisi.", "data": null}` |
 | `401` | Username atau password salah | `{"success": false, "message": "Username atau password salah.", "data": null}` |
+| `429` | Terlalu banyak percobaan login gagal (rate limit) | `{"success": false, "message": "Terlalu banyak percobaan login yang gagal. Silakan coba lagi dalam 15 menit.", "data": null}` |
 | `500` | Kesalahan server | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
 
 ---
