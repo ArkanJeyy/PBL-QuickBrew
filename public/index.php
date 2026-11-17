@@ -13,6 +13,7 @@ require_once APP_ROOT . '/app/Models/PemesananModel.php';
 require_once APP_ROOT . '/app/Models/PenggunaModel.php';
 require_once APP_ROOT . '/app/Controllers/PelangganController.php';
 require_once APP_ROOT . '/app/Controllers/AuthController.php';
+require_once APP_ROOT . '/app/Controllers/KasirController.php';
 
 // page => [Controller, method]
 $routes = [
@@ -26,6 +27,7 @@ $routes = [
     'qr'       => [PelangganController::class, 'qr'],
     'login'    => [AuthController::class, 'login'],
     'logout'   => [AuthController::class, 'logout'],
+    'kasir'    => [KasirController::class, 'index'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');
