@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= e(asset('css/css-kasir/dashboard.css')) ?>">
 
-    <!-- Tailwind CDN (Hybrid: komponen baru pakai Tailwind, lama tetap via dashboard.css) -->
+    <!-- Tailwind CDN ) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -99,14 +99,17 @@
         </nav>
 
         <div class="sidebar-footer">
-            <a href="<?= e(url('logout')) ?>" class="nav-link" style="color: #EF4444;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span>Keluar</span>
-            </a>
+            <form action="<?= e(url('logout')) ?>" method="POST" style="margin: 0; width: 100%;">
+                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                <button type="submit" class="nav-link" style="color: #EF4444; background: none; border: none; width: 100%; text-align: left; cursor: pointer; font: inherit; display: flex; align-items: center; gap: 12px; padding: 12px 16px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Keluar</span>
+                </button>
+            </form>
         </div>
     </aside>
 
