@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    QuickBrew - Kasir Dashboard CSS
    Sesuai Desain Figma: 02. Beranda Kasir
    ========================================================================== */
@@ -540,24 +540,8 @@ body {
   margin-bottom: 16px;
 }
 
-/* Donut Chart representation */
-.donut-chart-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  padding: 10px 0;
-}
-
-.donut-visual {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: conic-gradient(var(--color-brand-primary) 0% 85%, #BFA796 85% 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* Donut Chart (lama - diganti SVG di dashboard.php) */
+/* .donut-chart-container dan .donut-visual kini ada di bagian bawah */
 
 .donut-inner {
   width: 66px;
@@ -780,3 +764,205 @@ body {
   background: var(--color-brand-hover);
 }
 
+
+/* ==========================================================================
+   TAMBAHAN FIGMA UPDATE — Antrean Pesanan (Search, Filter, Tabel Baru)
+   ========================================================================== */
+
+/* Logout button (tombol di sidebar footer) */
+.logout-btn {
+  color: #EF4444 !important;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 14px;
+}
+.logout-btn:hover {
+  background-color: #FEF2F2 !important;
+  color: #DC2626 !important;
+}
+
+/* Stat icon: yellow (Belum Bayar) */
+.stat-icon.yellow {
+  background-color: #FEF9C3;
+  color: #CA8A04;
+}
+
+/* Antrean header */
+.antrean-header {
+  margin-bottom: 16px;
+}
+.antrean-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: 2px;
+}
+.antrean-subtitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* Toolbar: search + filter tabs */
+.antrean-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* Search bar */
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  min-width: 220px;
+}
+.search-input {
+  border: none;
+  outline: none;
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: var(--color-text-main);
+  background: transparent;
+  width: 100%;
+}
+.search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Filter tabs */
+.filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--color-border);
+  background: white;
+  color: var(--color-text-muted);
+  transition: all 0.18s;
+  font-family: var(--font-family);
+}
+.filter-tab:hover {
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}
+.filter-tab.active {
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+  color: white;
+}
+.filter-tab .tab-count {
+  font-weight: 700;
+}
+
+/* Tabel kolom baru */
+.meja-num {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-text-main);
+}
+.item-list {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+.order-total {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-text-main);
+}
+
+/* Badge: Selesai (hijau solid) */
+.badge-pill.done {
+  background-color: #DCFCE7;
+  color: #15803D;
+}
+
+/* Bottom grid: 2 kolom saja (chart + donut) */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Chart area */
+.bottom-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: 14px;
+}
+.chart-area {
+  width: 100%;
+  height: auto;
+}
+.chart-xaxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  padding: 0 4px;
+}
+
+/* Donut SVG container */
+.donut-chart-container {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+.donut-visual {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Legend item update */
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-text-main);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.legend-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.legend-name {
+  font-weight: 600;
+  font-size: 12px;
+}
+.legend-val {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
