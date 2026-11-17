@@ -38,7 +38,8 @@ final class AuthController
 
         // Jika staf sudah login pada GET, langsung arahkan ke tujuan balik aman atau beranda
         if ($method !== 'POST' && !empty($_SESSION['staf']['id'])) {
-            $this->arahkan($amanBack ?? url('home'));
+            $defaultUrl = in_array((string)($_SESSION['staf']['role'] ?? ''), ['kasir', 'admin'], true) ? url('kasir') : url('home');
+            $this->arahkan($amanBack ?? $defaultUrl);
             return;
         }
 
@@ -123,7 +124,8 @@ final class AuthController
         ];
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-        $this->arahkan($amanBack ?? url('home'));
+        $defaultUrl = in_array((string)($pengguna['role'] ?? ''), ['kasir', 'admin'], true) ? url('kasir') : url('home');
+        $this->arahkan($amanBack ?? $defaultUrl);
     }
 
     /**

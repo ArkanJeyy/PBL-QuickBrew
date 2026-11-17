@@ -40,9 +40,7 @@
 
         <form action="<?= e(url('login')) ?>" method="POST">
             <input type="hidden" name="csrf_token" value="<?= e($csrfToken ?? csrf_token()) ?>">
-            <?php if (!empty($redirect)): ?>
-                <input type="hidden" name="redirect" value="<?= e($redirect) ?>">
-            <?php endif; ?>
+            <input type="hidden" name="redirect" value="<?= e(!empty($redirect) ? $redirect : url('kasir')) ?>">
 
             <div class="form-group">
                 <label for="username">Username</label>
