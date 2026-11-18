@@ -484,3 +484,276 @@ curl -X POST "http://localhost:8000/public/api/auth.php?action=logout"
 | Kode | Kondisi | Contoh Body |
 |---|---|---|
 | `405` | Method selain POST | `{"success": false, "message": "Method tidak diizinkan. Gunakan POST.", "data": null}` |
+
+## 5. Endpoint Manajemen Menu (Admin)
+
+**Base URL**: `http://localhost:8000/public/api/admin_menu.php`
+
+Endpoint ini digunakan untuk operasi CRUD manajemen data menu oleh **Admin**. Seluruh endpoint dilindungi oleh guard `wajib_admin_api()` yang mewajibkan sesi login staf aktif dengan role `admin` (melalui `POST /auth.php?action=login`) atau header `Authorization: Bearer <token>`.
+
+> Jika diakses tanpa autentikasi atau oleh akun selain `admin` (misalnya `kasir`), server akan menolak permintaan dengan status **403 Forbidden**:
+> ```json
+> {
+>   "success": false,
+>   "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.",
+>   "data": null
+> }
+> ```
+
+---
+
+### 5.1 Daftar Semua Menu
+
+#### URL
+`GET /admin_menu.php`
+
+#### Deskripsi
+Mengembalikan seluruh daftar menu yang tersimpan di database untuk keperluan pengelolaan admin.
+
+#### Contoh Request
+```bash
+curl -X GET "http://localhost:8000/public/api/admin_menu.php" \
+  -b "PHPSESSID=<session_id_admin>"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Daftar menu berhasil diambil.",
+  "data": [
+    {
+      "id": 1,
+      "name": "Americano",
+      "price": 20000,
+      "description": "Espresso dengan air dan es, memiliki rasa kopi yang ringan dan menyegarkan.",
+      "status": "available",
+      "stock": 50,
+      "active": true,
+      "category": "minuman",
+      "image": "images/menu/americano.png",
+      "dim": false,
+      "customizable": true
+    }
+  ]
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `403` | Bukan role `admin` atau belum login | `{"success": false, "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.", "data": null}` |
+| `500` | Kesalahan server | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
+
+---
+
+### 5.2 Detail Satu Menu
+
+#### URL
+`GET /admin_menu.php?action=show&id={id}`
+
+#### Deskripsi
+Mengembalikan detail satu item menu berdasarkan ID menu.
+
+#### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `action` | string | ✅ | Harus bernilai `show` |
+| `id` | integer | ✅ | ID menu yang ingin dilihat |
+
+#### Contoh Request
+```bash
+curl -X GET "http://localhost:8000/public/api/admin_menu.php?action=show&id=1" \
+  -b "PHPSESSID=<session_id_admin>"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Detail menu berhasil diambil.",
+  "data": {
+    "id": 1,
+    "name": "Americano",
+    "price": 20000,
+    "description": "Espresso dengan air dan es, memiliki rasa kopi yang ringan dan menyegarkan.",
+    "status": "available",
+    "stock": 50,
+    "active": true,
+    "category": "minuman",
+    "image": "images/menu/americano.png",
+    "dim": false,
+    "customizable": true
+  }
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `400` | Parameter `id` tidak valid | `{"success": false, "message": "Parameter id tidak valid.", "data": null}` |
+| `403` | Bukan role `admin` atau belum login | `{"success": false, "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.", "data": null}` |
+| `404` | Menu tidak ditemukan | `{"success": false, "message": "Menu tidak ditemukan.", "data": null}` |
+| `500` | Kesalahan server | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
+
+---
+
+### 5.3 Tambah Menu Baru
+
+#### URL
+`POST /admin_menu.php?action=store`
+
+#### Deskripsi
+Menambahkan item menu baru ke database.
+
+#### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `action` | string | ✅ | Harus bernilai `store` |
+
+#### Request Body (JSON)
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `name` | string | ✅ | Nama menu |
+| `price` | integer | ✅ | Harga menu dalam Rupiah |
+| `category` | string | ✅ | Slug atau nama kategori (`minuman`, `makanan`, `dessert`) |
+| `description` | string | ❌ | Deskripsi singkat menu |
+| `image` | string | ❌ | Nama file gambar menu (misal: `"kopi-hitam.png"`) |
+| `stock` | integer | ❌ | Jumlah stok awal (default: `0`) |
+| `active` | boolean | ❌ | Status ketersediaan menu (default: `true`) |
+
+#### Contoh Request
+```bash
+curl -X POST "http://localhost:8000/public/api/admin_menu.php?action=store" \
+  -H "Content-Type: application/json" \
+  -b "PHPSESSID=<session_id_admin>" \
+  -d '{
+    "name": "Kopi Hitam",
+    "price": 15000,
+    "category": "minuman",
+    "description": "Kopi hitam tanpa gula",
+    "image": "kopi-hitam.png",
+    "stock": 20,
+    "active": true
+  }'
+```
+
+#### Respons Berhasil (201 Created)
+```json
+{
+  "success": true,
+  "message": "Menu berhasil dibuat.",
+  "data": {
+    "id": 29
+  }
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `400` | Kategori tidak ditemukan | `{"success": false, "message": "Kategori 'snack' tidak ditemukan.", "data": null}` |
+| `403` | Bukan role `admin` atau belum login | `{"success": false, "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.", "data": null}` |
+| `405` | Method bukan POST | `{"success": false, "message": "Method tidak diizinkan, gunakan POST.", "data": null}` |
+| `422` | Field wajib (`name`, `price`, `category`) kosong | `{"success": false, "message": "Field 'name' wajib diisi.", "data": null}` |
+| `500` | Kesalahan server | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
+
+---
+
+### 5.4 Perbarui Data Menu
+
+#### URL
+`PUT /admin_menu.php?action=update&id={id}`  
+*(atau `PATCH /admin_menu.php?action=update&id={id}`)*
+
+#### Deskripsi
+Memperbarui sebagian atau seluruh data menu yang sudah ada berdasarkan ID menu.
+
+#### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `action` | string | ✅ | Harus bernilai `update` |
+| `id` | integer | ✅ | ID menu yang akan diperbarui |
+
+#### Request Body (JSON — Opsional/Parsial)
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `name` | string | Nama menu baru |
+| `price` | integer | Harga menu baru |
+| `category` | string | Slug kategori baru (`minuman`, `makanan`, `dessert`) |
+| `description` | string | Deskripsi menu baru |
+| `image` | string | Nama file gambar baru |
+| `stock` | integer | Jumlah stok terbaru |
+| `active` | boolean | Status aktif menu (`true` / `false`) |
+
+#### Contoh Request
+```bash
+curl -X PUT "http://localhost:8000/public/api/admin_menu.php?action=update&id=29" \
+  -H "Content-Type: application/json" \
+  -b "PHPSESSID=<session_id_admin>" \
+  -d '{
+    "price": 18000,
+    "stock": 35
+  }'
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Menu berhasil diupdate.",
+  "data": {
+    "id": 29
+  }
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `400` | Parameter `id` tidak valid / kategori tidak ditemukan | `{"success": false, "message": "Parameter id tidak valid.", "data": null}` |
+| `403` | Bukan role `admin` atau belum login | `{"success": false, "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.", "data": null}` |
+| `405` | Method bukan PUT/PATCH | `{"success": false, "message": "Method tidak diizinkan, gunakan PUT/PATCH.", "data": null}` |
+| `422` | Body kosong atau tidak ada field valid | `{"success": false, "message": "Tidak ada data untuk diupdate.", "data": null}` |
+| `500` | Kesalahan server | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
+
+---
+
+### 5.5 Hapus Menu
+
+#### URL
+`DELETE /admin_menu.php?action=delete&id={id}`
+
+#### Deskripsi
+Menghapus item menu dari database berdasarkan ID menu.
+
+#### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `action` | string | ✅ | Harus bernilai `delete` |
+| `id` | integer | ✅ | ID menu yang akan dihapus |
+
+#### Contoh Request
+```bash
+curl -X DELETE "http://localhost:8000/public/api/admin_menu.php?action=delete&id=29" \
+  -b "PHPSESSID=<session_id_admin>"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Menu berhasil dihapus.",
+  "data": {
+    "id": 29
+  }
+}
+```
+
+#### Respons Error
+| Kode | Kondisi | Contoh Body |
+|---|---|---|
+| `400` | Parameter `id` tidak valid | `{"success": false, "message": "Parameter id tidak valid.", "data": null}` |
+| `403` | Bukan role `admin` atau belum login | `{"success": false, "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.", "data": null}` |
+| `405` | Method bukan DELETE | `{"success": false, "message": "Method tidak diizinkan, gunakan DELETE.", "data": null}` |
+| `500` | Kesalahan server (misal menu masih terikat relasi pesanan) | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
