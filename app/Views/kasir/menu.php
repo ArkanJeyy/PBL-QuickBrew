@@ -181,13 +181,13 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     $pathGambar = APP_ROOT . '/public/assets/images/menu/' . $namaFileGambar;
                     $gambarTersedia = $namaFileGambar !== '' && is_file($pathGambar);
                     ?>
-                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-4 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
-                        <div class="tw-mb-3 tw-flex tw-items-start tw-justify-between">
-                            <div class="tw-h-20 tw-w-20 tw-shrink-0">
+                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-3.5 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="tw-mb-2.5 tw-flex tw-items-start tw-justify-between">
+                            <div class="tw-h-[72px] tw-w-[72px] tw-shrink-0 tw-bg-transparent">
                                 <?php if ($gambarTersedia): ?>
-                                    <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-20 tw-w-20 tw-object-contain">
+                                    <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-object-contain">
                                 <?php else: ?>
-                                    <div class="tw-flex tw-h-20 tw-w-20 tw-items-center tw-justify-center tw-rounded-lg tw-bg-gray-100" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
+                                    <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-bg-transparent" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
                                         <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <rect x="3" y="3" width="18" height="18" rx="2"></rect>
                                             <circle cx="8.5" cy="8.5" r="1.5"></circle>
