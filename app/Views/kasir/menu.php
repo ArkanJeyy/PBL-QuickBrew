@@ -184,20 +184,22 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     $gambarTersedia = $namaFileGambar !== '' && is_file($pathGambar);
                     ?>
                     <article class="menu-card tw-relative tw-min-w-0 tw-rounded-xl2 tw-border tw-border-border tw-bg-white tw-p-3 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
-                        <div class="tw-relative tw-mb-2 tw-flex tw-h-24 tw-items-center tw-justify-center tw-rounded-lg tw-bg-page">
-                            <?php if ($gambarTersedia): ?>
-                                <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-rounded-lg tw-object-contain">
-                            <?php else: ?>
-                                <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-rounded-lg tw-bg-gray-100" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
-                                    <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                        <path d="m21 15-5-5L5 21"></path>
-                                    </svg>
-                                </div>
-                            <?php endif; ?>
+                        <div class="tw-mb-2 tw-flex tw-items-start tw-justify-between">
+                            <div class="tw-h-20 tw-w-20 tw-shrink-0">
+                                <?php if ($gambarTersedia): ?>
+                                    <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-20 tw-w-20 tw-object-contain">
+                                <?php else: ?>
+                                    <div class="tw-flex tw-h-20 tw-w-20 tw-items-center tw-justify-center tw-rounded-lg tw-bg-gray-100" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
+                                        <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                            <path d="m21 15-5-5L5 21"></path>
+                                        </svg>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                             <!-- TODO: Tambahkan aksi ubah/hapus menu. -->
-                            <button type="button" class="tw-absolute tw-right-1 tw-top-1 tw-rounded-full tw-border-0 tw-bg-white/90 tw-p-1 tw-text-brand hover:tw-bg-brand-light" aria-label="<?= htmlspecialchars('Aksi untuk ' . $namaMenu, ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="button" class="tw-rounded-full tw-border-0 tw-bg-transparent tw-p-1 tw-text-muted hover:tw-bg-brand-light hover:tw-text-brand" aria-label="<?= htmlspecialchars('Aksi untuk ' . $namaMenu, ENT_QUOTES, 'UTF-8') ?>">
                                 <svg class="tw-h-4 tw-w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <circle cx="12" cy="5" r="1.7"></circle>
                                     <circle cx="12" cy="12" r="1.7"></circle>
