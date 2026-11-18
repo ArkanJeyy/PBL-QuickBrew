@@ -147,21 +147,21 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                 <p class="tw-mt-1 tw-text-sm tw-text-muted">Pantau menu dan ketersediaan di kafe.</p>
             </div>
 
-            <div class="tw-mb-5 tw-flex tw-flex-col tw-gap-3 sm:tw-flex-row sm:tw-items-center sm:tw-justify-between">
-                <label class="tw-relative tw-block tw-w-full sm:tw-max-w-xs">
+            <div class="tw-mb-5 tw-flex tw-flex-wrap tw-items-center tw-gap-3">
+                <label class="tw-relative tw-block tw-w-full sm:tw-w-64">
                     <span class="tw-sr-only">Cari menu</span>
                     <svg class="tw-pointer-events-none tw-absolute tw-left-3 tw-top-1/2 tw-h-4 tw-w-4 -tw-translate-y-1/2 tw-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input id="menuSearch" type="search" placeholder="Cari menu..." autocomplete="off" class="tw-w-full tw-rounded-full tw-border tw-border-border tw-bg-white tw-py-2 tw-pl-10 tw-pr-4 tw-text-sm tw-text-main placeholder:tw-text-muted focus:tw-border-brand focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand-light">
+                    <input id="menuSearch" type="search" placeholder="Cari menu..." autocomplete="off" class="tw-w-full tw-rounded-full tw-border tw-border-border tw-bg-white tw-py-1.5 tw-pl-9 tw-pr-4 tw-text-xs sm:tw-text-sm tw-text-main placeholder:tw-text-muted focus:tw-border-brand focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand-light">
                 </label>
 
                 <div class="tw-flex tw-flex-wrap tw-gap-2" role="group" aria-label="Filter kategori menu">
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-brand tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-white tw-transition-colors" data-kategori="semua" aria-pressed="true">Semua</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="makanan" aria-pressed="false">Makanan</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="minuman" aria-pressed="false">Minuman</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="dessert" aria-pressed="false">Dessert</button>
+                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-brand tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-white tw-transition-colors" data-kategori="semua" aria-pressed="true">Semua</button>
+                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="makanan" aria-pressed="false">Makanan</button>
+                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="minuman" aria-pressed="false">Minuman</button>
+                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="dessert" aria-pressed="false">Dessert</button>
                 </div>
             </div>
 
