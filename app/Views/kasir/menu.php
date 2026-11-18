@@ -165,7 +165,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                 </div>
             </div>
 
-            <div id="menuGrid" class="tw-grid tw-grid-cols-1 tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-4" aria-live="polite">
+            <div id="menuGrid" class="tw-grid tw-grid-cols-1 tw-gap-4 sm:tw-grid-cols-2 md:tw-grid-cols-2 lg:tw-grid-cols-4" aria-live="polite">
                 <?php foreach ($menu as $item): ?>
                     <?php
                     $namaMenu = (string) ($item['nama_menu'] ?? $item['name'] ?? '');
