@@ -35,7 +35,7 @@ require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
 require_once APP_ROOT . '/app/Services/PembayaranService.php';
-require_once APP_ROOT . '/app/Controllers/PelangganController.php';
+require_once APP_ROOT . '/app/Controllers/Pelanggan/PelangganController.php';
 require_once APP_ROOT . '/app/Controllers/WebhookController.php';
 
 // 2. Pastikan database `quickbrew_test` tersedia & terisolasi penuh

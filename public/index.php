@@ -11,9 +11,9 @@ require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
 require_once APP_ROOT . '/app/Models/PenggunaModel.php';
-require_once APP_ROOT . '/app/Controllers/PelangganController.php';
+require_once APP_ROOT . '/app/Controllers/Pelanggan/PelangganController.php';
 require_once APP_ROOT . '/app/Controllers/AuthController.php';
-require_once APP_ROOT . '/app/Controllers/KasirController.php';
+require_once APP_ROOT . '/app/Controllers/Kasir/KasirController.php';
 
 // page => [Controller, method]
 $routes = [

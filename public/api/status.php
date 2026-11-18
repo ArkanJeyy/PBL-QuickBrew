@@ -5,7 +5,7 @@ require_once APP_ROOT . '/app/Helpers/helpers.php';
 require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
-require_once APP_ROOT . '/app/Controllers/StatusController.php';
+require_once APP_ROOT . '/app/Controllers/Pelanggan/StatusController.php';
 
 $controller = new StatusController();
 $controller->show();

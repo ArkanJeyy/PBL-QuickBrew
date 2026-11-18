@@ -30,7 +30,7 @@ require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Models/MejaModel.php';
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
 require_once APP_ROOT . '/app/Services/PembayaranService.php';
-require_once APP_ROOT . '/app/Controllers/PelangganController.php';
+require_once APP_ROOT . '/app/Controllers/Pelanggan/PelangganController.php';
 
 $pdo = db();
 $activeDb = (string) $pdo->query('SELECT current_database()')->fetchColumn();
