@@ -183,8 +183,8 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     $pathGambar = APP_ROOT . '/public/assets/images/menu/' . $namaFileGambar;
                     $gambarTersedia = $namaFileGambar !== '' && is_file($pathGambar);
                     ?>
-                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-xl2 tw-border tw-border-border tw-bg-white tw-p-3 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
-                        <div class="tw-mb-2 tw-flex tw-items-start tw-justify-between">
+                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-4 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="tw-mb-3 tw-flex tw-items-start tw-justify-between">
                             <div class="tw-h-20 tw-w-20 tw-shrink-0">
                                 <?php if ($gambarTersedia): ?>
                                     <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-20 tw-w-20 tw-object-contain">
@@ -213,7 +213,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                                 <p class="tw-mt-1 tw-text-xs tw-text-muted">Rp <?= htmlspecialchars(number_format($hargaMenu, 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></p>
                                 <span class="tw-sr-only"><?= htmlspecialchars($kategoriLabel, ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
-                            <span class="tw-shrink-0 tw-rounded-full tw-px-2 tw-py-1 tw-text-[10px] tw-font-medium <?= htmlspecialchars($tersedia ? 'tw-bg-green-100 tw-text-green-700' : 'tw-bg-red-100 tw-text-red-700', ENT_QUOTES, 'UTF-8') ?>">
+                            <span class="tw-shrink-0 tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[9px] tw-font-medium <?= htmlspecialchars($tersedia ? 'tw-bg-green-100 tw-text-green-600' : 'tw-bg-red-100 tw-text-red-500', ENT_QUOTES, 'UTF-8') ?>">
                                 <?= htmlspecialchars($tersedia ? 'Tersedia' : 'Habis', ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         </div>
