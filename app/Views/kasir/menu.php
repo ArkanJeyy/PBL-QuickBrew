@@ -115,9 +115,9 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
         </nav>
     </aside>
 
-    <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none tw-p-4 sm:tw-p-6 md:tw-ml-[240px] lg:tw-p-8">
-        <header class="top-header tw-items-center tw-border-b tw-border-border tw-pb-4">
-            <div class="top-header-right tw-ml-auto">
+    <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none tw-px-4 sm:tw-px-6 lg:tw-px-8 tw-pb-8 tw-pt-0 md:tw-ml-[240px]">
+        <header class="top-header tw-flex tw-h-14 sm:tw-h-16 tw-w-full tw-items-center tw-justify-end tw-border-b tw-border-border !tw-mb-0 tw-pb-0">
+            <div class="top-header-right tw-flex tw-items-center tw-gap-3 sm:tw-gap-4">
                 <button type="button" class="btn-icon-bell" title="Notifikasi">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -141,7 +141,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
             </div>
         </header>
 
-        <section class="tw-mt-6" aria-labelledby="menu-heading">
+        <section class="tw-mt-5" aria-labelledby="menu-heading">
             <div class="tw-mb-5">
                 <h1 id="menu-heading" class="tw-m-0 tw-text-2xl tw-font-bold tw-text-main">Menu</h1>
                 <p class="tw-mt-1 tw-text-sm tw-text-muted">Pantau menu dan ketersediaan di kafe.</p>
