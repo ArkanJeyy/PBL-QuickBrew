@@ -20,8 +20,8 @@ $withBrandHeader = false;
 $withBottomBar   = false;
 
 $headerTitle = 'Status Pesanan';
-$backUrl     = url('menu');
-$backLabel   = 'Kembali ke menu';
+$backUrl     = url();                 // Beranda: ada kartu "Pesanan Saya" untuk kembali ke pesanan ini
+$backLabel   = 'Kembali ke beranda';
 
 $state = $view['state'] ?? '';
 

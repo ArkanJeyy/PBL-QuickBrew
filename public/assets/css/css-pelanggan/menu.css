@@ -246,6 +246,23 @@
   background: var(--color-overlay-dropdown);
 }
 
+/* ===== Keadaan memuat / gagal memuat menu dari API =====
+   [Asumsi] tidak ada di desain; gaya mengikuti teks kosong pencarian. */
+.menu-state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 40px var(--space-page);
+  text-align: center;
+}
+
+.menu-state__text {
+  font-size: var(--fs-empty);
+  color: var(--color-disabled);
+}
+
+.menu-state__retry { width: 140px; }
+
 /* ===== Daftar menu ===== */
 .menu-list {
   display: grid;

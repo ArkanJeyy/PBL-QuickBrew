@@ -50,9 +50,31 @@ final class PelangganController
         return ($id > 0 && hash_equals(tok($id), $token)) ? PemesananModel::find($id) : null;
     }
 
-    /** Simpan pesanan terakhir di session agar bisa dibuka lagi dari tombol "Pesanan Saya" di Beranda. */
+    /** Jumlah maksimal pesanan yang diingat session (kartu "Pesanan Saya"). */
+    private const MY_ORDERS_MAX = 5;
+
+    /**
+     * Daftar id pesanan pelanggan di session, terbaru di depan. Sesi lama yang baru punya
+     * 'pesanan_terakhir' (sebelum daftar ini ada) ikut dimasukkan agar pesanannya tidak hilang.
+     * @return int[]
+     */
+    private function myOrderIds(): array
+    {
+        $ids = array_map('intval', is_array($_SESSION['pesanan_saya'] ?? null) ? $_SESSION['pesanan_saya'] : []);
+        $last = (int) ($_SESSION['pesanan_terakhir'] ?? 0);
+        if ($last > 0 && !in_array($last, $ids, true)) array_unshift($ids, $last);
+        return array_slice(array_values(array_filter($ids, static fn (int $id): bool => $id > 0)), 0, self::MY_ORDERS_MAX);
+    }
+
+    /**
+     * Ingat pesanan di session agar bisa dibuka lagi dari kartu "Pesanan Saya" (Beranda & Menu).
+     * Pesanan sebelumnya TIDAK tertimpa: disimpan sebagai daftar (maks. MY_ORDERS_MAX, terbaru di depan).
+     */
     private function rememberOrder(int $id): void
     {
+        $ids = array_values(array_diff($this->myOrderIds(), [$id]));
+        array_unshift($ids, $id);
+        $_SESSION['pesanan_saya']     = array_slice($ids, 0, self::MY_ORDERS_MAX);
         $_SESSION['pesanan_terakhir'] = $id;
     }
 
@@ -72,25 +94,68 @@ final class PelangganController
         redirect($url);
     }
 
+    /**
+     * Data kartu "Pesanan Saya" (Beranda & Menu) untuk semua pesanan di session, terbaru di depan.
+     * Tiap item: id, number (#A0017), url (Status), paymentUrl, statusLabel, unpaid (belum dibayar & belum batal).
+     * Bila database tidak dapat diakses: kartu tetap tampil dari id saja (tanpa label status, unpaid = false).
+     */
+    private function myOrders(): array
+    {
+        $orders = [];
+        foreach ($this->myOrderIds() as $id) {
+            $item = [
+                'id'          => $id,
+                'number'      => PemesananModel::displayNumber($id),
+                'url'         => $this->statusUrl($id),
+                'paymentUrl'  => url('pembayaran', ['id' => $id, 't' => tok($id)]),
+                'statusLabel' => '',
+                'unpaid'      => false,
+            ];
+            try {
+                $order = PemesananModel::find($id);
+                if (!$order) continue; // pesanan sudah tidak ada di database
+                $status = (string) $order['status_pemesanan'];
+                $item['statusLabel'] = PemesananModel::STATUS_LABEL[$status] ?? '';
+                $item['unpaid']      = !PemesananModel::isPaid($order) && $status !== 'batal';
+            } catch (Throwable $e) {
+                error_log(sprintf('[QuickBrew Pesanan Saya] id=%d gagal dibaca: %s', $id, $e->getMessage()));
+            }
+            $orders[] = $item;
+        }
+        return $orders;
+    }
+
     public function home(): void
     {
-        $lastId = (int) ($_SESSION['pesanan_terakhir'] ?? 0);
         view('pelanggan/public/index', [
             'favorites'   => MenuModel::favorites(6),
             'tableNumber' => $this->tableNumber(),
-            'lastOrder'   => $lastId > 0
-                ? ['number' => PemesananModel::displayNumber($lastId), 'url' => $this->statusUrl($lastId)]
-                : null,
+            'orders'      => $this->myOrders(),
         ]);
     }
 
+    /**
+     * Halaman Menu: hanya kerangka halaman. Daftar menu & kategori dimuat menu.js dari API
+     * GET /api/menu.php (MenuController). Opsi kustomisasi belum ada di API -> tetap dari file.
+     */
     public function menu(): void
     {
+        // Ikon kategori yang tersedia (icon-cat-<slug>.svg); kategori tanpa ikon memakai ikon "all"
+        $categoryIcons = array_map(
+            static fn (string $file): string => substr(basename($file, '.svg'), strlen('icon-cat-')),
+            glob(APP_ROOT . '/public/assets/images/icons/icon-cat-*.svg') ?: []
+        );
+
+        $orders = $this->myOrders();
+
         view('pelanggan/public/menu', [
-            'menuItems'   => MenuModel::all(),
-            'categories'  => MenuModel::categories(),
-            'custOptions' => require APP_ROOT . '/app/Models/customization-options.php',
-            'tableNumber' => $this->tableNumber(),
+            'menuApiUrl'    => BASE_URL . '/api/menu.php',
+            'categoryIcons' => $categoryIcons,
+            'custOptions'   => require APP_ROOT . '/app/Models/customization-options.php',
+            'tableNumber'   => $this->tableNumber(),
+            'orders'        => $orders, // kartu "Pesanan Saya" setelah keranjang dikosongkan
+            // popup "pesanan belum dibayar" saat menambah menu
+            'unpaidOrders'  => array_values(array_filter($orders, static fn (array $o): bool => $o['unpaid'])),
         ]);
     }
 
@@ -173,6 +238,15 @@ final class PelangganController
                 }
                 if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
                     $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
+                }
+            }
+
+            // Aturan: pesanan sebelumnya di sesi ini harus dibayar dulu sebelum membuat pesanan baru
+            if (!$errors) {
+                $unpaid = array_filter($this->myOrders(), static fn (array $o): bool => $o['unpaid']);
+                if ($unpaid) {
+                    $errors['form'] = 'Pesanan ' . implode(', ', array_column($unpaid, 'number'))
+                        . ' belum dibayar. Selesaikan pembayarannya terlebih dahulu sebelum membuat pesanan baru.';
                 }
             }
 

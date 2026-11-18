@@ -1,27 +1,30 @@
 <?php
 /**
- * Halaman Menu pelanggan.
+ * Halaman Menu pelanggan. Daftar menu, judul kategori, dan pilihan kategori di dropdown dimuat
+ * oleh menu.js dari API GET /api/menu.php (kartu dibuat dari <template> di component/menu-item.php).
  * Variabel dari PelangganController::menu():
- *   $menuItems   array        Menu aktif dari database (MenuModel::all), sudah urut per kategori
- *   $categories  array        Opsi filter kategori ['all' => 'Semua Kategori', 'minuman' => 'Minuman', ...]
- *   $custOptions array        Isi app/Models/customization-options.php
- *   $tableNumber string|null  Nomor meja dari QR (?meja=<kode_qr>)
+ *   $menuApiUrl    string       URL API menu (mis. /public/api/menu.php)
+ *   $categoryIcons string[]     Slug kategori yang punya ikon icon-cat-<slug>.svg
+ *   $custOptions   array        Isi app/Models/customization-options.php (belum ada di API)
+ *   $tableNumber   string|null  Nomor meja dari QR (?meja=<kode_qr>)
+ *   $orders        array        Pesanan di sesi ini (kartu "Pesanan Saya"), terbaru di depan: number, url, statusLabel
+ *   $unpaidOrders  array        Bagian $orders yang belum dibayar (popup peringatan saat menambah menu):
+ *                               id, number, paymentUrl
  */
-require_once __DIR__ . '/../component/menu-item.php';
-require_once __DIR__ . '/../component/customization-popup.php';
+/** @var string   $menuApiUrl */
+/** @var string[] $categoryIcons */
+/** @var array    $custOptions */
+/** @var ?string  $tableNumber */
+/** @var array    $orders */
+/** @var array    $unpaidOrders */
 
-// Data untuk pencarian di sisi klien
-$searchData = array_map(static fn (array $i): array => [
-    'id'          => $i['id'],
-    'name'        => $i['name'],
-    'description' => $i['description'],
-    'status'      => $i['status'],
-    'price'       => format_rupiah($i['price'], false),
-    'priceValue'  => $i['price'],
-    'image'       => asset($i['image']),
-    'dim'         => !empty($i['dim']),
-    'customizable' => $i['customizable'],
-], $menuItems);
+// Popup "belum dibayar" (memblokir tombol +): 1 pesanan -> langsung ke Pembayaran; lebih dari 1 -> ke daftar "Pesanan Saya"
+$unpaidCount   = count($unpaidOrders);
+$unpaidNumbers = implode(', ', array_column($unpaidOrders, 'number'));
+
+require_once __DIR__ . '/../component/menu-item.php';
+require_once __DIR__ . '/../component/order-shortcut.php';
+require_once __DIR__ . '/../component/customization-popup.php';
 
 $pageTitle       = 'Menu - ' . APP_NAME;
 $pageStyles      = ['menu', 'popup'];
@@ -50,41 +53,34 @@ require __DIR__ . '/../component/menu-header.php';
 
       <div class="dropdown" data-dropdown>
         <button type="button" class="dropdown__trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="category-panel">
-          <span class="dropdown__label" data-dropdown-label><?= e($categories['all']) ?></span>
+          <span class="dropdown__label" data-dropdown-label>Semua Kategori</span>
           <img class="dropdown__chevron" src="<?= e(asset('images/icons/icon-chevron-down.svg')) ?>" alt="">
         </button>
-        <div class="dropdown__panel" id="category-panel" role="listbox" aria-label="Kategori menu" hidden>
-<?php foreach ($categories as $value => $label):
-    // Kategori baru yang belum punya ikon khusus memakai ikon "Semua Kategori"
-    $icon = is_file(APP_ROOT . '/public/assets/images/icons/icon-cat-' . $value . '.svg') ? $value : 'all';
-?>
-          <button type="button" class="dropdown__option" role="option" data-value="<?= e($value) ?>" aria-selected="<?= $value === 'all' ? 'true' : 'false' ?>">
-            <span class="dd-icon dd-icon--<?= e($icon) ?>"><img src="<?= e(asset('images/icons/icon-cat-' . $icon . '.svg')) ?>" alt=""></span>
-            <span class="dropdown__option-label"><?= e($label) ?></span>
+        <div class="dropdown__panel" id="category-panel" role="listbox" aria-label="Kategori menu" hidden data-category-panel>
+          <button type="button" class="dropdown__option" role="option" data-value="all" aria-selected="true">
+            <span class="dd-icon dd-icon--all"><img src="<?= e(asset('images/icons/icon-cat-all.svg')) ?>" alt=""></span>
+            <span class="dropdown__option-label">Semua Kategori</span>
             <img class="dropdown__check" src="<?= e(asset('images/icons/icon-check.svg')) ?>" alt="">
           </button>
-<?php endforeach; ?>
+          <!-- Kategori lain ditambahkan menu.js dari field "category" di API menu -->
         </div>
       </div>
     </div>
 
-    <ul class="menu-list" id="menu-list">
-<?php
-// Daftar sudah dikelompokkan per kategori oleh MenuModel::all() (ORDER BY kategori);
-// setiap kategori diawali judul (dipakai juga oleh menu.js untuk lompat kategori & label dropdown).
-$prevCategory = null;
-foreach ($menuItems as $item):
-    if ($item['category'] !== $prevCategory):
-        $categoryLabel = $categories[$item['category']] ?? ucfirst($item['category']);
-?>
-      <li class="menu-section-title" data-category-heading="<?= e($item['category']) ?>"><h2><?= e($categoryLabel) ?></h2></li>
-<?php
-    endif;
-    render_menu_item($item);
-    $prevCategory = $item['category'];
-endforeach;
-?>
-    </ul>
+    <!-- Pintasan ke Status Pesanan terakhir (session), muncul setelah pelanggan membuat pesanan -->
+<?php render_order_shortcut($orders); ?>
+
+    <!-- Keadaan memuat / gagal memuat menu dari API -->
+    <div class="menu-state" data-menu-state role="status" aria-live="polite">
+      <p class="menu-state__text" data-menu-state-text>Memuat menu…</p>
+      <button type="button" class="btn btn--outline menu-state__retry" data-menu-retry hidden>Coba lagi</button>
+    </div>
+
+    <!-- Diisi menu.js dari API: judul kategori + kartu menu, urut per kategori -->
+    <ul class="menu-list" id="menu-list"
+        data-api-url="<?= e($menuApiUrl) ?>"
+        data-asset-base="<?= e(asset('')) ?>"
+        data-category-icons="<?= e(implode(',', $categoryIcons)) ?>"></ul>
   </main>
 
   <div class="toast-region" role="status" aria-live="polite" data-toast-region></div>
@@ -118,6 +114,25 @@ endforeach;
     </div>
   </div>
 
+<?php if ($unpaidCount > 0): ?>
+  <!-- Blokir: pesanan sebelumnya belum dibayar -> tombol + membuka dialog ini, menu tidak ditambahkan -->
+  <div class="confirm" data-unpaid hidden>
+    <div class="confirm__backdrop" data-unpaid-close></div>
+    <div class="confirm__panel" role="alertdialog" aria-modal="true" aria-labelledby="unpaid-title" aria-describedby="unpaid-text">
+      <h2 class="confirm__title" id="unpaid-title">Selesaikan pembayaran dulu</h2>
+      <p class="confirm__text" id="unpaid-text">Pesanan <?= e($unpaidNumbers) ?> belum dibayar. Selesaikan pembayarannya terlebih dahulu sebelum menambah menu baru.</p>
+      <div class="confirm__actions confirm__actions--stacked">
+<?php if ($unpaidCount === 1): ?>
+        <a class="btn btn--block" href="<?= e($unpaidOrders[0]['paymentUrl']) ?>">Selesaikan Pembayaran</a>
+<?php else: ?>
+        <a class="btn btn--block" href="#pesanan-saya" data-unpaid-list>Lihat Pesanan Saya</a>
+<?php endif; ?>
+        <button type="button" class="btn btn--block btn--outline" data-unpaid-close>Tutup</button>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+
 <?php render_customization_popup($custOptions); ?>
 
   <template id="search-result-template">
@@ -135,6 +150,6 @@ endforeach;
     </li>
   </template>
 
-  <script type="application/json" id="menu-data"><?= json_encode($searchData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<?php render_menu_item_template(); ?>
 
 <?php require __DIR__ . '/../../layouts/footer.php'; ?>
