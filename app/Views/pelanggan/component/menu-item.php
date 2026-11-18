@@ -1,38 +1,50 @@
 <?php
 /**
- * Komponen: kartu menu (daftar utama halaman Menu).
- * Struktur data item: lihat app/Models/MenuModel.php.
- * $sectionStart: item pertama sebuah section kategori (diberi jarak ekstra di atasnya).
+ * Komponen: template kartu menu (daftar utama halaman Menu).
+ * Kartu dibuat menu.js dari data API GET /api/menu.php (lihat MenuController / MenuModel::map()):
+ * template ini diklon per menu lalu diisi (nama, deskripsi, harga, foto, status Tersedia/Habis).
+ * Menu "Habis": tombol + dan stepper dihapus, foto hitam-putih (.menu-item--soldout).
  * Tombol + berganti menjadi stepper [- n +] bila menu sudah ada di keranjang (diatur menu.js).
  */
-function render_menu_item(array $item, bool $sectionStart = false): void
+function render_menu_item_template(): void
 {
-    $soldOut = $item['status'] === 'soldout';
     ?>
-        <li class="menu-item<?= $soldOut ? ' menu-item--soldout' : '' ?><?= $sectionStart ? ' menu-item--section-start' : '' ?>" data-id="<?= e($item['id']) ?>" data-category="<?= e($item['category']) ?>">
-          <div class="menu-item__media<?= !empty($item['dim']) ? ' menu-item__media--dim' : '' ?>">
-            <img src="<?= e(asset($item['image'])) ?>" alt="" width="110" height="110" loading="lazy">
-          </div>
-          <div class="menu-item__info">
-            <h2 class="menu-item__name"><?= e($item['name']) ?></h2>
-            <p class="menu-item__desc"><?= e($item['description']) ?></p>
-            <span class="chip <?= $soldOut ? 'chip--soldout' : 'chip--available' ?>"><?= $soldOut ? 'Habis' : 'Tersedia' ?></span>
-            <p class="menu-item__price"><?= e(format_rupiah($item['price'])) ?></p>
-          </div>
-<?php if (!$soldOut): // Menu habis: tanpa tombol + dan stepper ?>
-          <button type="button" class="btn-add" data-menu-id="<?= e($item['id']) ?>" aria-label="Tambah <?= e($item['name']) ?>">
-            <img src="<?= e(asset('images/icons/icon-plus.svg')) ?>" alt="">
-          </button>
-          <div class="qty-stepper" data-stepper role="group" aria-label="Jumlah <?= e($item['name']) ?>" hidden>
-            <button type="button" class="qty-stepper__minus" data-stepper-minus data-menu-id="<?= e($item['id']) ?>" aria-label="Kurangi <?= e($item['name']) ?>">
-              <img src="<?= e(asset('images/icons/icon-qty-minus.svg')) ?>" alt="">
-            </button>
-            <span class="qty-stepper__count" data-stepper-count aria-live="polite">0</span>
-            <button type="button" class="qty-stepper__plus" data-stepper-plus data-menu-id="<?= e($item['id']) ?>" aria-label="Tambah <?= e($item['name']) ?>">
-              <img src="<?= e(asset('images/icons/icon-plus.svg')) ?>" alt="">
-            </button>
-          </div>
-<?php endif; ?>
-        </li>
+  <template id="menu-item-template">
+    <li class="menu-item" data-id="" data-category="">
+      <div class="menu-item__media" data-media>
+        <img src="" alt="" width="110" height="110" loading="lazy" data-image>
+      </div>
+      <div class="menu-item__info">
+        <h2 class="menu-item__name" data-name></h2>
+        <p class="menu-item__desc" data-desc></p>
+        <span class="chip" data-chip></span>
+        <p class="menu-item__price" data-price></p>
+      </div>
+      <button type="button" class="btn-add" data-menu-id="" data-add>
+        <img src="<?= e(asset('images/icons/icon-plus.svg')) ?>" alt="">
+      </button>
+      <div class="qty-stepper" data-stepper role="group" hidden>
+        <button type="button" class="qty-stepper__minus" data-stepper-minus data-menu-id="">
+          <img src="<?= e(asset('images/icons/icon-qty-minus.svg')) ?>" alt="">
+        </button>
+        <span class="qty-stepper__count" data-stepper-count aria-live="polite">0</span>
+        <button type="button" class="qty-stepper__plus" data-stepper-plus data-menu-id="">
+          <img src="<?= e(asset('images/icons/icon-plus.svg')) ?>" alt="">
+        </button>
+      </div>
+    </li>
+  </template>
+
+  <template id="menu-section-template">
+    <li class="menu-section-title" data-category-heading=""><h2></h2></li>
+  </template>
+
+  <template id="menu-category-template">
+    <button type="button" class="dropdown__option" role="option" data-value="" aria-selected="false">
+      <span class="dd-icon"><img src="" alt=""></span>
+      <span class="dropdown__option-label"></span>
+      <img class="dropdown__check" src="<?= e(asset('images/icons/icon-check.svg')) ?>" alt="">
+    </button>
+  </template>
 <?php
 }

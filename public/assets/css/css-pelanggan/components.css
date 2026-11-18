@@ -197,6 +197,9 @@
   margin-top: 20px;
 }
 
+/* Tombol bertumpuk (teks tombol panjang, mis. peringatan "pesanan belum dibayar" di Menu) */
+.confirm__actions--stacked { grid-template-columns: 1fr; }
+
 /* ===== Chip status ===== */
 .chip {
   display: inline-flex;
@@ -280,4 +283,46 @@
   font-weight: var(--fw-bold);
   line-height: 1;
   text-align: center;
+}
+
+/* ===== Pintasan "Pesanan Saya" (Beranda & Menu; satu kartu per pesanan di sesi ini) =====
+   [Asumsi] tidak ada di desain; gaya mengikuti kartu & tombol yang ada. */
+.order-shortcuts {
+  display: grid;
+  gap: 8px; /* jarak antarkartu; margin atas 12px hanya untuk kartu pertama */
+  scroll-margin-top: var(--menu-tools-offset, 0px); /* Menu: tidak tertutup baris sticky saat digulir ke sini */
+}
+
+.order-shortcuts .order-shortcut + .order-shortcut { margin-top: 0; }
+
+.order-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px var(--space-page) 0;
+  padding: 12px var(--space-page);
+  border-radius: var(--radius-panel);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+  color: var(--color-brand-dark);
+}
+
+.order-shortcut__text { display: grid; }
+
+.order-shortcut__label { font-size: var(--fs-caption); color: var(--color-text-dark); }
+
+.order-shortcut__number {
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-extrabold);
+}
+
+.order-shortcut__action {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-button);
+  background: var(--color-button-bg);
+  color: var(--color-white);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
 }

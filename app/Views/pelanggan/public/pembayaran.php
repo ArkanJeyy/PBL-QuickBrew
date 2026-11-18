@@ -25,8 +25,8 @@ $withBrandHeader = false;
 $withBottomBar   = false;
 
 $headerTitle = $order ? 'Pembayaran ' . ($isQris ? 'QRIS' : 'Tunai') : 'Pembayaran';
-$backUrl     = url('menu');
-$backLabel   = 'Kembali ke menu';
+$backUrl     = url();                 // Beranda: ada kartu "Pesanan Saya" untuk kembali ke pesanan ini
+$backLabel   = 'Kembali ke beranda';
 
 // Teks kotak info & judul mengikuti status terbaru dari database
 if ($isFailed) {
