@@ -62,6 +62,47 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
             },
         }
     </script>
+    <style>
+        #menuSearch {
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
+            border: 1px solid #c9a98f !important;
+            box-shadow: none !important;
+        }
+        #menuSearch:focus {
+            outline: none !important;
+            border-color: #5A3E2B !important;
+            box-shadow: none !important;
+        }
+        #menuSearch::-webkit-search-decoration,
+        #menuSearch::-webkit-search-cancel-button,
+        #menuSearch::-webkit-search-results-button,
+        #menuSearch::-webkit-search-results-decoration {
+            -webkit-appearance: none;
+        }
+        .menu-filter {
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
+            border-style: solid !important;
+            border-width: 1px !important;
+            box-shadow: none !important;
+        }
+        .menu-filter[aria-pressed="true"] {
+            border-color: #5A3E2B !important;
+            background-color: #5A3E2B !important;
+            color: #ffffff !important;
+        }
+        .menu-filter[aria-pressed="false"] {
+            border-color: #c9a98f !important;
+            background-color: #ffffff !important;
+            color: #5A3E2B !important;
+        }
+        .menu-filter[aria-pressed="false"]:hover {
+            background-color: #F4ECE1 !important;
+        }
+    </style>
 </head>
 <body class="tw-font-sans">
     <aside class="kasir-sidebar tw-hidden md:tw-flex" aria-label="Navigasi kasir">
@@ -154,14 +195,14 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input id="menuSearch" type="search" placeholder="Cari menu..." autocomplete="off" class="tw-w-full tw-rounded-full tw-border tw-border-border tw-bg-white tw-py-1.5 tw-pl-9 tw-pr-4 tw-text-xs sm:tw-text-sm tw-text-main placeholder:tw-text-muted focus:tw-border-brand focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand-light">
+                    <input id="menuSearch" type="search" placeholder="Cari menu..." autocomplete="off" class="tw-w-full tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-py-1.5 tw-pl-9 tw-pr-4 tw-text-xs sm:tw-text-sm tw-text-main placeholder:tw-text-muted focus:tw-border-brand focus:tw-outline-none focus:tw-ring-0 appearance-none outline-none border border-solid border-[#c9a98f]">
                 </label>
 
                 <div class="tw-flex tw-flex-wrap tw-gap-2" role="group" aria-label="Filter kategori menu">
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-brand tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-white tw-transition-colors" data-kategori="semua" aria-pressed="true">Semua</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="makanan" aria-pressed="false">Makanan</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="minuman" aria-pressed="false">Minuman</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="dessert" aria-pressed="false">Dessert</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-brand tw-bg-brand tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-white tw-transition-colors appearance-none outline-none border border-solid border-brand" data-kategori="semua" aria-pressed="true">Semua</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light appearance-none outline-none border border-solid border-[#c9a98f]" data-kategori="makanan" aria-pressed="false">Makanan</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light appearance-none outline-none border border-solid border-[#c9a98f]" data-kategori="minuman" aria-pressed="false">Minuman</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light appearance-none outline-none border border-solid border-[#c9a98f]" data-kategori="dessert" aria-pressed="false">Dessert</button>
                 </div>
             </div>
 
