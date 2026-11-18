@@ -118,27 +118,25 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
     <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none tw-p-4 sm:tw-p-6 md:tw-ml-[240px] lg:tw-p-8">
         <header class="top-header tw-items-center tw-border-b tw-border-border tw-pb-4">
             <div class="top-header-right tw-ml-auto">
-                <button type="button" class="btn-icon-bell" title="Notifikasi" aria-label="Notifikasi">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <button type="button" class="btn-icon-bell" title="Notifikasi">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                     </svg>
                     <span class="bell-badge"></span>
                 </button>
 
-                <div class="profile-card tw-gap-2">
-                    <div class="profile-avatar" aria-hidden="true">
-                        <?= htmlspecialchars(strtoupper(substr($namaKasir, 0, 1)), ENT_QUOTES, 'UTF-8') ?>
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <?= strtoupper(substr($user['nama'] ?? $namaKasir, 0, 1)) ?>
                     </div>
                     <div class="profile-info">
-                        <span class="profile-name"><?= htmlspecialchars($namaKasir, ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="profile-name"><?= e($user['nama'] ?? $namaKasir) ?></span>
                         <span class="profile-role">Kasir</span>
                     </div>
-                    <button type="button" class="tw-flex tw-items-center tw-border-0 tw-bg-transparent tw-p-1 tw-text-muted" aria-label="Buka menu profil">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7E74" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                 </div>
             </div>
         </header>
