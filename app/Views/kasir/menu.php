@@ -186,7 +186,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     <article class="menu-card tw-relative tw-min-w-0 tw-rounded-xl2 tw-border tw-border-border tw-bg-white tw-p-3 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
                         <div class="tw-relative tw-mb-2 tw-flex tw-h-24 tw-items-center tw-justify-center tw-rounded-lg tw-bg-page">
                             <?php if ($gambarTersedia): ?>
-                                <img src="<?= htmlspecialchars('/assets/images/menu/' . rawurlencode($namaFileGambar), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-rounded-lg tw-object-contain">
+                                <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-rounded-lg tw-object-contain">
                             <?php else: ?>
                                 <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-rounded-lg tw-bg-gray-100" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
                                     <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

@@ -14,20 +14,22 @@ require_once APP_ROOT . '/app/Models/PenggunaModel.php';
 require_once APP_ROOT . '/app/Controllers/Pelanggan/PelangganController.php';
 require_once APP_ROOT . '/app/Controllers/AuthController.php';
 require_once APP_ROOT . '/app/Controllers/Kasir/KasirController.php';
+require_once APP_ROOT . '/app/Controllers/Kasir/MenuController.php';
 
 // page => [Controller, method]
 $routes = [
-    'home'     => [PelangganController::class, 'home'],
-    'menu'     => [PelangganController::class, 'menu'],
-    'cart'     => [PelangganController::class, 'cart'],
-    'checkout' => [PelangganController::class, 'checkout'], // GET form, POST buat pesanan
+    'home'       => [PelangganController::class, 'home'],
+    'menu'       => [PelangganController::class, 'menu'],
+    'cart'       => [PelangganController::class, 'cart'],
+    'checkout'   => [PelangganController::class, 'checkout'], // GET form, POST buat pesanan
     'pembayaran' => [PelangganController::class, 'pembayaran'], // setelah checkout: ?page=pembayaran&id=..&t=..
-    'status'      => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
-    'status-json' => [PelangganController::class, 'statusJson'], // polling status pesanan JSON: ?page=status-json&id=..&t=..
-    'qr'       => [PelangganController::class, 'qr'],
-    'login'    => [AuthController::class, 'login'],
-    'logout'   => [AuthController::class, 'logout'],
-    'kasir'    => [KasirController::class, 'index'],
+    'status'     => [PelangganController::class, 'status'],     // status pesanan: ?page=status&id=..&t=..
+    'status-json'=> [PelangganController::class, 'statusJson'], // polling status pesanan JSON: ?page=status-json&id=..&t=..
+    'qr'         => [PelangganController::class, 'qr'],
+    'login'      => [AuthController::class, 'login'],
+    'logout'     => [AuthController::class, 'logout'],
+    'kasir'      => [KasirController::class, 'index'],
+    'kasir-menu' => [KasirMenuController::class, 'index'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');
