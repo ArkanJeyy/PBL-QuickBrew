@@ -62,6 +62,47 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
             },
         }
     </script>
+    <style>
+        #menuSearch {
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
+            border: 1px solid #c9a98f !important;
+            box-shadow: none !important;
+        }
+        #menuSearch:focus {
+            outline: none !important;
+            border-color: #5A3E2B !important;
+            box-shadow: none !important;
+        }
+        #menuSearch::-webkit-search-decoration,
+        #menuSearch::-webkit-search-cancel-button,
+        #menuSearch::-webkit-search-results-button,
+        #menuSearch::-webkit-search-results-decoration {
+            -webkit-appearance: none;
+        }
+        .menu-filter {
+            appearance: none;
+            -webkit-appearance: none;
+            outline: none;
+            border-style: solid !important;
+            border-width: 1px !important;
+            box-shadow: none !important;
+        }
+        .menu-filter[aria-pressed="true"] {
+            border-color: #5A3E2B !important;
+            background-color: #5A3E2B !important;
+            color: #ffffff !important;
+        }
+        .menu-filter[aria-pressed="false"] {
+            border-color: #c9a98f !important;
+            background-color: #ffffff !important;
+            color: #5A3E2B !important;
+        }
+        .menu-filter[aria-pressed="false"]:hover {
+            background-color: #F4ECE1 !important;
+        }
+    </style>
 </head>
 <body class="tw-font-sans">
     <aside class="kasir-sidebar tw-hidden md:tw-flex" aria-label="Navigasi kasir">
@@ -115,59 +156,57 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
         </nav>
     </aside>
 
-    <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none tw-p-4 sm:tw-p-6 md:tw-ml-[240px] lg:tw-p-8">
-        <header class="top-header tw-items-center tw-border-b tw-border-border tw-pb-4">
-            <div class="top-header-right tw-ml-auto">
-                <button type="button" class="btn-icon-bell" title="Notifikasi" aria-label="Notifikasi">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none tw-px-4 sm:tw-px-6 lg:tw-px-8 tw-pb-8 tw-pt-0 md:tw-ml-[240px]">
+        <header class="top-header tw-flex tw-h-14 sm:tw-h-16 tw-w-full tw-items-center tw-justify-end tw-border-b tw-border-border !tw-mb-0 tw-pb-0">
+            <div class="top-header-right tw-flex tw-items-center tw-gap-3 sm:tw-gap-4">
+                <button type="button" class="btn-icon-bell" title="Notifikasi">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                     </svg>
                     <span class="bell-badge"></span>
                 </button>
 
-                <div class="profile-card tw-gap-2">
-                    <div class="profile-avatar" aria-hidden="true">
-                        <?= htmlspecialchars(strtoupper(substr($namaKasir, 0, 1)), ENT_QUOTES, 'UTF-8') ?>
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <?= strtoupper(substr($user['nama'] ?? $namaKasir, 0, 1)) ?>
                     </div>
                     <div class="profile-info">
-                        <span class="profile-name"><?= htmlspecialchars($namaKasir, ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="profile-name"><?= e($user['nama'] ?? $namaKasir) ?></span>
                         <span class="profile-role">Kasir</span>
                     </div>
-                    <button type="button" class="tw-flex tw-items-center tw-border-0 tw-bg-transparent tw-p-1 tw-text-muted" aria-label="Buka menu profil">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </button>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7E74" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                 </div>
             </div>
         </header>
 
-        <section class="tw-mt-6" aria-labelledby="menu-heading">
+        <section class="tw-mt-5" aria-labelledby="menu-heading">
             <div class="tw-mb-5">
                 <h1 id="menu-heading" class="tw-m-0 tw-text-2xl tw-font-bold tw-text-main">Menu</h1>
                 <p class="tw-mt-1 tw-text-sm tw-text-muted">Pantau menu dan ketersediaan di kafe.</p>
             </div>
 
-            <div class="tw-mb-5 tw-flex tw-flex-col tw-gap-3 sm:tw-flex-row sm:tw-items-center sm:tw-justify-between">
-                <label class="tw-relative tw-block tw-w-full sm:tw-max-w-xs">
+            <div class="tw-mb-5 tw-flex tw-flex-wrap tw-items-center tw-gap-3">
+                <label class="tw-relative tw-block tw-w-full sm:tw-w-64">
                     <span class="tw-sr-only">Cari menu</span>
                     <svg class="tw-pointer-events-none tw-absolute tw-left-3 tw-top-1/2 tw-h-4 tw-w-4 -tw-translate-y-1/2 tw-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input id="menuSearch" type="search" placeholder="Cari menu..." autocomplete="off" class="tw-w-full tw-rounded-full tw-border tw-border-border tw-bg-white tw-py-2 tw-pl-10 tw-pr-4 tw-text-sm tw-text-main placeholder:tw-text-muted focus:tw-border-brand focus:tw-outline-none focus:tw-ring-2 focus:tw-ring-brand-light">
+                    <input id="menuSearch" type="search" placeholder="Cari menu..." autocomplete="off" class="tw-w-full tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-py-1.5 tw-pl-9 tw-pr-4 tw-text-xs sm:tw-text-sm tw-text-main placeholder:tw-text-muted focus:tw-border-brand focus:tw-outline-none focus:tw-ring-0 appearance-none outline-none border border-solid border-[#c9a98f]">
                 </label>
 
                 <div class="tw-flex tw-flex-wrap tw-gap-2" role="group" aria-label="Filter kategori menu">
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-brand tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-white tw-transition-colors" data-kategori="semua" aria-pressed="true">Semua</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="makanan" aria-pressed="false">Makanan</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="minuman" aria-pressed="false">Minuman</button>
-                    <button type="button" class="menu-filter tw-rounded-full tw-border tw-border-brand tw-bg-white tw-px-5 tw-py-2 tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light" data-kategori="dessert" aria-pressed="false">Dessert</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-brand tw-bg-brand tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-white tw-transition-colors appearance-none outline-none border border-solid border-brand" data-kategori="semua" aria-pressed="true">Semua</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light appearance-none outline-none border border-solid border-[#c9a98f]" data-kategori="makanan" aria-pressed="false">Makanan</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light appearance-none outline-none border border-solid border-[#c9a98f]" data-kategori="minuman" aria-pressed="false">Minuman</button>
+                    <button type="button" class="menu-filter tw-appearance-none tw-outline-none tw-rounded-full tw-border tw-border-solid tw-border-[#c9a98f] tw-bg-white tw-px-4 tw-py-1.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-brand tw-transition-colors hover:tw-bg-brand-light appearance-none outline-none border border-solid border-[#c9a98f]" data-kategori="dessert" aria-pressed="false">Dessert</button>
                 </div>
             </div>
 
-            <div id="menuGrid" class="tw-grid tw-grid-cols-1 tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-4" aria-live="polite">
+            <div id="menuGrid" class="tw-grid tw-grid-cols-1 tw-gap-4 sm:tw-grid-cols-2 md:tw-grid-cols-2 lg:tw-grid-cols-4" aria-live="polite">
                 <?php foreach ($menu as $item): ?>
                     <?php
                     $namaMenu = (string) ($item['nama_menu'] ?? $item['name'] ?? '');
@@ -183,21 +222,23 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     $pathGambar = APP_ROOT . '/public/assets/images/menu/' . $namaFileGambar;
                     $gambarTersedia = $namaFileGambar !== '' && is_file($pathGambar);
                     ?>
-                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-xl2 tw-border tw-border-border tw-bg-white tw-p-3 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
-                        <div class="tw-relative tw-mb-2 tw-flex tw-h-24 tw-items-center tw-justify-center tw-rounded-lg tw-bg-page">
-                            <?php if ($gambarTersedia): ?>
-                                <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-rounded-lg tw-object-contain">
-                            <?php else: ?>
-                                <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-rounded-lg tw-bg-gray-100" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
-                                    <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                        <path d="m21 15-5-5L5 21"></path>
-                                    </svg>
-                                </div>
-                            <?php endif; ?>
+                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-3.5 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="tw-mb-2.5 tw-flex tw-items-start tw-justify-between">
+                            <div class="tw-h-[72px] tw-w-[72px] tw-shrink-0 tw-bg-transparent">
+                                <?php if ($gambarTersedia): ?>
+                                    <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-object-contain">
+                                <?php else: ?>
+                                    <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-bg-transparent" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
+                                        <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                            <path d="m21 15-5-5L5 21"></path>
+                                        </svg>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                             <!-- TODO: Tambahkan aksi ubah/hapus menu. -->
-                            <button type="button" class="tw-absolute tw-right-1 tw-top-1 tw-rounded-full tw-border-0 tw-bg-white/90 tw-p-1 tw-text-brand hover:tw-bg-brand-light" aria-label="<?= htmlspecialchars('Aksi untuk ' . $namaMenu, ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="button" class="tw-rounded-full tw-border-0 tw-bg-transparent tw-p-1 tw-text-muted hover:tw-bg-brand-light hover:tw-text-brand" aria-label="<?= htmlspecialchars('Aksi untuk ' . $namaMenu, ENT_QUOTES, 'UTF-8') ?>">
                                 <svg class="tw-h-4 tw-w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <circle cx="12" cy="5" r="1.7"></circle>
                                     <circle cx="12" cy="12" r="1.7"></circle>
@@ -211,7 +252,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                                 <p class="tw-mt-1 tw-text-xs tw-text-muted">Rp <?= htmlspecialchars(number_format($hargaMenu, 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></p>
                                 <span class="tw-sr-only"><?= htmlspecialchars($kategoriLabel, ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
-                            <span class="tw-shrink-0 tw-rounded-full tw-px-2 tw-py-1 tw-text-[10px] tw-font-medium <?= htmlspecialchars($tersedia ? 'tw-bg-green-100 tw-text-green-700' : 'tw-bg-red-100 tw-text-red-700', ENT_QUOTES, 'UTF-8') ?>">
+                            <span class="tw-shrink-0 tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[9px] tw-font-medium <?= htmlspecialchars($tersedia ? 'tw-bg-green-100 tw-text-green-600' : 'tw-bg-red-100 tw-text-red-500', ENT_QUOTES, 'UTF-8') ?>">
                                 <?= htmlspecialchars($tersedia ? 'Tersedia' : 'Habis', ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         </div>
