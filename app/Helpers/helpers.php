@@ -258,4 +258,67 @@ function wajib_staf(array $role = ['kasir', 'admin'], ?callable $redirector = nu
     ];
 }
 
+/**
+ * Guard endpoint API JSON berdasarkan role pengguna.
+ * Jika belum login -> HTTP 401 Unauthorized (JSON).
+ * Jika role tidak memenuhi syarat -> HTTP 403 Forbidden (JSON).
+ *
+ * @param  string[] $role        Daftar role yang diizinkan (default: ['admin'])
+ * @param  bool     $exitOnFail  Apakah script langsung dihentikan jika otorisasi gagal
+ * @return array{id:int, nama:string, username:string, role:string}|null
+ */
+function wajib_role_api(array $role = ['admin'], bool $exitOnFail = true): ?array
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
 
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+
+    $staf = $_SESSION['staf'] ?? null;
+    if (!is_array($staf) || empty($staf['id']) || empty($staf['role'])) {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Unauthorized: Silakan login terlebih dahulu untuk mengakses API ini.',
+            'data'    => null,
+        ], JSON_UNESCAPED_UNICODE);
+        if ($exitOnFail) {
+            exit;
+        }
+        return null;
+    }
+
+    $stafRole  = (string) $staf['role'];
+    $diizinkan = in_array($stafRole, $role, true);
+
+    if (!$diizinkan) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Forbidden: Akses ditolak. Endpoint ini hanya untuk role ' . implode('/', $role) . '.',
+            'data'    => null,
+        ], JSON_UNESCAPED_UNICODE);
+        if ($exitOnFail) {
+            exit;
+        }
+        return null;
+    }
+
+    return [
+        'id'       => (int) $staf['id'],
+        'nama'     => (string) ($staf['nama'] ?? ''),
+        'username' => (string) ($staf['username'] ?? ''),
+        'role'     => $stafRole,
+    ];
+}
+
+/**
+ * Guard endpoint API JSON khusus untuk role 'admin'.
+ */
+function wajib_admin_api(bool $exitOnFail = true): ?array
+{
+    return wajib_role_api(['admin'], $exitOnFail);
+}

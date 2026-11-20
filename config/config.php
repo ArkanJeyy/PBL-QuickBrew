@@ -8,6 +8,7 @@ define('APP_ROOT', dirname(__DIR__));
 // URL folder public/ (lokasi front controller), terdeteksi otomatis.
 // Contoh: http://localhost/PBL/PBL-QuickBrew/public -> '/PBL/PBL-QuickBrew/public'
 define('BASE_URL', rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/'));
+require_once APP_ROOT . '/app/Helpers/helpers.php';
 
 // 1. Loader .env — rahasia disimpan di config/.env (TIDAK di-commit ke Git).
 //    Variabel environment dari server (jika ada) diutamakan di atas isi file .env.
