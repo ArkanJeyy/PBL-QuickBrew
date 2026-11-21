@@ -4,55 +4,13 @@
  * PemesananController - API untuk pemesanan (CRUD sederhana).
  *
  * Endpoint:
- *   GET  /api/pemesanan              -> index()  Daftar semua pesanan (untuk kasir/admin)
- *   GET  /api/pemesanan?action=show&id=<id>&t=<tok>  -> show()   Detail satu pesanan
- *   POST /api/pemesanan              -> store()  Buat pesanan baru dari keranjang
+ *   POST /api/pemesanan                → store()   (buat pesanan baru)
+ *   GET  /api/pemesanan?action=show&id=&t= → show() (detail satu pesanan, token dibutuhkan)
+ *
+ * Daftar semua pesanan dipindah ke endpoint kasir (kasir.php).
  */
 final class PemesananController
 {
-    /**
-     * GET /api/pemesanan
-     * Mengembalikan daftar semua pesanan (opsional filter ?status= atau ?id=).
-     * Cocok untuk dashboard kasir.
-     */
-    public function index(): void
-    {
-        header('Content-Type: application/json; charset=utf-8');
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            http_response_code(405);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Method tidak diizinkan.',
-                'data'    => null,
-            ]);
-            return;
-        }
-
-        try {
-            $status  = isset($_GET['status'])  ? trim((string) $_GET['status'])  : null;
-            $id      = isset($_GET['id'])      ? (int) $_GET['id']               : null;
-
-            $orders = self::fetchOrders($status, $id);
-
-            http_response_code(200);
-            echo json_encode([
-                'success' => true,
-                'message' => 'Data pemesanan berhasil diambil.',
-                'data'    => $orders,
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        } catch (Throwable $e) {
-            error_log('[QuickBrew API Pemesanan] ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
-                'data'    => null,
-            ]);
-        }
-    }
-
     /**
      * GET /api/pemesanan?action=show&id=<id>&t=<tok(id)>
      * Mengembalikan detail satu pesanan beserta item-nya.
@@ -111,7 +69,6 @@ final class PemesananController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ]);
         }
@@ -263,68 +220,9 @@ final class PemesananController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ]);
         }
-    }
-
-    // -------------------------------------------------------------------------
-    // Helper private
-    // -------------------------------------------------------------------------
-
-    /**
-     * Query daftar pesanan dari DB dengan filter opsional.
-     * @return array[]
-     */
-    private static function fetchOrders(?string $status, ?int $id = null): array
-    {
-        $where  = [];
-        $params = [];
-
-        // Validasi nilai status agar tidak bisa inject nilai sembarang
-        $validStatuses = array_keys(PemesananModel::STATUS_LABEL);
-        if ($status !== null && in_array($status, $validStatuses, true)) {
-            $where[]  = 'p.status_pemesanan = ?';
-            $params[] = $status;
-        }
-
-        if ($id !== null && $id > 0) {
-            $where[]  = 'p.id = ?';
-            $params[] = $id;
-        }
-
-        $sql = "SELECT p.id, p.nama_pelanggan, p.email_pelanggan, p.catatan,
-                       p.total_harga, p.status_pemesanan, p.waktu_pemesanan,
-                       p.diperbarui_pada, m.no_meja,
-                       b.metode_pembayaran, b.status_pembayaran, b.waktu_pembayaran
-                  FROM pemesanan p
-                  JOIN meja m ON m.id = p.meja_id
-                  LEFT JOIN pembayaran b ON b.pemesanan_id = p.id"
-             . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
-             . ' ORDER BY p.waktu_pemesanan DESC';
-
-        $stmt = db()->prepare($sql);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll();
-
-        return array_map(static function (array $row): array {
-            return [
-                'id'                 => (int)    $row['id'],
-                'nomor'              => PemesananModel::displayNumber((int) $row['id']),
-                'nama_pelanggan'     => $row['nama_pelanggan'],
-                'email_pelanggan'    => $row['email_pelanggan'],
-                'no_meja'            => $row['no_meja'],
-                'catatan'            => $row['catatan'],
-                'total_harga'        => (int)    $row['total_harga'],
-                'status_pemesanan'   => $row['status_pemesanan'],
-                'status_pembayaran'  => $row['status_pembayaran'],
-                'metode_pembayaran'  => $row['metode_pembayaran'],
-                'waktu_pemesanan'    => $row['waktu_pemesanan'],
-                'waktu_pembayaran'   => $row['waktu_pembayaran'],
-                'diperbarui_pada'    => $row['diperbarui_pada'],
-            ];
-        }, $rows);
     }
 
     /**
