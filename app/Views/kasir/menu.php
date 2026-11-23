@@ -102,20 +102,22 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
         .menu-filter[aria-pressed="false"]:hover {
             background-color: #F4ECE1 !important;
         }
+        .top-header-divider {
+            border-bottom: 1px solid #D9C8B0 !important;
+        }
+        header.top-header-divider {
+        border-top: 0 !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        }
     </style>
 </head>
 <body class="tw-font-sans">
     <aside class="kasir-sidebar tw-hidden md:tw-flex" aria-label="Navigasi kasir">
         <div class="sidebar-brand">
-            <div class="brand-icon-wrapper">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                    <line x1="6" y1="1" x2="6" y2="4"></line>
-                    <line x1="10" y1="1" x2="10" y2="4"></line>
-                    <line x1="14" y1="1" x2="14" y2="4"></line>
-                </svg>
-            </div>
+            <img src="<?= e(asset('images/logo.png')) ?>" alt="QuickBrew Logo" class="brand-logo-img">
             <span class="brand-title">QuickBrew</span>
         </div>
 
@@ -156,9 +158,10 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
         </nav>
     </aside>
 
-    <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none tw-px-4 sm:tw-px-6 lg:tw-px-8 tw-pb-8 tw-pt-0 md:tw-ml-[240px]">
-        <header class="top-header tw-flex tw-h-14 sm:tw-h-16 tw-w-full tw-items-center tw-justify-end tw-border-b tw-border-border !tw-mb-0 tw-pb-0">
-            <div class="top-header-right tw-flex tw-items-center tw-gap-3 sm:tw-gap-4">
+    <main class="kasir-main tw-ml-0 tw-w-full tw-max-w-none !tw-p-0 md:tw-ml-[240px]">
+        <!-- ===== Top Header Bar ===== -->
+        <header class="top-header-divider tw-relative tw-z-30 tw-flex tw-h-16 tw-w-full tw-items-center tw-justify-end !tw-border-b !tw-border-solid !tw-border-[#D9C8B0] tw-bg-page tw-px-8 tw-overflow-visible" style="border-bottom: 1px solid #D9C8B0 !important;">
+            <div class="header-top-row tw-flex tw-items-center tw-gap-4">
                 <button type="button" class="btn-icon-bell" title="Notifikasi">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -167,26 +170,51 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     <span class="bell-badge"></span>
                 </button>
 
-                <div class="profile-card">
-                    <div class="profile-avatar">
-                        <?= strtoupper(substr($user['nama'] ?? $namaKasir, 0, 1)) ?>
+                <!-- Profil Kasir dengan Dropdown -->
+                <div class="profile-dropdown-wrapper tw-relative" id="profileDropdownWrapper">
+                    <button type="button" class="profile-card" id="profileDropdownBtn" aria-expanded="false" title="Menu Profil Kasir">
+                        <div class="profile-avatar">
+                            <?= strtoupper(substr($user['nama'] ?? $namaKasir, 0, 1)) ?>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-name"><?= e($user['nama'] ?? $namaKasir) ?></span>
+                            <span class="profile-role">Kasir</span>
+                        </div>
+                        <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7E74" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+
+                    <!-- Menu Dropdown Kasir -->
+                    <div class="profile-dropdown-menu" id="profileDropdownMenu">
+                        <a href="<?= e(url('kasir-profil')) ?>" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>Profil Akun</span>
+                        </a>
+                        <form action="<?= e(url('logout')) ?>" method="POST" style="margin: 0; width: 100%;">
+                            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                            <button type="submit" class="dropdown-item logout-item">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                                <span>Keluar</span>
+                            </button>
+                        </form>
                     </div>
-                    <div class="profile-info">
-                        <span class="profile-name"><?= e($user['nama'] ?? $namaKasir) ?></span>
-                        <span class="profile-role">Kasir</span>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7E74" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
                 </div>
             </div>
         </header>
 
-        <section class="tw-mt-5" aria-labelledby="menu-heading">
-            <div class="tw-mb-5">
-                <h1 id="menu-heading" class="tw-m-0 tw-text-2xl tw-font-bold tw-text-main">Menu</h1>
-                <p class="tw-mt-1 tw-text-sm tw-text-muted">Pantau menu dan ketersediaan di kafe.</p>
-            </div>
+        <div class="tw-px-8 tw-pt-6 tw-pb-10">
+            <section aria-labelledby="menu-heading">
+                <div class="tw-mb-5">
+                    <h1 id="menu-heading" class="tw-m-0 tw-text-2xl tw-font-bold tw-text-main">Menu</h1>
+                    <p class="tw-mt-1 tw-text-sm tw-text-muted">Pantau menu dan ketersediaan di kafe.</p>
+                </div>
 
             <div class="tw-mb-5 tw-flex tw-flex-wrap tw-items-center tw-gap-3">
                 <label class="tw-relative tw-block tw-w-full sm:tw-w-64">
@@ -261,6 +289,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
             </div>
             <p id="menuEmptyState" class="tw-hidden tw-py-12 tw-text-center tw-text-sm tw-text-muted" role="status">Menu tidak ditemukan</p>
         </section>
+    </div>
     </main>
 
     <script src="<?= htmlspecialchars(asset('js/js-kasir/menu.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
