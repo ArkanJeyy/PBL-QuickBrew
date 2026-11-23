@@ -64,7 +64,7 @@ curl -X GET "http://localhost:8000/public/api/menu?category=minuman"
 | Kode | Kondisi | Contoh Body |
 |------|----------|-------------|
 | `405` | Metode selain GET | ```json {"success":false,"message":"Method tidak diizinkan.","data":null}``` |
-| `500` | Kesalahan server (mis. DB tidak terhubung) | ```json {"success":false,"message":"Terjadi kesalahan pada server.","debug":"<pesan error>","data":null}``` |
+| `500` | Kesalahan server (mis. DB tidak terhubung) | ```json {"success":false,"message":"Terjadi kesalahan pada server.","data":null}``` |
 
 ---
 ## 2. Endpoint Pemesanan
@@ -72,6 +72,10 @@ curl -X GET "http://localhost:8000/public/api/menu?category=minuman"
 **Base URL endpoint ini**: `http://localhost:8000/public/api/pemesanan.php`
 
 ---
+
+> **Catatan:** Endpoint ini khusus untuk **pelanggan** (tanpa login, diamankan dengan token `t`).
+> `GET /pemesanan.php` tanpa `action=show` sudah tidak tersedia dan dibalas `405`.
+> Daftar semua pesanan untuk kasir/admin ada di **bagian 6**.
 
 ### 2.1 Buat Pesanan Baru
 
@@ -160,7 +164,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 }
 ```
 
-> **Simpan `id` dan `token`** dari respons ini — keduanya dibutuhkan untuk memanggil endpoint detail pesanan (2.3).
+> **Simpan `id` dan `token`** dari respons ini — keduanya dibutuhkan untuk memanggil endpoint detail pesanan (2.2).
 
 #### Respons Error
 | Kode | Kondisi | Keterangan |
@@ -169,7 +173,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 | `422` | Validasi gagal | Field tidak lengkap / tidak valid — lihat field `errors` |
 | `422` | Item tidak valid | Stok habis, menu nonaktif, pilihan kustomisasi salah |
 | `404` | Kode meja tidak ditemukan | Pastikan `meja` sesuai seed DB (`MEJA01`–`MEJA05`) |
-| `500` | Kesalahan server | Lihat field `debug` |
+| `500` | Kesalahan server | `{"success":false,"message":"Terjadi kesalahan pada server.","data":null}` |
 
 **Contoh respons validasi gagal (422):**
 ```json
@@ -186,66 +190,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 
 ---
 
-### 2.2 Daftar Semua Pesanan
-
-#### URL
-`GET /pemesanan.php`
-
-#### Deskripsi
-Mengembalikan daftar semua pesanan, diurutkan dari yang terbaru. Cocok untuk dashboard kasir.
-
-#### Parameter Query (opsional)
-| Parameter | Tipe | Keterangan |
-|-----------|------|------------|
-| `id`      | integer | Filter berdasarkan ID pesanan tertentu |
-| `status`  | string | Filter status pesanan. Nilai valid: `menunggu_pembayaran`, `dibayar`, `diproses`, `siap`, `selesai`, `batal` |
-
-#### Contoh Request
-```bash
-# Semua pesanan
-GET http://localhost:8000/public/api/pemesanan.php
-
-# Filter pesanan yang menunggu pembayaran
-GET http://localhost:8000/public/api/pemesanan.php?status=menunggu_pembayaran
-
-# Filter pesanan by ID pemesanan
-GET http://localhost:8000/public/api/pemesanan.php?id=1
-```
-
-#### Respons Berhasil (200 OK)
-```json
-{
-  "success": true,
-  "message": "Data pemesanan berhasil diambil.",
-  "data": [
-    {
-      "id"               : 1,
-      "nomor"            : "#A0001",
-      "nama_pelanggan"   : "Budi Santoso",
-      "email_pelanggan"  : "budi@email.com",
-      "no_meja"          : "1",
-      "catatan"          : "Minta gula sedikit",
-      "total_harga"      : 50600,
-      "status_pemesanan" : "menunggu_pembayaran",
-      "status_pembayaran": "pending",
-      "metode_pembayaran": "tunai",
-      "waktu_pemesanan"  : "2026-11-11 08:12:30",
-      "waktu_pembayaran" : null,
-      "diperbarui_pada"  : "2026-11-11 08:12:30"
-    }
-  ]
-}
-```
-
-#### Respons Error
-| Kode | Kondisi |
-|------|---------|
-| `405` | Method bukan GET |
-| `500` | Kesalahan server |
-
----
-
-### 2.3 Detail Satu Pesanan
+### 2.2 Detail Satu Pesanan
 
 #### URL
 `GET /pemesanan.php?action=show&id={id}&t={token}`
@@ -311,7 +256,7 @@ GET http://localhost:8000/public/api/pemesanan.php?action=show&id=1&t=abc123def4
 |------|---------|
 | `403` | Token tidak valid atau tidak cocok dengan ID |
 | `404` | Pesanan dengan ID tersebut tidak ditemukan |
-| `405` | Method bukan GET |
+| `405` | Method bukan GET, atau `GET` tanpa `action=show` |
 | `500` | Kesalahan server |
 
 ---
@@ -484,6 +429,8 @@ curl -X POST "http://localhost:8000/public/api/auth.php?action=logout"
 | Kode | Kondisi | Contoh Body |
 |---|---|---|
 | `405` | Method selain POST | `{"success": false, "message": "Method tidak diizinkan. Gunakan POST.", "data": null}` |
+
+---
 
 ## 5. Endpoint Manajemen Menu (Admin)
 
@@ -757,3 +704,185 @@ curl -X DELETE "http://localhost:8000/public/api/admin_menu.php?action=delete&id
 | `403` | Bukan role `admin` atau belum login | `{"success": false, "message": "Akses ditolak. Hanya admin yang dapat mengakses endpoint ini.", "data": null}` |
 | `405` | Method bukan DELETE | `{"success": false, "message": "Method tidak diizinkan, gunakan DELETE.", "data": null}` |
 | `500` | Kesalahan server (misal menu masih terikat relasi pesanan) | `{"success": false, "message": "Terjadi kesalahan pada server.", "data": null}` |
+---
+
+## 6. Endpoint Kasir / Staf (Pemesanan)
+
+**Base URL endpoint ini**: `http://localhost:8000/public/api/kasir/pemesanan.php`
+
+### Autentikasi
+
+Endpoint ini **wajib login** dengan role `kasir` atau `admin`.
+
+1. Login lewat endpoint **4.1** (`POST /auth.php`).
+2. Kirim cookie sesi pada request berikutnya (Postman otomatis menyimpannya; pada `fetch` gunakan `credentials: 'same-origin'`).
+
+Respons error umum untuk semua endpoint di bagian ini:
+
+| Kode | Kondisi |
+|------|---------|
+| `401` | Belum login atau sesi berakhir |
+| `403` | Sudah login, tetapi role bukan `kasir` / `admin` |
+| `405` | Method atau `action` tidak diizinkan |
+| `500` | Kesalahan server (`{"success":false,"message":"Terjadi kesalahan pada server.","data":null}`) |
+
+---
+
+### 6.1 Daftar Pesanan
+
+#### URL
+`GET /kasir/pemesanan.php`
+
+#### Deskripsi
+Mengembalikan daftar pesanan, diurutkan dari yang terbaru, lengkap dengan ringkasan item dan data pembayaran. Cocok untuk dashboard kasir.
+
+#### Parameter Query (opsional)
+| Parameter | Tipe | Default | Keterangan |
+|-----------|------|---------|------------|
+| `status` | string | semua | Filter status: `menunggu_pembayaran`, `diproses`, `siap`, `selesai`, `batal` |
+| `limit` | integer | `50` | Jumlah data per halaman (maks. `200`) |
+| `offset` | integer | `0` | Lewati sejumlah data awal (untuk halaman berikutnya) |
+
+#### Contoh Request
+```bash
+# Semua pesanan (50 terbaru)
+GET http://localhost:8000/public/api/kasir/pemesanan.php
+
+# Pesanan yang sedang diproses
+GET http://localhost:8000/public/api/kasir/pemesanan.php?status=diproses
+
+# Halaman kedua (data ke-51 dst.)
+GET http://localhost:8000/public/api/kasir/pemesanan.php?limit=50&offset=50
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Daftar pesanan berhasil diambil.",
+  "data": [
+    {
+      "id": 1,
+      "nomor": "#A0001",
+      "no_meja": "1",
+      "nama_pelanggan": "Budi Santoso",
+      "catatan": "Minta gula sedikit",
+      "total_harga": 50600,
+      "status_pemesanan": "menunggu_pembayaran",
+      "label_status": "Menunggu pembayaran",
+      "metode_pembayaran": "tunai",
+      "status_pembayaran": "pending",
+      "waktu_pembayaran": null,
+      "waktu_pemesanan": "2026-11-11 08:13:55.889171",
+      "diperbarui_pada": "2026-11-11 08:13:55.889171",
+      "pengguna_id": null,
+      "nama_kasir": null,
+      "ringkasan_item": "Americano",
+      "jumlah_item": 2,
+      "menit_sejak_dipesan": 15149
+    }
+  ]
+}
+```
+
+#### Respons Error (tambahan)
+| Kode | Kondisi |
+|------|---------|
+| `422` | Nilai `status` tidak valid |
+
+---
+
+### 6.2 Detail Satu Pesanan
+
+#### URL
+`GET /kasir/pemesanan.php?action=show&id={id}`
+
+#### Deskripsi
+Mengembalikan detail lengkap satu pesanan: data pelanggan, rincian item beserta kustomisasinya, informasi pembayaran, dan kasir yang memproses. Tidak memerlukan token `t` karena diamankan dengan login staf.
+
+#### Parameter Query
+| Parameter | Tipe | Wajib | Keterangan |
+|-----------|------|-------|------------|
+| `action` | string | ✅ | Harus bernilai `show` |
+| `id` | integer | ✅ | ID pesanan |
+
+#### Contoh Request
+```bash
+GET http://localhost:8000/public/api/kasir/pemesanan.php?action=show&id=1
+```
+
+#### Isi `data` (respons 200 OK)
+Nama field mengikuti `PemesananModel::detail()`:
+
+| Field | Keterangan |
+|-------|------------|
+| `id`, `number`, `no_meja` | Identitas pesanan dan nomor meja |
+| `nama_pelanggan`, `email_pelanggan`, `catatan` | Data pelanggan dan catatan pesanan |
+| `subtotal`, `tax`, `total_harga` | Rincian biaya |
+| `status_pemesanan`, `label_status` | Status pesanan dan labelnya |
+| `label_pembayaran`, `lunas` | Status pembayaran (label dan boolean) |
+| `waktu_pemesanan`, `diperbarui_pada`, `deadline` | Waktu terkait pesanan |
+| `items[]` | Daftar item: nama menu, harga, jumlah, subtotal, catatan, `options` (ukuran, varian, add-on) |
+| `pengguna_id`, `nama_kasir` | Kasir yang memproses (dapat `null`) |
+| `pembayaran_id`, `total_bayar`, `kasir_pembayaran_id` | Data pembayaran |
+
+#### Respons Error (tambahan)
+| Kode | Kondisi |
+|------|---------|
+| `400` | Parameter `id` tidak valid |
+| `404` | Pesanan tidak ditemukan |
+
+---
+
+### 6.3 Ubah Status Pesanan
+
+#### URL
+`PATCH /kasir/pemesanan.php?action=update&id={id}`  (`PUT` juga diterima)
+
+#### Deskripsi
+Mengubah status pesanan sesuai alur resmi. Aturan transisi ditentukan di `PemesananModel::PETA_TRANSISI`; siapa yang mengubah (id staf dari sesi) dicatat di log audit.
+
+#### Header
+| Header | Nilai |
+|--------|-------|
+| `Content-Type` | `application/json` (wajib) |
+
+#### Body (JSON)
+```json
+{ "status": "siap" }
+```
+
+#### Transisi status yang diizinkan
+| Dari | Ke |
+|------|----|
+| `menunggu_pembayaran` | `batal` |
+| `diproses` | `siap` |
+| `siap` | `selesai` |
+
+Pesanan yang sudah lunas (`diproses`, `siap`, `selesai`) tidak dapat dibatalkan. Perpindahan dari `menunggu_pembayaran` ke `diproses` terjadi saat pembayaran lunas (QRIS otomatis, tunai dikonfirmasi kasir), bukan lewat endpoint ini.
+
+#### Contoh Request
+```bash
+PATCH http://localhost:8000/public/api/kasir/pemesanan.php?action=update&id=1
+Content-Type: application/json
+
+{ "status": "siap" }
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Status pesanan berhasil diperbarui.",
+  "data": { "id": 1, "status": "siap" }
+}
+```
+
+#### Respons Error (tambahan)
+| Kode | Kondisi | Contoh Pesan |
+|------|---------|--------------|
+| `400` | Parameter `id` tidak valid | `Parameter id tidak valid.` |
+| `404` | Pesanan tidak ditemukan | `Pesanan tidak ditemukan.` |
+| `409` | Transisi tidak diizinkan dari status saat ini | `Perubahan status tidak diizinkan dari status saat ini.` |
+| `415` | `Content-Type` bukan JSON | `Content-Type harus application/json` |
+| `422` | Field `status` kosong atau nilainya tidak valid | `Nilai status tidak valid.` |
