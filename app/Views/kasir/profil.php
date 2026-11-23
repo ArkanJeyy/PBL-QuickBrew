@@ -163,7 +163,7 @@
         <section class="profile-section-card">
             <div class="profile-card-header">
                 <h2>Profil Akun</h2>
-                <p>Kelola informasi profil akun Anda.</p>
+                <p>Kelola informasi profil akun anda.</p>
             </div>
 
             <!-- Bagian Foto Profil -->
