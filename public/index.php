@@ -29,6 +29,7 @@ $routes = [
     'login'      => [AuthController::class, 'login'],
     'logout'     => [AuthController::class, 'logout'],
     'kasir'      => [KasirController::class, 'index'],
+    'kasir-profil'=> [KasirController::class, 'profil'],
     'kasir-menu' => [KasirMenuController::class, 'index'],
 ];
 

@@ -1226,3 +1226,340 @@ body {
   font-size: 11px;
   color: var(--color-text-muted);
 }
+
+/* ==========================================================================
+   HALAMAN PROFIL AKUN KASIR & MODAL UBAH PASSWORD
+   ========================================================================== */
+.profile-section-card {
+  background: #FFFFFF;
+  border: 1px solid #EFE8DF;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.profile-card-header {
+  margin-bottom: 24px;
+}
+
+.profile-card-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2D231C;
+  margin: 0 0 4px 0;
+}
+
+.profile-card-header p {
+  font-size: 13px;
+  color: #8C7E74;
+  margin: 0;
+}
+
+.profile-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.profile-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #4A3525;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 600;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(74, 53, 37, 0.15);
+}
+
+.btn-change-photo {
+  background: #FFFFFF;
+  border: 1px solid #D5C8BD;
+  color: #2D231C;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-change-photo:hover {
+  background: #FAF6F0;
+  border-color: #4A3525;
+  color: #4A3525;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.profile-form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2D231C;
+}
+
+.profile-field-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #E2D9D0;
+  background-color: #FFFFFF;
+  color: #2D231C;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-field-input:focus {
+  border-color: #4A3525;
+  box-shadow: 0 0 0 2px rgba(74, 53, 37, 0.08);
+}
+
+.profile-input-readonly {
+  background-color: #F7EFE8 !important;
+  border-color: #EFE8DF !important;
+  color: #4A3525 !important;
+  cursor: not-allowed;
+}
+
+.profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.btn-save-profile {
+  background-color: #4A3525;
+  color: #FFFFFF;
+  border: 1.5px solid #4A3525;
+  padding: 10px 28px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save-profile:hover {
+  background-color: #362417;
+  border-color: #362417;
+}
+
+/* Card Ubah Password */
+.password-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+}
+
+.password-card-info h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #2D231C;
+  margin: 0 0 4px 0;
+}
+
+.password-card-info p {
+  font-size: 13px;
+  color: #8C7E74;
+  margin: 0;
+}
+
+.btn-open-password-modal {
+  background: #FFFFFF;
+  border: 1px solid #D5C8BD;
+  color: #2D231C;
+  padding: 9px 22px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-open-password-modal:hover {
+  background: #FAF6F0;
+  border-color: #4A3525;
+  color: #4A3525;
+}
+
+/* Modal Popup Ubah Password */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.password-modal-box {
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 20px;
+  padding: 32px 36px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  animation: modalScaleIn 0.2s ease-out forwards;
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.password-modal-header {
+  margin-bottom: 24px;
+}
+
+.password-modal-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2D231C;
+  margin: 0 0 4px 0;
+}
+
+.password-modal-header p {
+  font-size: 13px;
+  color: #8C7E74;
+  margin: 0;
+}
+
+.modal-form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2D231C;
+}
+
+.modal-field-input {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: 1px solid #E2D9D0;
+  background-color: #FFFFFF;
+  color: #2D231C;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-field-input:focus {
+  border-color: #4A3525;
+  box-shadow: 0 0 0 2px rgba(74, 53, 37, 0.08);
+}
+
+.modal-field-help {
+  font-size: 11px;
+  color: #8C7E74;
+  margin-top: 2px;
+}
+
+.password-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.btn-modal-cancel-pill {
+  background: #FFFFFF;
+  border: 1.5px solid #D5C8BD;
+  color: #2D231C;
+  padding: 8px 26px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-cancel-pill:hover {
+  background: #FAF6F0;
+  border-color: #4A3525;
+  color: #4A3525;
+}
+
+.btn-modal-save-pill {
+  background: #4A3525;
+  border: 1.5px solid #4A3525;
+  color: #FFFFFF;
+  padding: 8px 28px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-save-pill:hover {
+  background: #362417;
+  border-color: #362417;
+}
+
+@media (max-width: 768px) {
+  .profile-form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .password-card-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .password-modal-box {
+    padding: 24px;
+  }
+}
