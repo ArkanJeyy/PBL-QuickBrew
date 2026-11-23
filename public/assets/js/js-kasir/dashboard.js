@@ -66,4 +66,24 @@
       });
     });
   }
+
+  /* ===================== DROPDOWN PROFIL KASIR ===================== */
+  const dropdownWrapper = document.getElementById('profileDropdownWrapper');
+  const dropdownBtn     = document.getElementById('profileDropdownBtn');
+
+  if (dropdownBtn && dropdownWrapper) {
+    dropdownBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const isActive = dropdownWrapper.classList.toggle('active');
+      dropdownBtn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+    });
+
+    // Tutup dropdown jika pengguna klik di luar menu
+    document.addEventListener('click', function (e) {
+      if (!dropdownWrapper.contains(e.target)) {
+        dropdownWrapper.classList.remove('active');
+        dropdownBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
 })();

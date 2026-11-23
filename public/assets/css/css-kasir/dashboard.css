@@ -5,7 +5,7 @@
 
 :root {
   --color-bg-page: #FBF8F3;
-  --color-sidebar-bg: #FFFFFF;
+  --color-sidebar-bg: #F5E6D3;
   --color-card-bg: #FFFFFF;
   --color-brand-primary: #5A3E2B;
   --color-brand-hover: #452E1E;
@@ -51,7 +51,7 @@ body {
 .kasir-sidebar {
   width: 240px;
   background-color: var(--color-sidebar-bg);
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid #EFE0D0;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -66,9 +66,17 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 12px 28px 12px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 0 12px 24px 12px;
+  border-bottom: 1px solid rgba(90, 62, 43, 0.08);
   margin-bottom: 20px;
+}
+
+.brand-logo-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 .brand-icon-wrapper {
@@ -106,38 +114,39 @@ body {
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  color: var(--color-text-muted);
+  color: #2D231C;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 10px;
+  border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .nav-link svg {
   width: 20px;
   height: 20px;
-  stroke-width: 1.8;
+  stroke: #2D231C;
+  stroke-width: 2;
 }
 
 .nav-link:hover {
-  background-color: #FAF6F0;
-  color: var(--color-brand-primary);
+  background-color: rgba(90, 62, 43, 0.08);
+  color: #2D231C;
 }
 
 .nav-link.active {
-  background-color: var(--color-brand-light);
-  color: var(--color-brand-primary);
+  background-color: #E8D5BF;
+  color: #2D231C;
   font-weight: 600;
 }
 
 .nav-link.active svg {
-  stroke: var(--color-brand-primary);
+  stroke: #2D231C;
 }
 
 .sidebar-footer {
   padding-top: 16px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(90, 62, 43, 0.08);
 }
 
 /* ==========================================================================
@@ -172,16 +181,23 @@ body {
 
 .top-header-right {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.header-top-row {
+  display: flex;
   align-items: center;
   gap: 16px;
 }
 
 .btn-icon-bell {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: white;
-  border: 1px solid var(--color-border);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,6 +205,7 @@ body {
   position: relative;
   color: var(--color-text-main);
   transition: background 0.2s;
+  padding: 0;
 }
 
 .btn-icon-bell:hover {
@@ -197,49 +214,50 @@ body {
 
 .bell-badge {
   position: absolute;
-  top: 9px;
-  right: 9px;
+  top: 5px;
+  right: 5px;
   width: 8px;
   height: 8px;
   background-color: #EF4444;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 1.5px solid #FFFFFF;
 }
 
-.date-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: white;
-  border: 1px solid var(--color-border);
-  padding: 9px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-main);
+/* Profile Dropdown Wrapper */
+.profile-dropdown-wrapper {
+  position: relative;
 }
 
 .profile-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: white;
-  border: 1px solid var(--color-border);
-  padding: 6px 14px 6px 8px;
-  border-radius: 30px;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.profile-card:hover {
+  background: rgba(90, 62, 43, 0.05);
 }
 
 .profile-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background-color: var(--color-brand-primary);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .profile-info {
@@ -257,6 +275,80 @@ body {
 .profile-role {
   font-size: 11px;
   color: var(--color-text-muted);
+}
+
+.chevron-icon {
+  transition: transform 0.2s ease;
+  color: #8C7E74;
+}
+
+.profile-dropdown-wrapper.active .chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* Menu Dropdown Profil Kasir */
+.profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 175px;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 10px 25px -5px rgba(45, 35, 28, 0.1), 0 8px 10px -6px rgba(45, 35, 28, 0.04);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-dropdown-wrapper.active .profile-dropdown-menu {
+  display: flex;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-main);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s ease;
+}
+
+.dropdown-item:hover {
+  background-color: var(--color-brand-light);
+  color: var(--color-brand-primary);
+  font-weight: 600;
+}
+
+.dropdown-item svg {
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+/* Date Badge */
+.date-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--color-border);
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-main);
 }
 
 /* ==========================================================================
@@ -793,39 +885,39 @@ body {
 
 /* Antrean header */
 .antrean-header {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .antrean-title {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-text-main);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .antrean-subtitle {
   font-size: 13px;
   color: var(--color-text-muted);
 }
 
-/* Toolbar: search + filter tabs */
+/* Toolbar: search + filter tabs berjejer rapat di kiri sesuai Figma */
 .antrean-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
-/* Search bar */
+/* Search bar kapsul */
 .search-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: white;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 9px 14px;
-  min-width: 220px;
+  border: 1px solid #D5C8BD;
+  border-radius: 9999px;
+  padding: 8px 18px;
+  width: 250px;
 }
 .search-input {
   border: none;
@@ -837,65 +929,233 @@ body {
   width: 100%;
 }
 .search-input::placeholder {
-  color: var(--color-text-muted);
+  color: #8C7E74;
 }
 
-/* Filter tabs */
+/* Filter tabs kapsul */
 .filter-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .filter-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  justify-content: center;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  border: 1.5px solid var(--color-border);
+  border: 1px solid #5A3E2B;
   background: white;
-  color: var(--color-text-muted);
+  color: #3D2D20;
   transition: all 0.18s;
   font-family: var(--font-family);
 }
 .filter-tab:hover {
-  border-color: var(--color-brand-primary);
-  color: var(--color-brand-primary);
+  background-color: #F8F3ED;
 }
 .filter-tab.active {
-  background: var(--color-brand-primary);
-  border-color: var(--color-brand-primary);
+  background: #4A3525;
+  border-color: #4A3525;
   color: white;
-}
-.filter-tab .tab-count {
-  font-weight: 700;
+  font-weight: 600;
 }
 
-/* Tabel kolom baru */
-.meja-num {
+/* Wadah tabel antrean dengan border rounded penuh */
+.table-container-card {
+  border: 1px solid #EFE8DF;
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  table-layout: fixed;
+}
+
+.custom-table thead {
+  background-color: #FDFBF8;
+}
+
+.custom-table th {
+  padding: 16px 12px;
+  font-size: 13px;
   font-weight: 700;
-  font-size: 15px;
+  color: #2D231C;
+  border-bottom: 1px solid #EFE8DF;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.custom-table td {
+  padding: 22px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid #EFE8DF;
+  vertical-align: middle;
+}
+
+.custom-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Pembagian Lebar Kolom Proporsional Sesuai Figma */
+.th-id, .td-id {
+  width: 120px;
+  padding-left: 24px !important;
+  text-align: left;
+}
+.th-meja, .td-meja {
+  width: 75px;
+  padding-left: 12px !important;
+  text-align: left;
+}
+.th-item, .td-item {
+  width: auto;
+  text-align: left;
+}
+.th-total, .td-total {
+  width: 125px;
+  text-align: left;
+}
+.th-bayar, .td-bayar {
+  width: 135px;
+  text-align: center;
+}
+.th-status, .td-status {
+  width: 135px;
+  text-align: center;
+}
+.th-aksi, .td-aksi {
+  width: 230px;
+  text-align: center;
+  padding-right: 20px !important;
+}
+
+/* Detail elemen dalam sel */
+.order-code {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-text-main);
+}
+.order-item-count {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+.meja-num {
+  font-weight: 500;
+  font-size: 14px;
   color: var(--color-text-main);
 }
 .item-list {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  line-height: 1.4;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-main);
+  line-height: 1.5;
 }
 .order-total {
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 13.5px;
   color: var(--color-text-main);
 }
 
-/* Badge: Selesai (hijau solid) */
-.badge-pill.done {
+/* Badge Transparan / Soft Pastel */
+.badge-pill {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 90px;
+}
+
+.badge-lunas {
   background-color: #DCFCE7;
   color: #15803D;
+}
+
+.badge-selesai {
+  background-color: #DCFCE7;
+  color: #15803D;
+}
+
+.badge-belum-bayar {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.badge-diproses {
+  background-color: #FFEDD5;
+  color: #C2410C;
+}
+
+.badge-menunggu {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+/* Action Buttons Kapsul Selaras & Kompak (Center Aligned dengan Header Aksi) */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-action-solid {
+  background: #4A3525;
+  border: 1.5px solid #4A3525;
+  color: white;
+  padding: 7px 0;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 82px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-family: var(--font-family);
+  box-sizing: border-box;
+  display: inline-block;
+}
+.btn-action-solid:hover {
+  background: #362417;
+  border-color: #362417;
+}
+
+.btn-action-outline {
+  background: white;
+  border: 1.5px solid #4A3525;
+  color: #4A3525;
+  padding: 7px 0;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  width: 116px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  font-family: var(--font-family);
+  white-space: nowrap;
+  box-sizing: border-box;
+  display: inline-block;
+}
+.btn-action-outline:hover {
+  background: #F8F3ED;
 }
 
 /* Bottom grid: 2 kolom saja (chart + donut) */
