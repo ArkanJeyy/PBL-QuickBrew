@@ -150,6 +150,7 @@ CREATE INDEX idx_pemesanan_meja         ON pemesanan (meja_id);
 CREATE INDEX idx_detail_pemesanan       ON detail_pemesanan (pemesanan_id);
 CREATE INDEX idx_detail_menu            ON detail_pemesanan (menu_id);
 CREATE INDEX idx_pembayaran_status      ON pembayaran (status_pembayaran, waktu_pembayaran); -- rekap harian
+CREATE INDEX idx_pembayaran_paid_waktu  ON pembayaran (waktu_pembayaran) INCLUDE (pemesanan_id, total_bayar, metode_pembayaran) WHERE status_pembayaran = 'paid';
 CREATE INDEX idx_pembatasan_laju_kunci_waktu ON pembatasan_laju (kunci, waktu);
 
 -- ---------------------------------------------------------------------
