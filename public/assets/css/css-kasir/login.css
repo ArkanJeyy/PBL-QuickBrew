@@ -14,27 +14,34 @@ body, html {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 40px 20px;
     background: url('../../images/hero.jpg') no-repeat center center;
     background-size: cover;
     position: relative;
+    overflow-y: auto;
 }
 
 .login-wrapper::before {
     content: "";
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.05);
 }
 
-.login-card {
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 12px;
+.login-container {
     width: 100%;
-    max-width: 450px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    margin: auto;
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 24px;
 }
 
 .brand-header {
@@ -42,33 +49,57 @@ body, html {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .brand-icon {
-    width: 32px;
-    height: auto;
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    mix-blend-mode: multiply;
 }
 
 .brand-name {
-    font-size: 24px;
-    color: #333;
+    font-size: 28px;
     font-weight: 700;
+    color: #3A2314;
+    letter-spacing: -0.3px;
 }
 
 .greeting {
-    text-align: center;
-    font-size: 20px;
-    color: #1a1a1a;
-    font-weight: 600;
-    margin-bottom: 5px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #3A2314;
+    margin-bottom: 6px;
+    line-height: 1.25;
 }
 
 .subtitle {
+    font-size: 16px;
+    color: #694724;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.login-card {
+    background-color: #ffffff;
+    padding: 40px 44px 36px 44px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 16px 40px rgba(90, 61, 43, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.login-alert-error {
+    background-color: #FEF2F2;
+    color: #B91C1C;
+    border: 1px solid #F87171;
+    padding: 11px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
     text-align: center;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 25px;
+    line-height: 1.4;
 }
 
 .form-group {
@@ -77,24 +108,31 @@ body, html {
 
 .form-group label {
     display: block;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
-    color: #333;
-    margin-bottom: 6px;
+    color: #3A2314;
+    margin-bottom: 8px;
 }
 
 .form-group input {
     width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 13px;
+    padding: 13px 16px;
+    border: 1px solid #D8CFC6;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #3A2314;
+    background-color: #fff;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
+}
+
+.form-group input::placeholder {
+    color: #9E9289;
 }
 
 .form-group input:focus {
-    border-color: #5d4037;
+    border-color: #5A3D2B;
+    box-shadow: 0 0 0 3px rgba(90, 61, 43, 0.12);
 }
 
 /* Password Input with Eye Toggle */
@@ -106,16 +144,16 @@ body, html {
 
 .password-input-group input {
     width: 100%;
-    padding-right: 44px;
+    padding-right: 46px;
 }
 
 .btn-toggle-password {
     position: absolute;
-    right: 12px;
+    right: 14px;
     background: transparent;
     border: none;
     cursor: pointer;
-    color: #888;
+    color: #8C7E74;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -124,7 +162,7 @@ body, html {
 }
 
 .btn-toggle-password:hover {
-    color: #513728;
+    color: #5A3D2B;
 }
 
 .btn-toggle-password svg {
@@ -136,80 +174,94 @@ body, html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 24px;
+    font-size: 13px;
 }
 
 .checkbox-container {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #555;
+    color: #6B5E55;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #5A3D2B;
     cursor: pointer;
 }
 
 .forgot-link {
-    color: #555;
+    color: #6B5E55;
     text-decoration: none;
+    transition: color 0.2s;
 }
 
 .forgot-link:hover {
+    color: #5A3D2B;
     text-decoration: underline;
 }
 
 .btn-primary {
     width: 100%;
-    padding: 12px;
-    background-color: #513728;
-    color: #fff;
+    padding: 14px 20px;
+    background-color: #5A3D2B;
+    color: #ffffff;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .btn-primary:hover {
-    background-color: #3e291e;
+    background-color: #483021;
 }
 
 .divider {
     display: flex;
     align-items: center;
     text-align: center;
-    margin: 20px 0;
-    color: #999;
-    font-size: 12px;
+    margin: 22px 0;
+    color: #8C7E74;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 .divider::before,
 .divider::after {
     content: "";
     flex: 1;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #E5E0DA;
 }
 
 .divider span {
-    padding: 0 10px;
+    padding: 0 14px;
 }
 
 .btn-secondary {
     display: block;
     width: 100%;
-    padding: 12px;
-    background-color: #fff;
-    color: #333;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    padding: 13px 20px;
+    background-color: #ffffff;
+    color: #3A2314;
+    border: 1px solid #D8CFC6;
+    border-radius: 10px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     text-align: center;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-    background-color: #f9f9f9;
+    background-color: #FAF6F2;
+    border-color: #C4B7AA;
+    color: #2D1A0E;
 }
