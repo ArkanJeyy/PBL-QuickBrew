@@ -9,7 +9,7 @@ require_once APP_ROOT . '/app/Services/PembayaranService.php';
  * verifikasi signature dan pembaruan status pesanan/stok ke PembayaranService:
  *   - 400 Bad Request           : body kosong, JSON rusak, atau field wajib kurang
  *   - 403 Forbidden             : signature_key tidak valid
- *   - 200 OK                    : sukses, sudah diproses, order tidak ditemukan, atau nominal tidak cocok
+ *   - 200 OK                    : sukses, sudah diproses, order tidak ditemukan, nominal tidak cocok, atau diabaikan (mis. capture+challenge)
  *   - 500 Internal Server Error : exception tak terduga (setelah rollback & pencatatan log)
  */
 final class WebhookController

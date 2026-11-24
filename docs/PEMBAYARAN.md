@@ -62,6 +62,7 @@ Endpoint webhook resmi hanya satu: **`POST /public/notify.php`**.
 | `midtrans_order_id` tidak ditemukan di tabel `pembayaran` | **200 OK** | Ya | Menghentikan retry berulang dari Midtrans untuk transaksi asing |
 | Nilai numerik `gross_amount` berbeda dari `pembayaran.total_bayar` | **200 OK** | Ya | Tidak memproses pelunasan, tetap balas 200 agar tidak di-retry |
 | Pesanan sudah diproses sebelumnya (`status_pemesanan != 'menunggu_pembayaran'`) | **200 OK** | Tidak | Idempotent; aman terhadap pengiriman webhook ganda / urutan terlambat |
+| Status belum final / diabaikan (mis. `capture` dengan `fraud_status = challenge`) | **200 OK** | Ya | Tidak mengubah status pesanan; dicatat ke `error_log` dan tidak di-*retry* |
 | Pembaruan status (`settlement`, `pending`, `expire`, dst.) berhasil | **200 OK** | Tidak (kecuali stok kurang) | Alur normal selesai |
 | Exception tak terduga (mis. gangguan koneksi / query database) | **500 Internal Server Error** | Ya (tanpa data sensitif) | Transaksi di-*rollback*; kode 500 meminta Midtrans menjadwalkan *retry* |
 
@@ -139,7 +140,7 @@ File: `app/Services/PembayaranService.php`
   require_once APP_ROOT . '/app/Services/PembayaranService.php';
 
   $service  = new PembayaranService();
-  $berhasil = $service->tandaiLunas($pemesananId, 'tunai', (int) $_SESSION['pengguna']['id']);
+  $berhasil = $service->tandaiLunas($pemesananId, 'tunai', (int) $_SESSION['staf']['id']);
   ```
 
 ### 6.2. `sinkron(string $midtrans_order_id): ?array`
