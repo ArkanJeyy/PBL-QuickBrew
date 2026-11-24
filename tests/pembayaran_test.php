@@ -298,6 +298,7 @@ PemesananModel::simpanQris($qrisOrderId, (string) $qrisOrder['midtrans_order_id'
 // =========================================================================
 // 2. Checkout Tunai (Tanpa Panggilan Midtrans) + Idempotensi Nonce
 // =========================================================================
+unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
 $httpCalls   = [];
 $redirectUrl = null;
 $csrfTunai   = csrf_token(); // token baru setelah checkout pertama berhasil
@@ -343,6 +344,7 @@ check(
 );
 
 // 2c. Dua pesanan identik berturut-turut dengan csrf_token() baru -> menjadi dua pesanan berbeda
+unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
 $csrfIdentik1 = csrf_token();
 $_POST['csrf_token'] = $csrfIdentik1;
 $redirectIdentik1 = null;
@@ -354,6 +356,7 @@ $ctrlIdentik1->checkout();
 ob_end_clean();
 $idIdentik1 = (int) ($_SESSION['pesanan_baru'] ?? 0);
 
+unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
 $csrfIdentik2 = csrf_token();
 $_POST['csrf_token'] = $csrfIdentik2;
 $redirectIdentik2 = null;
@@ -376,6 +379,7 @@ check(
 // =========================================================================
 // 3. Checkout QRIS Gagal (Midtrans Error) -> Pesanan Batal + Keranjang Aman
 // =========================================================================
+unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
 $stubHandler = static function (): array {
     return [
         'httpCode' => 200,
