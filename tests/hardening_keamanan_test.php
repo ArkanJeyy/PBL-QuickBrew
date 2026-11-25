@@ -146,7 +146,7 @@ $_SERVER['REMOTE_ADDR'] = '10.0.0.1';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, 198.51.100.99';
 $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'http, https';
 require %s . '/config/config.php';
-require APP_ROOT . '/app/Helpers/helpers.php';
+require_once APP_ROOT . '/app/Helpers/helpers.php';
 $ip1 = ip_klien();
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '1.2.3.4, ip_rusak';
 $ip2 = ip_klien();
@@ -265,6 +265,7 @@ check(($_SESSION['checkout_idempotensi'][$tokenAwal] ?? 0) === $idSuksesPertama,
 
 // 5c. Rate limit checkout: kita sudah memakai 2 hit dari IP 192.0.2.55. Habiskan sisa 8 hit (total 10 hit).
 for ($i = 3; $i <= 10; $i++) {
+    unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
     $_POST['csrf_token'] = csrf_token();
     $_POST['metode']     = 'tunai';
     $redirectUrl         = null;
@@ -275,6 +276,7 @@ for ($i = 3; $i <= 10; $i++) {
 check($redirectUrl !== null, 'Percobaan checkout ke-10 dalam 10 menit masih diizinkan');
 
 // Percobaan ke-11 dengan token baru -> ditolak HTTP 429 + pesan di form
+unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
 $_POST['csrf_token'] = csrf_token();
 $redirectUrl         = null;
 http_response_code(200);
@@ -289,6 +291,7 @@ check($redirectUrl === null && str_contains($html429, 'Terlalu banyak percobaan 
 $pdo->exec('TRUNCATE TABLE pembatasan_laju');
 putenv('CHECKOUT_RATE_MAX=30');
 for ($i = 1; $i <= 25; $i++) {
+    unset($_SESSION['pesanan_saya'], $_SESSION['pesanan_terakhir']);
     $_POST['csrf_token'] = csrf_token();
     $_POST['metode']     = 'tunai';
     ob_start();

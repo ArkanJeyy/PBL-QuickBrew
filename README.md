@@ -1,5 +1,7 @@
 # ☕ Quick Brew: Sistem Quick Order Berbasis Scan QR Code
 
+[![CI Pengujian QuickBrew](https://github.com/ArkanJeyy/PBL-QuickBrew/actions/workflows/ci.yml/badge.svg)](https://github.com/ArkanJeyy/PBL-QuickBrew/actions/workflows/ci.yml)
+
 > Proyek *Project Based Learning* (PBL) — Kelompok 5, Kelas SIB 2E
 > Program Studi D-IV Sistem Informasi Bisnis, Jurusan Teknologi Informasi, Politeknik Negeri Malang (September 2026)
 

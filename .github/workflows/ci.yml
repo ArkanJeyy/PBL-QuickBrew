@@ -1,0 +1,90 @@
+name: CI Pengujian QuickBrew
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php-version }} & PostgreSQL 16
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.3']
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_ci_dummy_password
+          POSTGRES_DB: quickbrew_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: testing
+      APP_SECRET: dummy-ci-app-secret-not-for-production-0123456789abcdef
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: quickbrew_test
+      DB_USER: postgres
+      DB_PASS: postgres_ci_dummy_password
+      MIDTRANS_SERVER_KEY: DUMMY-CI-Mid-server-NOT-REAL-000000
+      MIDTRANS_CLIENT_KEY: DUMMY-CI-Mid-client-NOT-REAL-000000
+      MIDTRANS_PROD: 'false'
+      ENABLE_PAYMENT_SIMULATION: 'false'
+
+    steps:
+      - name: Checkout repositori
+        uses: actions/checkout@v4
+
+      - name: Siapkan PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo_pgsql, curl, mbstring
+          coverage: none
+
+      - name: Periksa sintaks seluruh berkas PHP (php -l)
+        run: |
+          find . -path './.git' -prune -o -path './vendor' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Siapkan database quickbrew_test dan muat skema SQL/QuickBrew.sql
+        run: |
+          php -r '
+          $host = getenv("DB_HOST");
+          $port = getenv("DB_PORT");
+          $user = getenv("DB_USER");
+          $pass = getenv("DB_PASS");
+          $admin = new PDO("pgsql:host=$host;port=$port;dbname=postgres", $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+          $exists = $admin->query("SELECT 1 FROM pg_database WHERE datname = \x27quickbrew_test\x27")->fetchColumn();
+          if (!$exists) {
+              $admin->exec("CREATE DATABASE quickbrew_test");
+          }
+          $pdo = new PDO("pgsql:host=$host;port=$port;dbname=quickbrew_test", $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+          $pdo->exec(file_get_contents("SQL/QuickBrew.sql"));
+          echo "Skema SQL/QuickBrew.sql berhasil dimuat ke quickbrew_test.\n";
+          '
+
+      - name: Jalankan seluruh suite pengujian
+        run: php tests/jalankan_semua.php
