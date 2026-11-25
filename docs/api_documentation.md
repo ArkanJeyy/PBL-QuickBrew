@@ -9,7 +9,7 @@ Dokumentasi ini menjelaskan semua endpoint API yang tersedia.
 ## 1. Endpoint Menu
 
 ### URL
-`GET /menu`
+`GET /pelanggan/menu.php`
 
 ### Deskripsi
 Mengembalikan data menu *aktif* dalam format JSON. Mendukung filter berdasarkan **ID** atau **kategori**.
@@ -25,13 +25,13 @@ Mengembalikan data menu *aktif* dalam format JSON. Mendukung filter berdasarkan 
 ### Contoh Request
 ```bash
 # Semua menu
-curl -X GET "http://localhost:8000/public/api/menu"
+curl -X GET "http://localhost:8000/public/api/pelanggan/menu.php"
 
 # Menu dengan ID = 12
-curl -X GET "http://localhost:8000/public/api/menu?id=12"
+curl -X GET "http://localhost:8000/public/api/pelanggan/menu.php?id=12"
 
 # Menu kategori "minuman"
-curl -X GET "http://localhost:8000/public/api/menu?category=minuman"
+curl -X GET "http://localhost:8000/public/api/pelanggan/menu.php?category=minuman"
 ```
 
 ### Respons Berhasil (200 OK)
@@ -69,18 +69,18 @@ curl -X GET "http://localhost:8000/public/api/menu?category=minuman"
 ---
 ## 2. Endpoint Pemesanan
 
-**Base URL endpoint ini**: `http://localhost:8000/public/api/pemesanan.php`
+**Base URL endpoint ini**: `http://localhost:8000/public/api/pelanggan/pemesanan.php`
 
 ---
 
 > **Catatan:** Endpoint ini khusus untuk **pelanggan** (tanpa login, diamankan dengan token `t`).
-> `GET /pemesanan.php` tanpa `action=show` sudah tidak tersedia dan dibalas `405`.
+> `GET /pelanggan/pemesanan.php` tanpa `action=show` sudah tidak tersedia dan dibalas `405`.
 > Daftar semua pesanan untuk kasir/admin ada di **bagian 6**.
 
 ### 2.1 Buat Pesanan Baru
 
 #### URL
-`POST /pemesanan.php`
+`POST /pelanggan/pemesanan.php`
 
 #### Deskripsi
 Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harga & memvalidasi stok secara server-side (tidak percaya data harga dari client).
@@ -98,7 +98,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 #### Struktur tiap objek dalam `items`
 | Field | Tipe | Wajib | Keterangan |
 |-------|------|-------|------------|
-| `id` | integer | ✅ | ID menu (dari endpoint `/menu.php`) |
+| `id` | integer | ✅ | ID menu (dari endpoint `/pelanggan/menu.php`) |
 | `quantity` | integer | ✅ | Jumlah (1 – 99) |
 | `size` | string | ✅ hanya minuman | Ukuran: `"S"`, `"M"` (+Rp 3.000), `"L"` (+Rp 5.000) |
 | `type` | string | ✅ hanya minuman | Tipe: `"Hot"` atau `"Ice"` |
@@ -193,7 +193,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 ### 2.2 Detail Satu Pesanan
 
 #### URL
-`GET /pemesanan.php?action=show&id={id}&t={token}`
+`GET /pelanggan/pemesanan.php?action=show&id={id}&t={token}`
 
 #### Deskripsi
 Mengembalikan detail lengkap satu pesanan beserta daftar item yang dipesan. Memerlukan **token** dari respons endpoint 2.1 untuk keamanan (mencegah akses pesanan orang lain).
@@ -207,7 +207,7 @@ Mengembalikan detail lengkap satu pesanan beserta daftar item yang dipesan. Meme
 
 #### Contoh Request
 ```bash
-GET http://localhost:8000/public/api/pemesanan.php?action=show&id=1&t=abc123def456789a
+GET http://localhost:8000/public/api/pelanggan/pemesanan.php?action=show&id=1&t=abc123def456789a
 ```
 
 #### Respons Berhasil (200 OK)
@@ -263,10 +263,10 @@ GET http://localhost:8000/public/api/pemesanan.php?action=show&id=1&t=abc123def4
 
 ## 3. Endpoint Status Pesanan
 
-**Base URL**: `http://localhost:8000/public/api/status.php`
+**Base URL**: `http://localhost:8000/public/api/pelanggan/status.php`
 
 ### URL
-`GET /status.php?id={id}&t={token}`
+`GET /pelanggan/status.php?id={id}&t={token}`
 
 ### Deskripsi
 Mengembalikan status terkini pesanan beserta data tahapan/stepper (unpaid, progress, done, cancel). Dirancang ringan untuk dipanggil berkala (polling) oleh halaman pelanggan.
@@ -279,7 +279,7 @@ Mengembalikan status terkini pesanan beserta data tahapan/stepper (unpaid, progr
 
 ### Contoh Request
 ```bash
-GET http://localhost:8000/public/api/status.php?id=1&t=091778a481317fdb
+GET http://localhost:8000/public/api/pelanggan/status.php?id=1&t=091778a481317fdb
 ```
 
 ### Respons Berhasil (200 OK)
@@ -434,7 +434,7 @@ curl -X POST "http://localhost:8000/public/api/auth.php?action=logout"
 
 ## 5. Endpoint Manajemen Menu (Admin)
 
-**Base URL**: `http://localhost:8000/public/api/admin_menu.php`
+**Base URL**: `http://localhost:8000/public/api/admin/menu.php`
 
 Endpoint ini digunakan untuk operasi CRUD manajemen data menu oleh **Admin**. Seluruh endpoint dilindungi oleh guard `wajib_admin_api()` yang mewajibkan sesi login staf aktif dengan role `admin` (melalui `POST /auth.php?action=login`) atau header `Authorization: Bearer <token>`.
 
@@ -452,14 +452,14 @@ Endpoint ini digunakan untuk operasi CRUD manajemen data menu oleh **Admin**. Se
 ### 5.1 Daftar Semua Menu
 
 #### URL
-`GET /admin_menu.php`
+`GET /admin/menu.php`
 
 #### Deskripsi
 Mengembalikan seluruh daftar menu yang tersimpan di database untuk keperluan pengelolaan admin.
 
 #### Contoh Request
 ```bash
-curl -X GET "http://localhost:8000/public/api/admin_menu.php" \
+curl -X GET "http://localhost:8000/public/api/admin/menu.php" \
   -b "PHPSESSID=<session_id_admin>"
 ```
 
@@ -497,7 +497,7 @@ curl -X GET "http://localhost:8000/public/api/admin_menu.php" \
 ### 5.2 Detail Satu Menu
 
 #### URL
-`GET /admin_menu.php?action=show&id={id}`
+`GET /admin/menu.php?action=show&id={id}`
 
 #### Deskripsi
 Mengembalikan detail satu item menu berdasarkan ID menu.
@@ -510,7 +510,7 @@ Mengembalikan detail satu item menu berdasarkan ID menu.
 
 #### Contoh Request
 ```bash
-curl -X GET "http://localhost:8000/public/api/admin_menu.php?action=show&id=1" \
+curl -X GET "http://localhost:8000/public/api/admin/menu.php?action=show&id=1" \
   -b "PHPSESSID=<session_id_admin>"
 ```
 
@@ -548,7 +548,7 @@ curl -X GET "http://localhost:8000/public/api/admin_menu.php?action=show&id=1" \
 ### 5.3 Tambah Menu Baru
 
 #### URL
-`POST /admin_menu.php?action=store`
+`POST /admin/menu.php?action=store`
 
 #### Deskripsi
 Menambahkan item menu baru ke database.
@@ -571,7 +571,7 @@ Menambahkan item menu baru ke database.
 
 #### Contoh Request
 ```bash
-curl -X POST "http://localhost:8000/public/api/admin_menu.php?action=store" \
+curl -X POST "http://localhost:8000/public/api/admin/menu.php?action=store" \
   -H "Content-Type: application/json" \
   -b "PHPSESSID=<session_id_admin>" \
   -d '{
@@ -610,8 +610,8 @@ curl -X POST "http://localhost:8000/public/api/admin_menu.php?action=store" \
 ### 5.4 Perbarui Data Menu
 
 #### URL
-`PUT /admin_menu.php?action=update&id={id}`  
-*(atau `PATCH /admin_menu.php?action=update&id={id}`)*
+`PUT /admin/menu.php?action=update&id={id}`  
+*(atau `PATCH /admin/menu.php?action=update&id={id}`)*
 
 #### Deskripsi
 Memperbarui sebagian atau seluruh data menu yang sudah ada berdasarkan ID menu.
@@ -635,7 +635,7 @@ Memperbarui sebagian atau seluruh data menu yang sudah ada berdasarkan ID menu.
 
 #### Contoh Request
 ```bash
-curl -X PUT "http://localhost:8000/public/api/admin_menu.php?action=update&id=29" \
+curl -X PUT "http://localhost:8000/public/api/admin/menu.php?action=update&id=29" \
   -H "Content-Type: application/json" \
   -b "PHPSESSID=<session_id_admin>" \
   -d '{
@@ -669,7 +669,7 @@ curl -X PUT "http://localhost:8000/public/api/admin_menu.php?action=update&id=29
 ### 5.5 Hapus Menu
 
 #### URL
-`DELETE /admin_menu.php?action=delete&id={id}`
+`DELETE /admin/menu.php?action=delete&id={id}`
 
 #### Deskripsi
 Menghapus item menu dari database berdasarkan ID menu.
@@ -682,7 +682,7 @@ Menghapus item menu dari database berdasarkan ID menu.
 
 #### Contoh Request
 ```bash
-curl -X DELETE "http://localhost:8000/public/api/admin_menu.php?action=delete&id=29" \
+curl -X DELETE "http://localhost:8000/public/api/admin/menu.php?action=delete&id=29" \
   -b "PHPSESSID=<session_id_admin>"
 ```
 

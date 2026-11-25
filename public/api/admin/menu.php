@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../../config/config.php';
 require_once APP_ROOT . '/app/Helpers/helpers.php';   // <‑‑ pastikan ada
 require_once APP_ROOT . '/app/Models/MenuModel.php';
 require_once APP_ROOT . '/app/Controllers/Admin/MenuController.php';
