@@ -402,7 +402,7 @@ foreach ($itemPerKategori as $idx => $kat) {
         <!-- ===== Antrean Pesanan ===== -->
         <section class="section-card"
                  id="antreanSection"
-                 data-api-url="<?= e(BASE_URL . '/api/Kasir/pemesanan.php') ?>"
+                 data-api-url="<?= e(BASE_URL . '/api/kasir/pemesanan.php') ?>"
                  data-status="<?= e($statusFilter) ?>"
                  data-q="<?= e($cari) ?>"
                  data-per="<?= $perHalaman ?>"

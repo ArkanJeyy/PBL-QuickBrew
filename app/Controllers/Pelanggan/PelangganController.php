@@ -149,7 +149,7 @@ final class PelangganController
         $orders = $this->myOrders();
 
         view('pelanggan/public/menu', [
-            'menuApiUrl'    => BASE_URL . '/api/menu.php',
+            'menuApiUrl'    => BASE_URL . '/api/pelanggan/menu.php',
             'categoryIcons' => $categoryIcons,
             'custOptions'   => require APP_ROOT . '/app/Models/customization-options.php',
             'tableNumber'   => $this->tableNumber(),
