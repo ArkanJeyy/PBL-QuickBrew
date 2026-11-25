@@ -1,0 +1,44 @@
+/* ==========================================================================
+   QuickBrew - Kasir Pesanan CSS
+   Tambahan khusus halaman Pesanan (di atas dashboard.css)
+   ========================================================================== */
+
+/* Date filter di header pesanan: sedikit lebih menonjol dengan cursor pointer */
+.pesanan-date-filter {
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+.pesanan-date-filter:hover {
+    background: #F8F3ED;
+    border-color: #C4A882;
+}
+
+/* Empty state di dalam tabel */
+.empty-state-cell {
+    padding: 48px 20px !important;
+}
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-text-muted);
+}
+.empty-state p {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+/* Badge selesai sedikit lebih gelap dari lunas agar dibedakan */
+.badge-selesai {
+    background-color: #BBF7D0 !important;
+    color: #15803D !important;
+}
+
+/* Hover row tabel pesanan */
+.custom-table tbody tr {
+    transition: background 0.15s;
+}
+.custom-table tbody tr:hover {
+    background-color: #FDFAF7;
+}
