@@ -198,4 +198,21 @@ class KasirController
             'user' => $staf,
         ]);
     }
+
+    /**
+     * Menampilkan Halaman Stok Menu (hanya lihat).
+     */
+    public function stok(): void
+    {
+        // Guard autentikasi: wajib login dengan role 'kasir' atau 'admin'
+        $staf = wajib_staf(['kasir', 'admin']);
+        if (empty($staf)) {
+            return;
+        }
+
+        view('kasir/stok', [
+            'user' => $staf,
+            'stok' => MenuModel::allForApi(),   // menu aktif + stok, tanpa data fallback
+        ]);
+    }
 }

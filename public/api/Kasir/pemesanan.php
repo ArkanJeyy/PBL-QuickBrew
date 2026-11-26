@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../../config/config.php';
-require_once APP_ROOT . '/app/Helpers/helpers.php';          // memuat wajib_kasir_api()
+require_once APP_ROOT . '/app/Helpers/helpers.php';
 require_once APP_ROOT . '/app/Models/MenuModel.php'; 
 require_once APP_ROOT . '/app/Models/PemesananModel.php';
 require_once APP_ROOT . '/app/Controllers/Kasir/KasirPemesananController.php';
