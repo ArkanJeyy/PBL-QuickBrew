@@ -1,4 +1,10 @@
 <?php
+if (!function_exists('e')) {
+    function e($val) {
+        return htmlspecialchars((string) $val, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 $menu = $menu ?? [
     ['nama_menu' => 'Americano', 'nama_kategori' => 'Minuman', 'harga' => 20000, 'gambar' => 'americano.png', 'stok' => 12, 'aktif' => true],
     ['nama_menu' => 'Caramel Frappe', 'nama_kategori' => 'Minuman', 'harga' => 24000, 'gambar' => 'caramel-frappe.png', 'stok' => 8, 'aktif' => true],
@@ -122,7 +128,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
         </div>
 
         <nav class="sidebar-nav">
-            <a href="<?= htmlspecialchars(url('kasir'), ENT_QUOTES, 'UTF-8') ?>" class="nav-link">
+            <a href="<?= e(url('kasir')) ?>" class="nav-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -139,7 +145,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                 </svg>
                 <span>Pesanan</span>
             </a>
-            <a href="<?= htmlspecialchars(url('kasir-menu'), ENT_QUOTES, 'UTF-8') ?>" class="nav-link active" aria-current="page">
+            <a href="<?= e(url('kasir-menu')) ?>" class="nav-link active" aria-current="page">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
                     <path d="M7 2v20"></path>
@@ -147,7 +153,7 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                 </svg>
                 <span>Menu</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="<?= e(url('kasir-stok')) ?>" class="nav-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
