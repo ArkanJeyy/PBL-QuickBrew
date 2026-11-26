@@ -31,7 +31,8 @@ final class MenuModel
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $s = db()->prepare(
-            "SELECT m.id, m.nama_menu, m.harga, m.gambar, m.deskripsi, m.stok, m.aktif, k.nama_kategori\n               FROM menu m\r\n               JOIN kategori k ON k.id = m.kategori_id\r\n              WHERE m.id IN ($placeholders)"
+            "SELECT m.id, m.nama_menu, m.harga, m.gambar, m.deskripsi, m.stok, m.aktif, k.nama_kategori
+\n               FROM menu m\r\n               JOIN kategori k ON k.id = m.kategori_id\r\n              WHERE m.id IN ($placeholders)"
         );
         $s->execute($ids);
 

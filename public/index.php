@@ -31,6 +31,7 @@ $routes = [
     'kasir'      => [KasirController::class, 'index'],
     'kasir-profil'=> [KasirController::class, 'profil'],
     'kasir-menu' => [KasirMenuController::class, 'index'],
+    'kasir-stok' => [KasirController::class, 'stok'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');
