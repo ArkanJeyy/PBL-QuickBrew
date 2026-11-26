@@ -886,3 +886,153 @@ Content-Type: application/json
 | `409` | Transisi tidak diizinkan dari status saat ini | `Perubahan status tidak diizinkan dari status saat ini.` |
 | `415` | `Content-Type` bukan JSON | `Content-Type harus application/json` |
 | `422` | Field `status` kosong atau nilainya tidak valid | `Nilai status tidak valid.` |
+---
+
+## 7. Endpoint Admin Pengguna
+
+**Base URL endpoint:** `http://localhost:8000/public/api/admin/pengguna.php`
+
+> Endpoint ini ditujukan untuk pengelolaan akun staf (`admin` dan `kasir`) dan memerlukan sesi login dengan role `admin`. Akses tanpa sesi login ditolak (`401`), sedangkan staf dengan role selain admin ditolak (`403`), sesuai helper otorisasi yang digunakan.
+
+### 7.1 Daftar Pengguna
+
+#### URL
+`GET /admin/pengguna.php`
+
+#### Deskripsi
+Mengambil seluruh pengguna. Password tidak disertakan dalam data respons.
+
+#### Contoh Request
+```bash
+curl -X GET "http://localhost:8000/public/api/admin/pengguna.php"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Daftar pengguna berhasil diambil.",
+  "data": [
+    {"id": 1, "nama": "Admin", "username": "admin", "role": "admin"},
+    {"id": 2, "nama": "Kasir", "username": "kasir", "role": "kasir"}
+  ]
+}
+```
+
+### 7.2 Detail Pengguna
+
+#### URL
+`GET /admin/pengguna.php?action=show&id={id}`
+
+#### Deskripsi
+Mengambil data satu pengguna berdasarkan ID. Password tidak disertakan.
+
+#### Contoh Request
+```bash
+curl -X GET "http://localhost:8000/public/api/admin/pengguna.php?action=show&id=2"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{
+  "success": true,
+  "message": "Detail pengguna berhasil diambil.",
+  "data": {"id": 2, "nama": "Kasir", "username": "kasir", "role": "kasir"}
+}
+```
+
+### 7.3 Tambah Pengguna
+
+#### URL
+`POST /admin/pengguna.php`
+
+#### Deskripsi
+Menambahkan akun pengguna baru. Password di-hash di server. Role yang diterima adalah `admin` atau `kasir`.
+
+#### Header
+| Header | Nilai |
+|-------|-------|
+| `Content-Type` | `application/json` |
+
+#### Request Body (JSON)
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `nama` | string | Ya | Nama (2–100 karakter) |
+| `username` | string | Ya | Username (3–50 karakter; huruf, angka, titik, underscore, atau tanda hubung) |
+| `password` | string | Ya | Password minimal 8 karakter |
+| `role` | string | Ya | `admin` atau `kasir` |
+
+#### Contoh Request
+```bash
+curl -X POST "http://localhost:8000/public/api/admin/pengguna.php" \
+  -H "Content-Type: application/json" \
+  -d '{"nama":"Kasir Baru","username":"kasirbaru","password":"password123","role":"kasir"}'
+```
+
+#### Respons Berhasil (201 Created)
+```json
+{"success":true,"message":"Pengguna berhasil dibuat.","data":{"id":3}}
+```
+
+### 7.4 Perbarui Pengguna
+
+#### URL
+`PUT /admin/pengguna.php?action=update&id={id}`
+
+#### Deskripsi
+Memperbarui nama, username, role, dan opsional password. Password tidak diubah jika field password tidak dikirim atau berupa string kosong.
+
+#### Header
+| Header | Nilai |
+|-------|-------|
+| `Content-Type` | `application/json` |
+
+#### Request Body (JSON)
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `nama` | string | Tidak | Nama (2–100 karakter) |
+| `username` | string | Tidak | Username (3–50 karakter; huruf, angka, titik, underscore, atau tanda hubung) |
+| `role` | string | Tidak | `admin` atau `kasir` |
+| `password` | string | Tidak | Jika diisi, minimal 8 karakter dan akan di-hash |
+
+#### Contoh Request
+```bash
+curl -X PUT "http://localhost:8000/public/api/admin/pengguna.php?action=update&id=2" \
+  -H "Content-Type: application/json" \
+  -d '{"nama":"Kasir Updated","username":"kasirbaru","role":"kasir"}'
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{"success":true,"message":"Pengguna berhasil diperbarui.","data":{"id":2}}
+```
+
+### 7.5 Hapus Pengguna
+
+#### URL
+`DELETE /admin/pengguna.php?action=delete&id={id}`
+
+#### Deskripsi
+Menghapus akun pengguna berdasarkan ID.
+
+#### Contoh Request
+```bash
+curl -X DELETE "http://localhost:8000/public/api/admin/pengguna.php?action=delete&id=2"
+```
+
+#### Respons Berhasil (200 OK)
+```json
+{"success":true,"message":"Pengguna berhasil dihapus.","data":{"id":2}}
+```
+
+### 7.6 Respons Error dan Validasi
+
+| Kode | Kondisi |
+|------|---------|
+| `400` | Parameter ID tidak valid atau action tidak sesuai |
+| `401` | Belum login |
+| `403` | Role bukan admin; admin tidak dapat menghapus akun sendiri, menurunkan role dirinya, atau menghapus admin terakhir |
+| `404` | Pengguna tidak ditemukan |
+| `409` | Username sudah digunakan |
+| `422` | Validasi input gagal |
+| `500` | Kesalahan server |
