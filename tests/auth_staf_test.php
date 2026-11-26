@@ -205,8 +205,8 @@ check(
     'password_needs_rehash memperbarui hash password secara otomatis saat login'
 );
 check(
-    $redirectTo === url('home') && !str_contains((string) $redirectTo, 'evil.example'),
-    'Login menolak URL redirect eksternal dan mengarahkan ke beranda internal'
+    $redirectTo === url('kasir') && !str_contains((string) $redirectTo, 'evil.example'),
+    'Login kasir menolak URL redirect eksternal dan mengarahkan ke dashboard kasir internal'
 );
 check(
     isset($_SESSION['staf'])
@@ -216,6 +216,29 @@ check(
     && $_SESSION['staf']['role'] === 'kasir',
     '$_SESSION[staf] berisi [id, nama, username, role] setelah web login sukses'
 );
+
+// Uji juga role admin dengan redirect kosong/eksternal -> diarahkan ke url('kasir')
+$kasirSessionBackup = $_SESSION;
+$_SESSION = [];
+$_POST = [
+    'csrf_token' => csrf_token(),
+    'username'   => 'admin',
+    'password'   => $strongPassAdmin,
+    'redirect'   => 'https://evil.example/admin',
+];
+$redirectAdmin = null;
+$authCtrlAdmin = new AuthController(static function (string $to) use (&$redirectAdmin): void {
+    $redirectAdmin = $to;
+});
+ob_start();
+$authCtrlAdmin->login();
+ob_end_clean();
+check(
+    $redirectAdmin === url('kasir')
+    && ($_SESSION['staf']['role'] ?? '') === 'admin',
+    'Login admin menolak URL redirect eksternal dan mengarahkan ke dashboard kasir internal'
+);
+$_SESSION = $kasirSessionBackup;
 
 // =========================================================================
 // 4. Guard wajib_staf() & Validasi Tujuan Balik

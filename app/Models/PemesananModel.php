@@ -871,4 +871,283 @@ final class PemesananModel
 
         return $order;
     }
+
+    /**
+     * Data analitik dashboard kasir hari ini (zona WIB sesi PostgreSQL):
+     *   - total_hari_ini: jumlah pesanan yang dibuat hari ini
+     *   - selesai_hari_ini: jumlah pesanan berstatus 'selesai' hari ini
+     *   - per_jam: 8 slot 3-jaman (00.00 - 21.00) berisi label dan jumlah pesanan hari ini
+     *   - item_per_kategori: seluruh kategori beserta jumlah item lunas hari ini & persentase
+     *   - total_item_lunas: total unit item dengan pembayaran 'paid' hari ini
+     *
+     * @return array{
+     *   total_hari_ini:int,
+     *   selesai_hari_ini:int,
+     *   per_jam:array<int, array{label:string, jumlah:int}>,
+     *   item_per_kategori:array<int, array{nama_kategori:string, jumlah_item:int, persen:int}>,
+     *   total_item_lunas:int
+     * }
+     */
+    public static function analitikDashboard(): array
+    {
+        $db = db();
+
+        $ringkasanHari = $db->query("
+            SELECT COUNT(*) FILTER (
+                       WHERE waktu_pemesanan >= CURRENT_DATE
+                         AND waktu_pemesanan < CURRENT_DATE + INTERVAL '1 day'
+                   )::int AS total_hari_ini,
+                   COUNT(*) FILTER (
+                       WHERE status_pemesanan = 'selesai'
+                         AND COALESCE(diperbarui_pada, waktu_pemesanan) >= CURRENT_DATE
+                         AND COALESCE(diperbarui_pada, waktu_pemesanan) < CURRENT_DATE + INTERVAL '1 day'
+                   )::int AS selesai_hari_ini
+              FROM pemesanan
+        ")->fetch() ?: [];
+
+        $perJamRows = $db->query("
+            SELECT gs.slot,
+                   COALESCE(COUNT(p.id), 0)::int AS jumlah
+              FROM generate_series(0, 7) AS gs(slot)
+              LEFT JOIN pemesanan p
+                     ON p.waktu_pemesanan >= CURRENT_DATE
+                    AND p.waktu_pemesanan < CURRENT_DATE + INTERVAL '1 day'
+                    AND FLOOR(EXTRACT(HOUR FROM p.waktu_pemesanan) / 3)::int = gs.slot
+             GROUP BY gs.slot
+             ORDER BY gs.slot ASC
+        ")->fetchAll();
+
+        $perJam = array_map(static function (array $row): array {
+            $slot = (int) $row['slot'];
+            return [
+                'label'  => sprintf('%02d.00', $slot * 3),
+                'jumlah' => (int) $row['jumlah'],
+            ];
+        }, $perJamRows);
+
+        $katRows = $db->query("
+            SELECT k.id,
+                   k.nama_kategori,
+                   COALESCE(SUM(d.jumlah) FILTER (
+                       WHERE b.status_pembayaran = 'paid'
+                         AND b.waktu_pembayaran >= CURRENT_DATE
+                         AND b.waktu_pembayaran < CURRENT_DATE + INTERVAL '1 day'
+                   ), 0)::int AS jumlah_item
+              FROM kategori k
+              LEFT JOIN menu m ON m.kategori_id = k.id
+              LEFT JOIN detail_pemesanan d ON d.menu_id = m.id
+              LEFT JOIN pembayaran b ON b.pemesanan_id = d.pemesanan_id
+             GROUP BY k.id, k.nama_kategori
+             ORDER BY k.id ASC
+        ")->fetchAll();
+
+        $totalItemLunas = 0;
+        foreach ($katRows as $row) {
+            $totalItemLunas += (int) $row['jumlah_item'];
+        }
+
+        $itemPerKategori = array_map(static function (array $row) use ($totalItemLunas): array {
+            $jumlah = (int) $row['jumlah_item'];
+            return [
+                'nama_kategori' => (string) $row['nama_kategori'],
+                'jumlah_item'   => $jumlah,
+                'persen'        => $totalItemLunas > 0 ? (int) round(($jumlah / $totalItemLunas) * 100) : 0,
+            ];
+        }, $katRows);
+
+        return [
+            'total_hari_ini'    => (int) ($ringkasanHari['total_hari_ini'] ?? 0),
+            'selesai_hari_ini'  => (int) ($ringkasanHari['selesai_hari_ini'] ?? 0),
+            'per_jam'           => $perJam,
+            'item_per_kategori' => $itemPerKategori,
+            'total_item_lunas'  => $totalItemLunas,
+        ];
+    }
+
+    /**
+     * Daftar antrean pesanan terpaginasi (10 transaksi/halaman) dengan filter status & pencarian.
+     * Agregasi detail_pemesanan hanya dijalankan pada ID yang masuk di halaman aktif via CTE.
+     *
+     * @return array{
+     *   items:array<int, array<string, mixed>>,
+     *   total:int,
+     *   halaman:int,
+     *   per_halaman:int,
+     *   total_halaman:int,
+     *   dari:int,
+     *   sampai:int
+     * }
+     */
+    public static function daftarAntreanPaginasi(
+        ?string $filterStatus = null,
+        string $cari = '',
+        int $halaman = 1,
+        int $perHalaman = 10
+    ): array {
+        $perHalaman = max(1, min(100, $perHalaman));
+        $halaman    = max(1, $halaman);
+
+        $statusKey = strtolower(trim((string) ($filterStatus ?? '')));
+        $cariClean = trim($cari);
+
+        $conditions = [];
+        $params     = [];
+
+        switch ($statusKey) {
+            case 'menunggu':
+            case 'menunggu_pembayaran':
+                $conditions[] = "p.status_pemesanan = 'menunggu_pembayaran'";
+                break;
+            case 'diproses':
+                $conditions[] = "p.status_pemesanan IN ('diproses', 'dibayar')";
+                break;
+            case 'siap':
+                $conditions[] = "p.status_pemesanan = 'siap'";
+                break;
+            case 'selesai':
+                $conditions[] = "p.status_pemesanan = 'selesai'";
+                break;
+            case 'batal':
+                $conditions[] = "p.status_pemesanan = 'batal'";
+                break;
+        }
+
+        if ($cariClean !== '') {
+            $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $cariClean);
+            $like    = '%' . $escaped . '%';
+            $conditions[] = "(
+                ('#A' || LPAD(p.id::text, 4, '0')) ILIKE :cari_nomor ESCAPE '!'
+                OR m.no_meja ILIKE :cari_meja ESCAPE '!'
+                OR p.nama_pelanggan ILIKE :cari_nama ESCAPE '!'
+                OR EXISTS (
+                    SELECT 1
+                      FROM detail_pemesanan d2
+                      JOIN menu mn2 ON mn2.id = d2.menu_id
+                     WHERE d2.pemesanan_id = p.id
+                       AND mn2.nama_menu ILIKE :cari_menu ESCAPE '!'
+                )
+            )";
+            $params[':cari_nomor'] = $like;
+            $params[':cari_meja']  = $like;
+            $params[':cari_nama']  = $like;
+            $params[':cari_menu']  = $like;
+        }
+
+        $whereSql = $conditions !== [] ? ('WHERE ' . implode(' AND ', $conditions)) : '';
+        $db       = db();
+
+        $stmtCount = $db->prepare(
+            "SELECT COUNT(*)::int
+               FROM pemesanan p
+               JOIN meja m ON m.id = p.meja_id
+              {$whereSql}"
+        );
+        foreach ($params as $key => $val) {
+            $stmtCount->bindValue($key, $val, PDO::PARAM_STR);
+        }
+        $stmtCount->execute();
+        $total = (int) $stmtCount->fetchColumn();
+
+        $totalHalaman = max(1, (int) ceil($total / $perHalaman));
+        $halaman      = min($halaman, $totalHalaman);
+        $offset       = ($halaman - 1) * $perHalaman;
+
+        if ($total === 0) {
+            return [
+                'items'         => [],
+                'total'         => 0,
+                'halaman'       => 1,
+                'per_halaman'   => $perHalaman,
+                'total_halaman' => 1,
+                'dari'          => 0,
+                'sampai'        => 0,
+            ];
+        }
+
+        $sql = "
+            WITH halaman AS (
+                SELECT p.id,
+                       m.no_meja,
+                       p.nama_pelanggan,
+                       p.catatan,
+                       p.total_harga,
+                       p.status_pemesanan,
+                       p.waktu_pemesanan,
+                       p.diperbarui_pada
+                  FROM pemesanan p
+                  JOIN meja m ON m.id = p.meja_id
+                 {$whereSql}
+                 ORDER BY p.waktu_pemesanan DESC, p.id DESC
+                 LIMIT :limit OFFSET :offset
+            )
+            SELECT h.id,
+                   h.no_meja,
+                   h.nama_pelanggan,
+                   h.catatan,
+                   h.total_harga,
+                   h.status_pemesanan,
+                   h.waktu_pemesanan,
+                   h.diperbarui_pada,
+                   b.pengguna_id,
+                   u.nama AS nama_kasir,
+                   COALESCE(b.metode_pembayaran, 'tunai') AS metode_pembayaran,
+                   COALESCE(b.status_pembayaran, 'pending') AS status_pembayaran,
+                   b.waktu_pembayaran,
+                   COALESCE(agg.ringkasan_item, '') AS ringkasan_item,
+                   COALESCE(agg.jumlah_item, 0) AS jumlah_item,
+                   GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - h.waktu_pemesanan)) / 60))::int AS menit_sejak_dipesan
+              FROM halaman h
+              LEFT JOIN pembayaran b ON b.pemesanan_id = h.id
+              LEFT JOIN pengguna u ON u.id = b.pengguna_id
+              LEFT JOIN (
+                   SELECT d.pemesanan_id,
+                          STRING_AGG(mn.nama_menu, ' + ' ORDER BY d.id) AS ringkasan_item,
+                          SUM(d.jumlah)::int AS jumlah_item
+                     FROM detail_pemesanan d
+                     JOIN menu mn ON mn.id = d.menu_id
+                    WHERE d.pemesanan_id IN (SELECT id FROM halaman)
+                    GROUP BY d.pemesanan_id
+              ) agg ON agg.pemesanan_id = h.id
+             ORDER BY h.waktu_pemesanan DESC, h.id DESC
+        ";
+
+        $stmt = $db->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $perHalaman, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $items = array_map(static fn (array $r): array => [
+            'id'                  => (int) $r['id'],
+            'nomor'               => self::displayNumber((int) $r['id']),
+            'no_meja'             => (string) $r['no_meja'],
+            'nama_pelanggan'      => (string) $r['nama_pelanggan'],
+            'catatan'             => $r['catatan'],
+            'total_harga'         => (int) $r['total_harga'],
+            'status_pemesanan'    => (string) $r['status_pemesanan'],
+            'label_status'        => self::STATUS_LABEL[(string) $r['status_pemesanan']] ?? (string) $r['status_pemesanan'],
+            'metode_pembayaran'   => (string) $r['metode_pembayaran'],
+            'status_pembayaran'   => (string) $r['status_pembayaran'],
+            'waktu_pembayaran'    => $r['waktu_pembayaran'],
+            'waktu_pemesanan'     => (string) $r['waktu_pemesanan'],
+            'diperbarui_pada'     => (string) $r['diperbarui_pada'],
+            'pengguna_id'         => $r['pengguna_id'] !== null ? (int) $r['pengguna_id'] : null,
+            'nama_kasir'          => $r['nama_kasir'],
+            'ringkasan_item'      => (string) $r['ringkasan_item'],
+            'jumlah_item'         => (int) $r['jumlah_item'],
+            'menit_sejak_dipesan' => (int) $r['menit_sejak_dipesan'],
+        ], $stmt->fetchAll());
+
+        return [
+            'items'         => $items,
+            'total'         => $total,
+            'halaman'       => $halaman,
+            'per_halaman'   => $perHalaman,
+            'total_halaman' => $totalHalaman,
+            'dari'          => $offset + 1,
+            'sampai'        => $offset + count($items),
+        ];
+    }
 }
