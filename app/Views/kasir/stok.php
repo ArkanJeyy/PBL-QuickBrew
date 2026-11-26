@@ -240,81 +240,89 @@ $tanggalHariIni = 'Hari ini, ' . date('d') . ' ' . ($bulanIndo[(int)date('n')] ?
             <!-- Empat Kartu Ringkasan -->
             <section class="tw-grid tw-grid-cols-1 sm:tw-grid-cols-2 md:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4 tw-mb-6" aria-label="Ringkasan Stok">
                 <!-- Total Menu -->
-                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-4 tw-shadow-sm">
-                    <div class="tw-flex tw-items-center tw-gap-2.5">
-                        <div class="tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-brand tw-text-white" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
+                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-5 tw-shadow-sm">
+                    <div class="tw-flex tw-items-start tw-gap-3">
+                        <div class="tw-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-[#5A3E2B] tw-text-white" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
                             </svg>
                         </div>
-                        <span class="tw-text-xs tw-font-semibold tw-text-[#5A3E2B]">Total Menu</span>
+                        <div class="tw-min-w-0 tw-flex-1">
+                            <div class="tw-flex tw-h-10 tw-items-center">
+                                <span class="tw-text-sm tw-font-medium tw-text-[#5A3E2B]">Total Menu</span>
+                            </div>
+                            <div class="tw-mt-3 tw-text-3xl sm:tw-text-4xl tw-font-semibold tw-text-[#5A3E2B]"><?= e($totalMenu) ?></div>
+                        </div>
                     </div>
-                    <div class="tw-mt-3 tw-text-center tw-text-3xl tw-font-bold tw-text-main"><?= e($totalMenu) ?></div>
                 </article>
 
                 <!-- Tersedia -->
-                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-4 tw-shadow-sm">
-                    <div class="tw-flex tw-items-center tw-gap-2.5">
-                        <div class="tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-brand tw-text-white" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
+                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-5 tw-shadow-sm">
+                    <div class="tw-flex tw-items-start tw-gap-3">
+                        <div class="tw-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-[#5A3E2B] tw-text-white" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="9 12 12 15 16 10"></polyline>
                             </svg>
                         </div>
-                        <span class="tw-text-xs tw-font-semibold tw-text-[#5A3E2B]">Tersedia</span>
+                        <div class="tw-min-w-0 tw-flex-1">
+                            <div class="tw-flex tw-h-10 tw-items-center">
+                                <span class="tw-text-sm tw-font-medium tw-text-[#5A3E2B]">Tersedia</span>
+                            </div>
+                            <div class="tw-mt-3 tw-text-3xl sm:tw-text-4xl tw-font-semibold tw-text-[#5A3E2B]"><?= e($totalTersedia) ?></div>
+                        </div>
                     </div>
-                    <div class="tw-mt-3 tw-text-center tw-text-3xl tw-font-bold tw-text-main"><?= e($totalTersedia) ?></div>
                 </article>
 
                 <!-- Stok Menipis -->
-                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-4 tw-shadow-sm">
-                    <div class="tw-flex tw-items-center tw-gap-2.5">
-                        <div class="tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-brand tw-text-white" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
+                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-5 tw-shadow-sm">
+                    <div class="tw-flex tw-items-start tw-gap-3">
+                        <div class="tw-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-[#5A3E2B] tw-text-white" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
                             </svg>
                         </div>
-                        <span class="tw-text-xs tw-font-semibold tw-text-[#5A3E2B]">Stok Menipis</span>
+                        <div class="tw-min-w-0 tw-flex-1">
+                            <div class="tw-flex tw-h-10 tw-items-center">
+                                <span class="tw-text-sm tw-font-medium tw-text-[#5A3E2B]">Stok Menipis</span>
+                            </div>
+                            <div class="tw-mt-3 tw-text-3xl sm:tw-text-4xl tw-font-semibold tw-text-[#5A3E2B]"><?= e($totalMenipis) ?></div>
+                        </div>
                     </div>
-                    <div class="tw-mt-3 tw-text-center tw-text-3xl tw-font-bold tw-text-main"><?= e($totalMenipis) ?></div>
                 </article>
 
                 <!-- Stok Habis -->
-                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-4 tw-shadow-sm">
-                    <div class="tw-flex tw-items-center tw-gap-2.5">
-                        <div class="tw-flex tw-h-8 tw-w-8 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-brand tw-text-white" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
+                <article class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-5 tw-shadow-sm">
+                    <div class="tw-flex tw-items-start tw-gap-3">
+                        <div class="tw-flex tw-h-10 tw-w-10 tw-shrink-0 tw-items-center tw-justify-center tw-rounded-full tw-bg-[#5A3E2B] tw-text-white" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
                             </svg>
                         </div>
-                        <span class="tw-text-xs tw-font-semibold tw-text-[#5A3E2B]">Stok Habis</span>
+                        <div class="tw-min-w-0 tw-flex-1">
+                            <div class="tw-flex tw-h-10 tw-items-center">
+                                <span class="tw-text-sm tw-font-medium tw-text-[#5A3E2B]">Stok Habis</span>
+                            </div>
+                            <div class="tw-mt-3 tw-text-3xl sm:tw-text-4xl tw-font-semibold tw-text-[#5A3E2B]"><?= e($totalHabis) ?></div>
+                        </div>
                     </div>
-                    <div class="tw-mt-3 tw-text-center tw-text-3xl tw-font-bold tw-text-main"><?= e($totalHabis) ?></div>
                 </article>
             </section>
 
             <!-- Kartu Putih Ketersediaan Menu -->
             <section class="tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-5 sm:tw-p-6 tw-shadow-sm" aria-labelledby="ketersediaan-heading">
-                <div class="tw-mb-5">
+                <div class="tw-mb-4">
                     <h2 id="ketersediaan-heading" class="tw-m-0 tw-text-base sm:tw-text-lg tw-font-bold tw-text-main">Ketersediaan Menu</h2>
                 </div>
 
-                <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-3 sm:tw-gap-4">
+                <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-3">
                     <?php foreach ($stok as $item): ?>
                         <?php
                         $namaMenu = (string) ($item['nama_menu'] ?? $item['name'] ?? '');
@@ -337,13 +345,13 @@ $tanggalHariIni = 'Hari ini, ' . date('d') . ' ' . ($bulanIndo[(int)date('n')] ?
                             $statusClass = 'tw-bg-green-100 tw-text-green-600';
                         }
                         ?>
-                        <article class="tw-relative tw-flex tw-items-center tw-gap-3.5 tw-rounded-xl tw-border tw-border-border/80 tw-bg-white tw-p-3.5 tw-shadow-sm tw-transition-colors hover:tw-border-brand/40">
-                            <!-- Foto Menu (56px object-contain) -->
-                            <div class="tw-h-[56px] tw-w-[56px] tw-shrink-0 tw-flex tw-items-center tw-justify-center">
+                        <article class="tw-relative tw-flex tw-items-center tw-gap-3 tw-rounded-xl tw-border tw-border-[#EFE6DA] tw-bg-white tw-p-3 tw-shadow-sm" style="border: 1px solid #EFE6DA;">
+                            <!-- Foto Menu (56x56 object-contain tanpa latar) -->
+                            <div class="tw-h-[56px] tw-w-[56px] tw-shrink-0 tw-flex tw-items-center tw-justify-center tw-bg-transparent">
                                 <?php if ($gambarTersedia): ?>
-                                    <img src="<?= e(asset('images/menu/' . rawurlencode($namaFileGambar))) ?>" alt="<?= e($namaMenu) ?>" class="tw-h-[56px] tw-w-[56px] tw-object-contain">
+                                    <img src="<?= e(asset('images/menu/' . rawurlencode($namaFileGambar))) ?>" alt="<?= e($namaMenu) ?>" class="tw-h-[56px] tw-w-[56px] tw-object-contain tw-bg-transparent">
                                 <?php else: ?>
-                                    <div class="tw-flex tw-h-[56px] tw-w-[56px] tw-items-center tw-justify-center tw-rounded-lg tw-bg-page/60" role="img" aria-label="<?= e('Gambar ' . $namaMenu . ' tidak tersedia') ?>">
+                                    <div class="tw-flex tw-h-[56px] tw-w-[56px] tw-items-center tw-justify-center tw-bg-transparent" role="img" aria-label="<?= e('Gambar ' . $namaMenu . ' tidak tersedia') ?>">
                                         <svg class="tw-h-6 tw-w-6 tw-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <rect x="3" y="3" width="18" height="18" rx="2"></rect>
                                             <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -355,9 +363,9 @@ $tanggalHariIni = 'Hari ini, ' . date('d') . ' ' . ($bulanIndo[(int)date('n')] ?
 
                             <!-- Detail: Nama, Harga, Jumlah Pcs -->
                             <div class="tw-min-w-0 tw-flex-1 tw-pr-14">
-                                <h3 class="tw-truncate tw-text-sm tw-font-semibold tw-text-main"><?= e($namaMenu) ?></h3>
-                                <p class="tw-mt-0.5 tw-text-xs tw-text-muted">Rp <?= e(number_format($hargaMenu, 0, ',', '.')) ?></p>
-                                <p class="tw-text-xs tw-text-muted"><?= e($stokMenu) ?> pcs</p>
+                                <h3 class="tw-truncate tw-text-sm tw-font-semibold tw-text-[#2B1B12]"><?= e($namaMenu) ?></h3>
+                                <p class="tw-mt-0.5 tw-text-xs tw-font-semibold tw-text-[#2B1B12]">Rp <?= e(number_format($hargaMenu, 0, ',', '.')) ?></p>
+                                <p class="tw-mt-0.5 tw-text-[11px] tw-text-muted"><?= e($stokMenu) ?> pcs</p>
                             </div>
 
                             <!-- Badge Status (Kanan Atas) -->
