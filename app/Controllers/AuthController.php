@@ -287,7 +287,6 @@ final class AuthController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ]);
         }
