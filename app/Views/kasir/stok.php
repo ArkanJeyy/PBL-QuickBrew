@@ -30,7 +30,7 @@ $totalMenipis = 0;
 $totalHabis = 0;
 
 foreach ($stok as $item) {
-    $qty = (int) ($item['stok'] ?? 0);
+    $qty = (int) ($item['stok'] ?? $item['stock'] ?? 0);
     if ($qty === 0) {
         $totalHabis++;
     } elseif ($qty <= 5) {
