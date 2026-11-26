@@ -210,9 +210,17 @@ class KasirController
             return;
         }
 
+        // Samakan nama key dengan yang dibaca view stok.php
+        $stok = array_map(static fn (array $m): array => [
+            'nama_menu' => $m['name'],
+            'harga'     => $m['price'],
+            'stok'      => $m['stock'],
+            'gambar'    => $m['image'],
+        ], MenuModel::allForApi());
+
         view('kasir/stok', [
             'user' => $staf,
-            'stok' => MenuModel::allForApi(),   // menu aktif + stok, tanpa data fallback
+            'stok' => $stok,
         ]);
     }
 }
