@@ -35,10 +35,376 @@
     color: #15803D !important;
 }
 
-/* Hover row tabel pesanan */
+/* Baris tabel pesanan: latar tetap bersih (tidak berubah warna saat kursor/klik) */
 .custom-table tbody tr {
-    transition: background 0.15s;
+    background-color: #FFFFFF;
 }
 .custom-table tbody tr:hover {
-    background-color: #FDFAF7;
+    background-color: #FFFFFF !important;
 }
+
+/* Yang menyala saat di-hover / di-klik adalah tombol aksinya */
+.action-buttons .btn-action-outline {
+    transition: all 0.18s ease;
+}
+.action-buttons .btn-action-outline:hover {
+    background-color: #4A3525 !important;
+    color: #FFFFFF !important;
+    border-color: #4A3525 !important;
+    box-shadow: 0 2px 8px rgba(74, 53, 37, 0.2);
+}
+.action-buttons .btn-action-outline:active {
+    background-color: #362417 !important;
+    border-color: #362417 !important;
+    color: #FFFFFF !important;
+    transform: scale(0.96);
+}
+
+.action-buttons .btn-action-solid {
+    transition: all 0.18s ease;
+}
+.action-buttons .btn-action-solid:hover {
+    background-color: #362417 !important;
+    border-color: #362417 !important;
+    box-shadow: 0 2px 8px rgba(74, 53, 37, 0.25);
+}
+.action-buttons .btn-action-solid:active {
+    background-color: #26190F !important;
+    transform: scale(0.96);
+}
+
+/* ==========================================================================
+   HALAMAN DETAIL PESANAN & PEMBAYARAN (pesanan-detail.php)
+   ========================================================================== */
+
+/* Banner peringatan kuning di atas */
+.detail-alert-banner {
+    background-color: #FEF3C7;
+    color: #D97706;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 13px 20px;
+    border-radius: 10px;
+    margin-bottom: 22px;
+}
+
+.detail-alert-banner.is-paid {
+    background-color: #DCFCE7;
+    color: #15803D;
+}
+
+.detail-alert-banner.is-cancelled {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+
+/* Grid 2 kolom: Kiri lebih lebar (Detail Pesanan), Kanan (Tujuan & Riwayat) */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.detail-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.detail-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 24px 26px;
+    box-shadow: 0 2px 8px rgba(45, 35, 28, 0.03);
+}
+
+.detail-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 18px;
+}
+
+/* Baris ID Pesanan & Badge Meja Solid */
+.detail-order-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.detail-order-id {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.badge-meja-solid {
+    background-color: #4A3525;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 18px;
+    border-radius: 9999px;
+}
+
+/* Meta info Pelanggan / Telepon / Metode */
+.detail-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.detail-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.meta-label {
+    color: var(--color-text-main);
+    font-weight: 500;
+}
+
+.meta-value {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+/* Badges status di Detail Pesanan */
+.detail-status-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 22px;
+}
+
+/* Item Pesanan */
+.detail-items-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.detail-item-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-item-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.detail-item-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+    background-color: #F7EFE8;
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.detail-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.detail-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.detail-item-price {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-main);
+}
+
+.detail-item-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+}
+
+.detail-note {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    padding: 12px 0 16px 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 16px;
+}
+
+/* Ringkasan Harga */
+.detail-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.detail-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--color-text-main);
+}
+
+.detail-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    padding-top: 12px;
+    margin-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Kolom Kanan: Tujuan Pengantaran */
+.destination-table {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 8px;
+}
+
+.destination-customer {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--color-text-main);
+    margin-bottom: 4px;
+}
+
+.destination-phone {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+}
+
+.detail-divider {
+    height: 1px;
+    background-color: var(--color-border);
+    margin: 18px 0;
+}
+
+.detail-side-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-detail-primary {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 9999px;
+    background-color: #4A3525;
+    border: 1.5px solid #4A3525;
+    color: #FFFFFF;
+    font-family: var(--font-family);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-detail-primary:hover {
+    background-color: #362417;
+    border-color: #362417;
+}
+
+.btn-detail-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-detail-outline {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 9999px;
+    background-color: #FFFFFF;
+    border: 1.5px solid #4A3525;
+    color: #4A3525;
+    font-family: var(--font-family);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-detail-outline:hover {
+    background-color: #F8F3ED;
+}
+
+.btn-detail-outline:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-detail-back {
+    display: block;
+    text-align: center;
+    margin-top: 4px;
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.btn-detail-back:hover {
+    color: var(--color-brand-primary);
+    text-decoration: underline;
+}
+
+/* Riwayat Pesanan */
+.history-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+}
+
+.history-time {
+    color: var(--color-text-main);
+    font-weight: 500;
+    min-width: 42px;
+}
+
+.history-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #4A3525;
+    flex-shrink: 0;
+}
+
+.history-text {
+    color: var(--color-text-main);
+    font-weight: 400;
+}
+
+@media (max-width: 992px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

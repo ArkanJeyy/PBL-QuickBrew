@@ -200,6 +200,134 @@ class KasirController
     }
 
     /**
+     * Menampilkan Halaman Detail & Pembayaran Pesanan Kasir
+     */
+    public function pesananDetail(): void
+    {
+        // Guard autentikasi: wajib login dengan role 'kasir' atau 'admin'
+        $staf = wajib_staf(['kasir', 'admin']);
+        if (empty($staf)) {
+            return;
+        }
+
+        $orderId = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) ($_GET['id'] ?? 'A1234')));
+        if ($orderId === '') {
+            $orderId = 'A1234';
+        }
+
+        $orders = [
+            'A1232' => [
+                'id'             => 'A1232',
+                'meja'           => '5',
+                'pelanggan'      => 'Rian Pratama',
+                'telepon'        => '0812-3456-7890',
+                'metode'         => 'QRIS',
+                'status_bayar'   => 'Lunas',
+                'status_pesanan' => 'Diproses',
+                'subtotal'       => 'Rp 77.000',
+                'pajak'          => 'Rp 7.700',
+                'total'          => 'Rp 84.700',
+                'catatan'        => 'Less sugar untuk Matcha Latte',
+                'items'          => [
+                    [
+                        'nama'    => '1 × Americano (Dingin)',
+                        'harga'   => 'Rp 22.000',
+                        'gambar'  => 'americano.png',
+                        'varian'  => ['Base Rp 22.000 | R (+Rp 0)', 'Normal Es | Tanpa Gula']
+                    ],
+                    [
+                        'nama'    => '1 × Matcha Latte (Dingin)',
+                        'harga'   => 'Rp 34.700',
+                        'gambar'  => 'matcha-latte.png',
+                        'varian'  => ['Size L (+Rp 6.000)', 'Sedikit Gula']
+                    ],
+                    [
+                        'nama'    => '1 × Croissant Butter',
+                        'harga'   => 'Rp 28.000',
+                        'gambar'  => 'croissant-butter.png',
+                        'varian'  => ['Hangatkan']
+                    ]
+                ]
+            ],
+            'A1234' => [
+                'id'             => 'A1234',
+                'meja'           => '5',
+                'pelanggan'      => 'Arkan',
+                'telepon'        => '0857-8765-6748',
+                'metode'         => 'Tunai',
+                'status_bayar'   => 'Belum Bayar',
+                'status_pesanan' => 'Menunggu Pembayaran',
+                'subtotal'       => 'Rp 24.000',
+                'pajak'          => 'Rp 2.400',
+                'total'          => 'Rp 26.400',
+                'catatan'        => 'Tidak ada',
+                'items'          => [
+                    [
+                        'nama'    => '1 × Americano (Dingin)',
+                        'harga'   => 'Rp 24.000',
+                        'gambar'  => 'americano.png',
+                        'varian'  => [
+                            'Base Rp 18.000 | R (+Rp 0)',
+                            'Normal Es | Sedikit Gula',
+                            'Tambahan / Topping: Ekstra Espresso (+Rp 4.000)'
+                        ]
+                    ]
+                ]
+            ],
+            'A1235' => [
+                'id'             => 'A1235',
+                'meja'           => '3',
+                'pelanggan'      => 'Siti Sarah',
+                'telepon'        => '0821-9876-5432',
+                'metode'         => 'QRIS',
+                'status_bayar'   => 'Lunas',
+                'status_pesanan' => 'Selesai',
+                'subtotal'       => 'Rp 19.000',
+                'pajak'          => 'Rp 1.900',
+                'total'          => 'Rp 20.900',
+                'catatan'        => 'Extra caramel drizzle',
+                'items'          => [
+                    [
+                        'nama'    => '1 × Caramel Frappe',
+                        'harga'   => 'Rp 20.900',
+                        'gambar'  => 'caramel-frappe.png',
+                        'varian'  => ['Normal Ice | Normal Sweet']
+                    ]
+                ]
+            ],
+            'A1238' => [
+                'id'             => 'A1238',
+                'meja'           => '7',
+                'pelanggan'      => 'Budi Santoso',
+                'telepon'        => '0813-1122-3344',
+                'metode'         => 'Tunai',
+                'status_bayar'   => 'Lunas',
+                'status_pesanan' => 'Diproses',
+                'subtotal'       => 'Rp 24.000',
+                'pajak'          => 'Rp 2.400',
+                'total'          => 'Rp 26.400',
+                'catatan'        => 'Sajikan segera',
+                'items'          => [
+                    [
+                        'nama'    => '1 × Waffle Berry',
+                        'harga'   => 'Rp 26.400',
+                        'gambar'  => 'waffle-berry.png',
+                        'varian'  => ['Extra berry syrup']
+                    ]
+                ]
+            ],
+        ];
+
+        $detail = $orders[$orderId] ?? $orders['A1234'];
+        $detail['id'] = $orderId;
+
+        view('kasir/pesanan-detail', [
+            'user'  => $staf,
+            'order' => $detail,
+        ]);
+    }
+
+    /**
      * Menampilkan Halaman Profil Akun Kasir
      */
     public function profil(): void

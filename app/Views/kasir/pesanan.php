@@ -234,14 +234,14 @@
                                 <td class="td-status"><span class="badge-pill badge-diproses">Diproses</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <button type="button" class="btn-action-solid">Detail</button>
+                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1232" class="btn-action-solid">Detail</a>
                                         <button type="button" class="btn-action-outline btn-open-modal" data-order="#A1232">Siap Antar</button>
                                     </div>
                                 </td>
                             </tr>
 
                             <!-- Row 2 -->
-                            <tr data-status="menunggu">
+                            <tr data-status="menunggu" id="row-A1234">
                                 <td class="td-id">
                                     <div class="order-code">#A1234</div>
                                     <div class="order-item-count">1 item</div>
@@ -255,8 +255,8 @@
                                 <td class="td-status"><span class="badge-pill badge-menunggu">Menunggu</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <button type="button" class="btn-action-solid">Detail</button>
-                                        <button type="button" class="btn-action-outline">Bayar</button>
+                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1234" class="btn-action-solid">Detail</a>
+                                        <button type="button" class="btn-action-outline btn-open-pay-modal" data-order="#A1234" data-total="Rp 22.000">Bayar</button>
                                     </div>
                                 </td>
                             </tr>
@@ -276,7 +276,7 @@
                                 <td class="td-status"><span class="badge-pill badge-selesai">Selesai</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <button type="button" class="btn-action-solid">Detail</button>
+                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1235" class="btn-action-solid">Detail</a>
                                         <button type="button" class="btn-action-outline">Cetak Struk</button>
                                     </div>
                                 </td>
@@ -297,7 +297,7 @@
                                 <td class="td-status"><span class="badge-pill badge-diproses">Diproses</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <button type="button" class="btn-action-solid">Detail</button>
+                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1238" class="btn-action-solid">Detail</a>
                                         <button type="button" class="btn-action-outline btn-open-modal" data-order="#A1238">Siap Antar</button>
                                     </div>
                                 </td>
@@ -337,6 +337,24 @@
             <div class="modal-actions">
                 <button type="button" class="btn-modal-cancel" id="btnCancelModal">Batal</button>
                 <button type="button" class="btn-modal-confirm" id="btnConfirmModal">Siap Diantar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL KONFIRMASI BAYAR (ANTREAN) ==================== -->
+    <div class="modal-overlay" id="payTableModal">
+        <div class="modal-box">
+            <div class="modal-icon-wrapper" style="background: #DCFCE7; color: #15803D;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="16 10 11 15 8 12"></polyline>
+                </svg>
+            </div>
+            <h3 class="modal-title">Konfirmasi Pembayaran?</h3>
+            <p class="modal-desc">Terima pembayaran untuk pesanan <strong id="modalPayOrderId">#A1234</strong> sebesar <strong id="modalPayTotal">Rp 22.000</strong>?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" id="btnCancelPayTableModal">Batal</button>
+                <button type="button" class="btn-modal-confirm" id="btnConfirmPayTableModal">Terima Pembayaran</button>
             </div>
         </div>
     </div>
