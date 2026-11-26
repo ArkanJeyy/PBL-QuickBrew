@@ -37,7 +37,6 @@ final class AdminMenuController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ], JSON_UNESCAPED_UNICODE);
         }
@@ -86,7 +85,6 @@ final class AdminMenuController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ], JSON_UNESCAPED_UNICODE);
         }
@@ -186,7 +184,6 @@ final class AdminMenuController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ], JSON_UNESCAPED_UNICODE);
         }
@@ -304,7 +301,6 @@ final class AdminMenuController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ], JSON_UNESCAPED_UNICODE);
         }
@@ -354,7 +350,6 @@ final class AdminMenuController
             echo json_encode([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
-                'debug'   => $e->getMessage(),
                 'data'    => null,
             ], JSON_UNESCAPED_UNICODE);
         }
