@@ -6,18 +6,18 @@ if (!function_exists('e')) {
 }
 
 $menu = $menu ?? [
-    ['nama_menu' => 'Americano', 'nama_kategori' => 'Minuman', 'harga' => 20000, 'gambar' => 'americano.png', 'stok' => 12, 'aktif' => true],
-    ['nama_menu' => 'Caramel Frappe', 'nama_kategori' => 'Minuman', 'harga' => 24000, 'gambar' => 'caramel-frappe.png', 'stok' => 8, 'aktif' => true],
-    ['nama_menu' => 'Matcha Latte', 'nama_kategori' => 'Minuman', 'harga' => 24000, 'gambar' => 'matcha-latte.png', 'stok' => 0, 'aktif' => true],
-    ['nama_menu' => 'Peach Tea', 'nama_kategori' => 'Minuman', 'harga' => 19000, 'gambar' => 'peach-tea.png', 'stok' => 5, 'aktif' => true],
-    ['nama_menu' => 'Chicken Croffle', 'nama_kategori' => 'Makanan', 'harga' => 20000, 'gambar' => 'chicken-croffle.png', 'stok' => 10, 'aktif' => true],
-    ['nama_menu' => 'French Fries', 'nama_kategori' => 'Makanan', 'harga' => 26000, 'gambar' => 'french-fries.png', 'stok' => 0, 'aktif' => true],
-    ['nama_menu' => 'Spaghetti Carbonara', 'nama_kategori' => 'Makanan', 'harga' => 24000, 'gambar' => 'spaghetti-carbonara.png', 'stok' => 7, 'aktif' => true],
-    ['nama_menu' => 'Chicken Sandwich', 'nama_kategori' => 'Makanan', 'harga' => 19000, 'gambar' => 'chicken-sandwich.png', 'stok' => 4, 'aktif' => true],
-    ['nama_menu' => 'Brownies', 'nama_kategori' => 'Dessert', 'harga' => 20000, 'gambar' => 'brownies.png', 'stok' => 6, 'aktif' => true],
-    ['nama_menu' => 'Cheesecake', 'nama_kategori' => 'Dessert', 'harga' => 19000, 'gambar' => 'cheesecake.png', 'stok' => 2, 'aktif' => true],
-    ['nama_menu' => 'Banana Pancake', 'nama_kategori' => 'Dessert', 'harga' => 26000, 'gambar' => 'banana-pancake.png', 'stok' => 0, 'aktif' => true],
-    ['nama_menu' => 'Choco Cake', 'nama_kategori' => 'Dessert', 'harga' => 24000, 'gambar' => 'choco-cake.png', 'stok' => 0, 'aktif' => false],
+    ['nama_menu' => 'Americano', 'nama_kategori' => 'Minuman', 'harga' => 20000, 'gambar' => 'americano.png', 'stok' => 12, 'aktif' => true, 'deskripsi' => 'Espresso dengan air panas yang kaya aroma dan cita rasa kopi autentik.'],
+    ['nama_menu' => 'Caramel Frappe', 'nama_kategori' => 'Minuman', 'harga' => 24000, 'gambar' => 'caramel-frappe.png', 'stok' => 8, 'aktif' => true, 'deskripsi' => 'Kopi blended dengan susu segar, sirup karamel manis, dan saus karamel lezat.'],
+    ['nama_menu' => 'Matcha Latte', 'nama_kategori' => 'Minuman', 'harga' => 24000, 'gambar' => 'matcha-latte.png', 'stok' => 0, 'aktif' => true, 'deskripsi' => 'Matcha khas Jepang berpadu dengan susu segar yang lembut dan creamy.'],
+    ['nama_menu' => 'Peach Tea', 'nama_kategori' => 'Minuman', 'harga' => 19000, 'gambar' => 'peach-tea.png', 'stok' => 5, 'aktif' => true, 'deskripsi' => 'Teh segar pilihan dengan perisa buah persik manis dan potongan buah.'],
+    ['nama_menu' => 'Chicken Croffle', 'nama_kategori' => 'Makanan', 'harga' => 20000, 'gambar' => 'chicken-croffle.png', 'stok' => 10, 'aktif' => true, 'deskripsi' => 'Croffle renyah disajikan dengan potongan daging ayam gurih dan saus spesial.'],
+    ['nama_menu' => 'French Fries', 'nama_kategori' => 'Makanan', 'harga' => 26000, 'gambar' => 'french-fries.png', 'stok' => 0, 'aktif' => true, 'deskripsi' => 'Kentang goreng gurih keemasan dengan taburan bumbu rempah pilihan.'],
+    ['nama_menu' => 'Spaghetti Carbonara', 'nama_kategori' => 'Makanan', 'harga' => 24000, 'gambar' => 'spaghetti-carbonara.png', 'stok' => 7, 'aktif' => true, 'deskripsi' => 'Pasta spaghetti dengan saus krim carbonara gurih, keju parmesan, dan daging asap.'],
+    ['nama_menu' => 'Chicken Sandwich', 'nama_kategori' => 'Makanan', 'harga' => 19000, 'gambar' => 'chicken-sandwich.png', 'stok' => 4, 'aktif' => true, 'deskripsi' => 'Roti panggang lapis ayam fillet renyah, sayuran segar, dan saus mayones lezat.'],
+    ['nama_menu' => 'Brownies', 'nama_kategori' => 'Dessert', 'harga' => 20000, 'gambar' => 'brownies.png', 'stok' => 6, 'aktif' => true, 'deskripsi' => 'Kue cokelat panggang fudgy lembut dengan lelehan cokelat pekat di dalamnya.'],
+    ['nama_menu' => 'Cheesecake', 'nama_kategori' => 'Dessert', 'harga' => 19000, 'gambar' => 'cheesecake.png', 'stok' => 2, 'aktif' => true, 'deskripsi' => 'Kue keju lembut creamy dengan lapisan biskuit renyah di bagian dasar.'],
+    ['nama_menu' => 'Banana Pancake', 'nama_kategori' => 'Dessert', 'harga' => 26000, 'gambar' => 'banana-pancake.png', 'stok' => 0, 'aktif' => true, 'deskripsi' => 'Pancake hangat empuk disajikan dengan potongan pisang segar dan sirup maple.'],
+    ['nama_menu' => 'Choco Cake', 'nama_kategori' => 'Dessert', 'harga' => 24000, 'gambar' => 'choco-cake.png', 'stok' => 0, 'aktif' => false, 'deskripsi' => 'Kue bolu cokelat berlapis krim cokelat lembut dan taburan cokelat serut.'],
 ];
 
 $kasirUser = $user ?? (isset($_SESSION['staf']) ? $_SESSION['staf'] : []);
@@ -255,14 +255,19 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                     $namaFileGambar = basename($gambarMenu);
                     $pathGambar = APP_ROOT . '/public/assets/images/menu/' . $namaFileGambar;
                     $gambarTersedia = $namaFileGambar !== '' && is_file($pathGambar);
+                    $urlGambar = $gambarTersedia ? asset('images/menu/' . rawurlencode($namaFileGambar)) : '';
+                    $deskripsiMenu = trim((string) ($item['deskripsi'] ?? $item['description'] ?? ''));
+                    if ($deskripsiMenu === '') {
+                        $deskripsiMenu = 'Belum ada deskripsi.';
+                    }
                     ?>
-                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-3.5 tw-shadow-sm" data-kategori="<?= htmlspecialchars($kategoriSlug, ENT_QUOTES, 'UTF-8') ?>" data-nama="<?= htmlspecialchars(strtolower($namaMenu), ENT_QUOTES, 'UTF-8') ?>">
+                    <article class="menu-card tw-relative tw-min-w-0 tw-rounded-2xl tw-border tw-border-border tw-bg-white tw-p-3.5 tw-shadow-sm" data-kategori="<?= e($kategoriSlug) ?>" data-nama="<?= e(strtolower($namaMenu)) ?>">
                         <div class="tw-mb-2.5 tw-flex tw-items-start tw-justify-between">
                             <div class="tw-h-[72px] tw-w-[72px] tw-shrink-0 tw-bg-transparent">
                                 <?php if ($gambarTersedia): ?>
-                                    <img src="<?= htmlspecialchars(asset('images/menu/' . rawurlencode($namaFileGambar)), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?>" class="tw-h-full tw-w-full tw-object-contain">
+                                    <img src="<?= e($urlGambar) ?>" alt="<?= e($namaMenu) ?>" class="tw-h-full tw-w-full tw-object-contain">
                                 <?php else: ?>
-                                    <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-bg-transparent" role="img" aria-label="<?= htmlspecialchars('Gambar ' . $namaMenu . ' tidak tersedia', ENT_QUOTES, 'UTF-8') ?>">
+                                    <div class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-bg-transparent" role="img" aria-label="<?= e('Gambar ' . $namaMenu . ' tidak tersedia') ?>">
                                         <svg class="tw-h-8 tw-w-8 tw-text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <rect x="3" y="3" width="18" height="18" rx="2"></rect>
                                             <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -271,8 +276,21 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <!-- TODO: Tambahkan aksi ubah/hapus menu. -->
-                            <button type="button" class="tw-rounded-full tw-border-0 tw-bg-transparent tw-p-1 tw-text-muted hover:tw-bg-brand-light hover:tw-text-brand" aria-label="<?= htmlspecialchars('Aksi untuk ' . $namaMenu, ENT_QUOTES, 'UTF-8') ?>">
+                            <!-- Tombol Titik Tiga: Pop Up Detail Menu (Read-Only) -->
+                            <button type="button" 
+                                class="menu-detail-btn tw-rounded-full tw-border-0 tw-bg-transparent tw-p-1 tw-text-muted hover:tw-bg-brand-light hover:tw-text-brand tw-transition-colors" 
+                                aria-label="Lihat detail <?= e($namaMenu) ?>" 
+                                aria-haspopup="dialog"
+                                data-nama="<?= e($namaMenu) ?>"
+                                data-kategori="<?= e($kategoriLabel) ?>"
+                                data-kategori-slug="<?= e($kategoriSlug) ?>"
+                                data-harga="<?= e($hargaMenu) ?>"
+                                data-gambar="<?= e($namaFileGambar) ?>"
+                                data-gambar-url="<?= e($urlGambar) ?>"
+                                data-deskripsi="<?= e($deskripsiMenu) ?>"
+                                data-stok="<?= e($stokMenu) ?>"
+                                data-aktif="<?= e($aktifMenu ? '1' : '0') ?>"
+                                data-tersedia="<?= e($tersedia ? '1' : '0') ?>">
                                 <svg class="tw-h-4 tw-w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <circle cx="12" cy="5" r="1.7"></circle>
                                     <circle cx="12" cy="12" r="1.7"></circle>
@@ -282,12 +300,12 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
                         </div>
                         <div class="tw-flex tw-items-end tw-justify-between tw-gap-2">
                             <div class="tw-min-w-0">
-                                <h2 class="tw-truncate tw-text-sm tw-font-semibold tw-text-main"><?= htmlspecialchars($namaMenu, ENT_QUOTES, 'UTF-8') ?></h2>
-                                <p class="tw-mt-1 tw-text-xs tw-text-muted">Rp <?= htmlspecialchars(number_format($hargaMenu, 0, ',', '.'), ENT_QUOTES, 'UTF-8') ?></p>
-                                <span class="tw-sr-only"><?= htmlspecialchars($kategoriLabel, ENT_QUOTES, 'UTF-8') ?></span>
+                                <h2 class="tw-truncate tw-text-sm tw-font-semibold tw-text-main"><?= e($namaMenu) ?></h2>
+                                <p class="tw-mt-1 tw-text-xs tw-text-muted">Rp <?= e(number_format($hargaMenu, 0, ',', '.')) ?></p>
+                                <span class="tw-sr-only"><?= e($kategoriLabel) ?></span>
                             </div>
-                            <span class="tw-shrink-0 tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[9px] tw-font-medium <?= htmlspecialchars($tersedia ? 'tw-bg-green-100 tw-text-green-600' : 'tw-bg-red-100 tw-text-red-500', ENT_QUOTES, 'UTF-8') ?>">
-                                <?= htmlspecialchars($tersedia ? 'Tersedia' : 'Habis', ENT_QUOTES, 'UTF-8') ?>
+                            <span class="tw-shrink-0 tw-rounded-full tw-px-2 tw-py-0.5 tw-text-[9px] tw-font-medium <?= e($tersedia ? 'tw-bg-green-100 tw-text-green-600' : 'tw-bg-red-100 tw-text-red-500') ?>">
+                                <?= e($tersedia ? 'Tersedia' : 'Habis') ?>
                             </span>
                         </div>
                     </article>
@@ -297,6 +315,110 @@ $namaKasir = (string) ($kasirUser['nama'] ?? 'Jihan Amanda');
         </section>
     </div>
     </main>
+
+    <!-- ==================== POP UP DETAIL MENU (READ-ONLY) ==================== -->
+    <div id="menuDetailModal" class="tw-fixed tw-inset-0 tw-z-50 tw-hidden tw-items-center tw-justify-center tw-p-4 tw-overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="menuDetailModalTitle">
+        <!-- Backdrop Overlay -->
+        <div id="menuDetailModalBackdrop" class="tw-fixed tw-inset-0 tw-bg-black/50 tw-backdrop-blur-sm" aria-hidden="true"></div>
+
+        <!-- Kartu Modal -->
+        <div class="tw-relative tw-z-10 tw-w-full tw-max-w-lg tw-rounded-2xl tw-bg-white tw-shadow-2xl tw-border tw-border-[#EFE6DA] tw-flex tw-flex-col tw-max-h-[90vh] tw-overflow-hidden" style="border: 1px solid #EFE6DA;">
+            <!-- Header Modal -->
+            <div class="tw-flex tw-items-start tw-justify-between tw-border-b tw-border-[#EFE6DA] tw-px-6 tw-py-4 tw-shrink-0" style="border-bottom: 1px solid #EFE6DA;">
+                <div>
+                    <h2 id="menuDetailModalTitle" class="tw-text-lg sm:tw-text-xl tw-font-bold tw-text-main tw-m-0">Detail Menu</h2>
+                    <p id="menuDetailModalSubtitle" class="tw-text-xs sm:tw-text-sm tw-text-muted tw-mt-0.5 tw-m-0">Informasi menu</p>
+                </div>
+                <button type="button" id="menuDetailModalCloseBtn" class="tw-rounded-full tw-p-1.5 tw-text-muted hover:tw-bg-brand-light hover:tw-text-brand tw-transition-colors tw-border-0 tw-bg-transparent focus:tw-outline-none" aria-label="Tutup detail menu">
+                    <svg class="tw-h-5 tw-w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Body Modal (Scroll Internal - Susunan Satu Kolom) -->
+            <div class="tw-overflow-y-auto tw-p-6 tw-space-y-4">
+                <!-- 2. Banner Krem dengan Ikon Gembok di Paling Atas Isi -->
+                <div class="tw-flex tw-items-center tw-gap-2.5 tw-rounded-xl tw-bg-[#F4ECE1] tw-border tw-border-[#EFE6DA] tw-px-3.5 tw-py-2.5 tw-text-xs tw-text-[#5A3E2B]" style="border: 1px solid #EFE6DA;">
+                    <svg class="tw-h-4 tw-w-4 tw-shrink-0 tw-text-[#5A3E2B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>Perubahan menu hanya dapat dilakukan oleh Admin.</span>
+                </div>
+
+                <!-- 3. Foto Menu di Tengah (~120px, object-contain) -->
+                <div class="tw-flex tw-justify-center tw-py-1">
+                    <div class="tw-h-[120px] tw-w-[120px] tw-shrink-0 tw-flex tw-items-center tw-justify-center tw-bg-transparent">
+                        <img id="modalMenuFoto" src="" alt="" class="tw-h-[120px] tw-w-[120px] tw-object-contain tw-bg-transparent tw-hidden">
+                        <div id="modalMenuFotoPlaceholder" class="tw-flex tw-h-[120px] tw-w-[120px] tw-items-center tw-justify-center tw-rounded-2xl tw-bg-[#FBF8F3] tw-border tw-border-[#EFE6DA]" role="img" aria-label="Gambar menu tidak tersedia" style="border: 1px solid #EFE6DA;">
+                            <svg class="tw-h-12 tw-w-12 tw-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <path d="m21 15-5-5L5 21"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Tiap Field Berupa Kotak Sendiri (Border tipis, BG krem muda, rounded-xl, padding 12px) -->
+                <div class="tw-space-y-3">
+                    <!-- Nama Menu -->
+                    <div class="tw-rounded-xl tw-border tw-border-[#EFE6DA] tw-bg-[#FBF8F3]/60 tw-p-3" style="border: 1px solid #EFE6DA;">
+                        <span class="tw-block tw-text-xs tw-font-medium tw-text-muted">Nama Menu</span>
+                        <p id="modalMenuNama" class="tw-mt-1 tw-text-sm tw-font-semibold tw-text-[#2D231C] tw-m-0">-</p>
+                    </div>
+
+                    <!-- Kategori -->
+                    <div class="tw-rounded-xl tw-border tw-border-[#EFE6DA] tw-bg-[#FBF8F3]/60 tw-p-3" style="border: 1px solid #EFE6DA;">
+                        <span class="tw-block tw-text-xs tw-font-medium tw-text-muted">Kategori</span>
+                        <p id="modalMenuKategori" class="tw-mt-1 tw-text-sm tw-font-semibold tw-text-[#2D231C] tw-m-0">-</p>
+                    </div>
+
+                    <!-- Harga Dasar -->
+                    <div class="tw-rounded-xl tw-border tw-border-[#EFE6DA] tw-bg-[#FBF8F3]/60 tw-p-3" style="border: 1px solid #EFE6DA;">
+                        <span class="tw-block tw-text-xs tw-font-medium tw-text-muted">Harga Dasar</span>
+                        <p id="modalMenuHarga" class="tw-mt-1 tw-text-sm tw-font-semibold tw-text-[#2D231C] tw-m-0">Rp 0</p>
+                    </div>
+
+                    <!-- Deskripsi -->
+                    <div class="tw-rounded-xl tw-border tw-border-[#EFE6DA] tw-bg-[#FBF8F3]/60 tw-p-3" style="border: 1px solid #EFE6DA;">
+                        <span class="tw-block tw-text-xs tw-font-medium tw-text-muted">Deskripsi</span>
+                        <p id="modalMenuDeskripsi" class="tw-mt-1 tw-text-xs sm:tw-text-sm tw-text-main tw-leading-relaxed tw-m-0">-</p>
+                    </div>
+
+                    <!-- Ketersediaan (Badge Tersedia/Habis + "N pcs") -->
+                    <div class="tw-rounded-xl tw-border tw-border-[#EFE6DA] tw-bg-[#FBF8F3]/60 tw-p-3" style="border: 1px solid #EFE6DA;">
+                        <span class="tw-block tw-text-xs tw-font-medium tw-text-muted">Ketersediaan</span>
+                        <div class="tw-mt-1.5 tw-flex tw-items-center tw-gap-2.5">
+                            <span id="modalMenuStatusBadge" class="tw-rounded-full tw-px-2.5 tw-py-0.5 tw-text-xs tw-font-medium tw-bg-green-100 tw-text-green-600">
+                                Tersedia
+                            </span>
+                            <span id="modalMenuStok" class="tw-text-xs tw-font-medium tw-text-muted">0 pcs</span>
+                        </div>
+                    </div>
+
+                    <!-- 5. Kotak Info Krem Khusus Minuman di Bawah Ketersediaan -->
+                    <div id="modalMenuCustomizableNote" class="tw-hidden tw-w-full tw-items-start tw-gap-2.5 tw-rounded-xl tw-bg-[#F4ECE1] tw-border tw-border-[#EFE6DA] tw-p-3 tw-text-xs tw-text-[#5A3E2B]" style="width: 100%; border: 1px solid #EFE6DA;">
+                        <svg class="tw-h-4 tw-w-4 tw-shrink-0 tw-text-[#5A3E2B] tw-mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <span class="tw-leading-normal">Menu ini mendukung kustomisasi ukuran, tipe, gula, es, dan topping saat dipesan pelanggan.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Footer: Satu Tombol "Tutup" Cokelat Tua Rounded-Full di Kanan -->
+            <div class="tw-border-t tw-border-[#EFE6DA] tw-px-6 tw-py-3.5 tw-flex tw-justify-end tw-bg-[#FBF8F3]/60 tw-shrink-0" style="border-top: 1px solid #EFE6DA;">
+                <button type="button" id="menuDetailModalActionCloseBtn" class="tw-appearance-none tw-outline-none tw-rounded-full tw-border-0 tw-bg-brand tw-px-6 tw-py-2.5 tw-text-xs sm:tw-text-sm tw-font-medium tw-text-white tw-shadow-sm hover:tw-bg-brand-hover focus:tw-outline-none tw-transition-colors">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="<?= htmlspecialchars(asset('js/js-kasir/menu.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
