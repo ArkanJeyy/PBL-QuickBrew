@@ -1,7 +1,9 @@
 /*
  * Halaman Checkout: tampilkan ringkasan dari keranjang (cart-store.js), hitung pajak & total untuk
- * tampilan, isi field tersembunyi "items" untuk dikirim ke server, tampilkan dialog "Konfirmasi Pesanan"
- * sebelum form dikirim, dan cegah kirim ganda.
+ * tampilan, tampilkan dialog "Konfirmasi Pesanan", lalu kirim pesanan ke API POST /api/pelanggan/pemesanan.php
+ * (atribut data-api-url pada form) dan pindah ke halaman pembayaran dari respons API.
+ * Error dari API (per field atau umum) ditampilkan di form tanpa memuat ulang halaman; cegah kirim ganda.
+ * Bila fetch tidak tersedia, form dikirim biasa ke ?page=checkout (logika server sama).
  * Harga final tetap dihitung ulang server (PemesananModel::price). Vanilla JS.
  */
 (function () {
@@ -23,6 +25,9 @@
   var submitText = form.querySelector('[data-checkout-submit-text]');
   var submitTotal = form.querySelector('[data-checkout-submit-total]');
   var taxRate = Number(form.getAttribute('data-tax-rate')) || 0;
+  var apiUrl = form.getAttribute('data-api-url') || '';
+  var useApi = apiUrl !== '' && typeof window.fetch === 'function';
+  var alertEl = document.querySelector('[data-checkout-alert]');
 
   var formatRupiah = function (amount) {
     return 'Rp ' + String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -168,6 +173,100 @@
     }
   };
 
+  /* ---------- Pesan error dari server ---------- */
+  var fieldNames = ['nama', 'email', 'metode', 'catatan'];
+
+  var clearErrors = function () {
+    Array.prototype.forEach.call(form.querySelectorAll('.field__error'), function (el) { el.remove(); });
+    Array.prototype.forEach.call(form.querySelectorAll('[aria-invalid]'), function (el) {
+      el.removeAttribute('aria-invalid');
+      el.removeAttribute('aria-describedby');
+    });
+    if (alertEl) {
+      alertEl.textContent = '';
+      alertEl.hidden = true;
+    }
+  };
+
+  // errors: { form?: string, nama?: string, email?: string, metode?: string, catatan?: string, ... }
+  var showErrors = function (errors) {
+    clearErrors();
+    var general = [];
+    var firstInvalid = null;
+
+    Object.keys(errors).forEach(function (key) {
+      var message = String(errors[key]);
+      var inputs = fieldNames.indexOf(key) !== -1 ? form.querySelectorAll('[name="' + key + '"]') : [];
+      if (!inputs.length) {
+        general.push(message); // "form", "meja", atau field yang tidak ada di halaman ini
+        return;
+      }
+      var container = key === 'metode'
+        ? form.querySelector('.checkout-payment')
+        : (inputs[0].closest('.field') || inputs[0].parentNode);
+      var errorEl = document.createElement('p');
+      errorEl.className = 'field__error';
+      errorEl.id = 'error-' + key;
+      errorEl.textContent = message;
+      container.appendChild(errorEl);
+      Array.prototype.forEach.call(inputs, function (input) {
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', errorEl.id);
+      });
+      if (!firstInvalid) firstInvalid = inputs[0];
+    });
+
+    if (general.length && alertEl) {
+      alertEl.textContent = general.join(' ');
+      alertEl.hidden = false;
+      alertEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    } else if (firstInvalid) {
+      firstInvalid.focus();
+    }
+  };
+
+  /* ---------- Kirim pesanan ke API ---------- */
+  var sendToApi = function () {
+    var payload = {
+      csrf_token: fieldValue('csrf_token'),
+      nama: fieldValue('nama'),
+      email: fieldValue('email'),
+      metode: (form.querySelector('input[name="metode"]:checked') || {}).value || '',
+      catatan: fieldValue('catatan'),
+      items: JSON.parse(itemsInput.value || '[]')
+    };
+
+    var fail = function (errors) {
+      if (dialog && !dialog.hidden) closeDialog(false);
+      setBusy(false);
+      showErrors(errors);
+    };
+
+    fetch(apiUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return null; });
+      })
+      .then(function (body) {
+        if (body && body.success && body.data && body.data.redirect) {
+          window.location.assign(body.data.redirect); // halaman Pembayaran mengosongkan keranjang
+          return;
+        }
+        var errors = body && body.errors && typeof body.errors === 'object' ? body.errors : {};
+        if (!Object.keys(errors).length) {
+          errors = { form: (body && body.message) || 'Pesanan gagal dibuat. Silakan coba lagi.' };
+        }
+        fail(errors);
+      })
+      .catch(function () {
+        fail({ form: 'Tidak dapat terhubung ke server. Periksa koneksi internet lalu coba lagi.' });
+      });
+  };
+
   form.addEventListener('submit', function (event) {
     if (!cart.items().length) {
       event.preventDefault();
@@ -183,6 +282,10 @@
       return;
     }
     sent = true;
+    if (useApi) {
+      event.preventDefault();
+      sendToApi();
+    }
   });
 
   if (dialog) {
