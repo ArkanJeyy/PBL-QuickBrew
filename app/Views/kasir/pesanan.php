@@ -1,3 +1,8 @@
+<?php
+$ordersList = is_array($orders ?? null) ? $orders : [];
+$detailBaseUrl = url('kasir-pesanan-detail');
+$menuImgBase   = asset('images/menu/');
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -76,7 +81,7 @@
                 </svg>
                 <span>Menu</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="<?= e(url('kasir-stok')) ?>" class="nav-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
@@ -111,7 +116,6 @@
                 <p>Kelola pembayaran dan pengantaran pesanan ke meja.</p>
             </div>
             <div class="top-header-right">
-                <!-- Baris Atas: Notifikasi & Akun Kasir (Dropdown) -->
                 <div class="header-top-row">
                     <button type="button" class="btn-icon-bell" title="Notifikasi">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -136,7 +140,6 @@
                             </svg>
                         </button>
 
-                        <!-- Menu Dropdown Kasir -->
                         <div class="profile-dropdown-menu" id="profileDropdownMenu">
                             <a href="<?= e(url('kasir-profil')) ?>" class="dropdown-item">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -177,7 +180,6 @@
 
         <!-- ===== Card Antrean Pesanan ===== -->
         <section class="section-card">
-            <!-- Section Header -->
             <div class="antrean-header">
                 <div>
                     <h2 class="antrean-title">Antrean Pesanan</h2>
@@ -195,14 +197,14 @@
                     <input type="text" id="searchPesanan" class="search-input" placeholder="Cari ID pesanan...">
                 </div>
                 <div class="filter-tabs">
-                    <button class="filter-tab active" data-filter="semua">Semua (40)</button>
-                    <button class="filter-tab" data-filter="menunggu">Menunggu (8)</button>
+                    <button class="filter-tab active" data-filter="semua">Semua (41)</button>
+                    <button class="filter-tab" data-filter="menunggu">Menunggu (9)</button>
                     <button class="filter-tab" data-filter="diproses">Diproses (10)</button>
                     <button class="filter-tab" data-filter="selesai">Selesai (20)</button>
                 </div>
             </div>
 
-            <!-- Tabel Antrean dalam Box Card Ber-border -->
+            <!-- Tabel Antrean -->
             <div class="table-container-card">
                 <div class="table-responsive">
                     <table class="custom-table" id="tabelPesanan">
@@ -212,13 +214,14 @@
                                 <th class="th-meja">Meja</th>
                                 <th class="th-item">Item</th>
                                 <th class="th-total">Total</th>
+                                <th class="th-metode">Metode</th>
                                 <th class="th-bayar">Pembayaran</th>
                                 <th class="th-status">Status</th>
                                 <th class="th-aksi">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="bodyPesanan">
-                            <!-- Row 1 -->
+                            <!-- Row 1: QRIS Lunas / Diproses -->
                             <tr data-status="diproses">
                                 <td class="td-id">
                                     <div class="order-code">#A1232</div>
@@ -230,38 +233,62 @@
                                     <div class="item-list">Croissant Butter</div>
                                 </td>
                                 <td class="td-total"><span class="order-total">Rp 84.700</span></td>
+                                <td class="td-metode"><span class="metode-badge metode-qris">QRIS</span></td>
                                 <td class="td-bayar"><span class="badge-pill badge-lunas">Lunas</span></td>
                                 <td class="td-status"><span class="badge-pill badge-diproses">Diproses</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1232" class="btn-action-solid">Detail</a>
+                                        <a href="<?= e($detailBaseUrl) ?>&id=A1232" class="btn-action-solid">Detail</a>
                                         <button type="button" class="btn-action-outline btn-open-modal" data-order="#A1232">Siap Antar</button>
                                     </div>
                                 </td>
                             </tr>
 
-                            <!-- Row 2 -->
+                            <!-- Row 2: TUNAI Belum Bayar (Sesuai Figma) -->
                             <tr data-status="menunggu" id="row-A1234">
                                 <td class="td-id">
                                     <div class="order-code">#A1234</div>
                                     <div class="order-item-count">1 item</div>
                                 </td>
-                                <td class="td-meja"><span class="meja-num">2</span></td>
+                                <td class="td-meja"><span class="meja-num">5</span></td>
                                 <td class="td-item">
-                                    <div class="item-list">Americano</div>
+                                    <div class="item-list">Americano (Dingin)</div>
                                 </td>
-                                <td class="td-total"><span class="order-total">Rp 22.000</span></td>
+                                <td class="td-total"><span class="order-total">Rp 26.400</span></td>
+                                <td class="td-metode"><span class="metode-badge metode-tunai">Tunai</span></td>
                                 <td class="td-bayar"><span class="badge-pill badge-belum-bayar">Belum Bayar</span></td>
                                 <td class="td-status"><span class="badge-pill badge-menunggu">Menunggu</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1234" class="btn-action-solid">Detail</a>
-                                        <button type="button" class="btn-action-outline btn-open-pay-modal" data-order="#A1234" data-total="Rp 22.000">Bayar</button>
+                                        <a href="<?= e($detailBaseUrl) ?>&id=A1234" class="btn-action-solid">Detail</a>
+                                        <button type="button" class="btn-action-outline btn-open-tunai-modal" data-order-id="A1234">Bayar</button>
                                     </div>
                                 </td>
                             </tr>
 
-                            <!-- Row 3 -->
+                            <!-- Row 3: QRIS Belum Bayar (Pembanding dengan Tunai) -->
+                            <tr data-status="menunggu" id="row-A1236">
+                                <td class="td-id">
+                                    <div class="order-code">#A1236</div>
+                                    <div class="order-item-count">2 item</div>
+                                </td>
+                                <td class="td-meja"><span class="meja-num">4</span></td>
+                                <td class="td-item">
+                                    <div class="item-list">Matcha Latte L, Cheesecake</div>
+                                </td>
+                                <td class="td-total"><span class="order-total">Rp 55.000</span></td>
+                                <td class="td-metode"><span class="metode-badge metode-qris">QRIS</span></td>
+                                <td class="td-bayar"><span class="badge-pill badge-belum-bayar">Belum Bayar</span></td>
+                                <td class="td-status"><span class="badge-pill badge-menunggu">Menunggu</span></td>
+                                <td class="td-aksi">
+                                    <div class="action-buttons">
+                                        <a href="<?= e($detailBaseUrl) ?>&id=A1236" class="btn-action-solid">Detail</a>
+                                        <button type="button" class="btn-action-outline btn-open-qris-modal" data-order-id="A1236">Cek QRIS</button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Row 4: QRIS Lunas / Selesai -->
                             <tr data-status="selesai">
                                 <td class="td-id">
                                     <div class="order-code">#A1235</div>
@@ -272,17 +299,18 @@
                                     <div class="item-list">Caramel Frappe</div>
                                 </td>
                                 <td class="td-total"><span class="order-total">Rp 20.900</span></td>
+                                <td class="td-metode"><span class="metode-badge metode-qris">QRIS</span></td>
                                 <td class="td-bayar"><span class="badge-pill badge-lunas">Lunas</span></td>
                                 <td class="td-status"><span class="badge-pill badge-selesai">Selesai</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1235" class="btn-action-solid">Detail</a>
-                                        <button type="button" class="btn-action-outline">Cetak Struk</button>
+                                        <a href="<?= e($detailBaseUrl) ?>&id=A1235" class="btn-action-solid">Detail</a>
+                                        <button type="button" class="btn-action-outline btn-open-struk-modal" data-order-id="A1235">Cetak Struk</button>
                                     </div>
                                 </td>
                             </tr>
 
-                            <!-- Row 4 -->
+                            <!-- Row 5: Tunai Lunas / Diproses -->
                             <tr data-status="diproses">
                                 <td class="td-id">
                                     <div class="order-code">#A1238</div>
@@ -293,19 +321,20 @@
                                     <div class="item-list">Waffle Berry</div>
                                 </td>
                                 <td class="td-total"><span class="order-total">Rp 26.400</span></td>
+                                <td class="td-metode"><span class="metode-badge metode-tunai">Tunai</span></td>
                                 <td class="td-bayar"><span class="badge-pill badge-lunas">Lunas</span></td>
                                 <td class="td-status"><span class="badge-pill badge-diproses">Diproses</span></td>
                                 <td class="td-aksi">
                                     <div class="action-buttons">
-                                        <a href="<?= e(url('kasir-pesanan-detail')) ?>&id=A1238" class="btn-action-solid">Detail</a>
+                                        <a href="<?= e($detailBaseUrl) ?>&id=A1238" class="btn-action-solid">Detail</a>
                                         <button type="button" class="btn-action-outline btn-open-modal" data-order="#A1238">Siap Antar</button>
                                     </div>
                                 </td>
                             </tr>
 
-                            <!-- Empty state (tersembunyi secara default) -->
+                            <!-- Empty state -->
                             <tr id="emptyRow" style="display: none;">
-                                <td colspan="7" class="empty-state-cell">
+                                <td colspan="8" class="empty-state-cell">
                                     <div class="empty-state">
                                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                                             <circle cx="11" cy="11" r="8"></circle>
@@ -322,6 +351,268 @@
         </section>
 
     </main>
+
+    <!-- ==================== MODAL 1: KONFIRMASI PEMBAYARAN TUNAI (SESUAI FIGMA) ==================== -->
+    <div class="modal-overlay" id="tunaiVerifyModal">
+        <div class="verify-modal-box">
+            <div class="verify-modal-header">
+                <div>
+                    <h3 class="verify-modal-title">Konfirmasi Pembayaran Tunai</h3>
+                    <p class="verify-modal-subtitle">Periksa ulang total sebelum konfirmasi.</p>
+                </div>
+                <button type="button" class="verify-modal-close" id="btnCloseTunaiModal" aria-label="Tutup">&times;</button>
+            </div>
+
+            <div class="verify-modal-grid">
+                <!-- Kolom Kiri: Info Pesanan & Item -->
+                <div class="verify-col-left">
+                    <div class="verify-order-title">ID Pesanan <span id="tvOrderId">#A1234</span></div>
+                    <div class="verify-info-list">
+                        <div class="verify-info-line" id="tvCustomer">Arkan (0857-8765-6748)</div>
+                        <div class="verify-info-line">Nomor Meja: <span id="tvMeja">5</span></div>
+                        <div class="verify-info-line">Nama / Jumlah Item: <span id="tvItemSummary">Americano (Dingin) (1 item)</span></div>
+                        <div class="verify-info-line">Metode Pembayaran: <strong>Tunai</strong></div>
+                    </div>
+
+                    <div class="verify-badge-rows">
+                        <div class="verify-badge-row">
+                            <span>Status Pembayaran</span>
+                            <span class="badge-pill badge-belum-bayar">Belum Bayar</span>
+                        </div>
+                        <div class="verify-badge-row">
+                            <span>Status Pesanan</span>
+                            <span class="badge-pill badge-menunggu">Menunggu Pembayaran</span>
+                        </div>
+                    </div>
+
+                    <div class="verify-info-line verify-duration">Durasi Menunggu: <span id="tvDurasi">12 menit</span></div>
+
+                    <div class="verify-divider"></div>
+
+                    <div class="verify-items-wrap" id="tvItemsList">
+                        <!-- Diisi dinamis oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Ringkasan Pembayaran & Input Uang Tunai -->
+                <div class="verify-col-right">
+                    <h4 class="verify-section-heading">Ringkasan Pembayaran</h4>
+                    <div class="verify-note-line">Catatan: <span id="tvCatatan">Tidak ada</span></div>
+
+                    <div class="verify-summary-rows">
+                        <div class="verify-summary-row">
+                            <span>Subtotal</span>
+                            <span id="tvSubtotal">Rp 24.000</span>
+                        </div>
+                        <div class="verify-summary-row">
+                            <span>Pajak (10%)</span>
+                            <span id="tvPajak">Rp 2.400</span>
+                        </div>
+                    </div>
+
+                    <div class="verify-divider"></div>
+
+                    <div class="verify-total-row">
+                        <span>Total Pembayaran</span>
+                        <span id="tvTotal">Rp 26.400</span>
+                    </div>
+
+                    <!-- Input Uang Diterima -->
+                    <div class="cash-input-group">
+                        <div class="cash-input-row">
+                            <label for="inputUangDiterima" class="cash-input-label">Uang Diterima</label>
+                            <div class="cash-field-wrap">
+                                <span class="cash-prefix">Rp</span>
+                                <input type="text" id="inputUangDiterima" class="cash-field-input" value="30.000" inputmode="numeric" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="cash-quick-chips">
+                            <button type="button" class="cash-chip" data-nominal="pas">Uang Pas</button>
+                            <button type="button" class="cash-chip" data-nominal="30000">Rp 30.000</button>
+                            <button type="button" class="cash-chip" data-nominal="50000">Rp 50.000</button>
+                            <button type="button" class="cash-chip" data-nominal="100000">Rp 100.000</button>
+                        </div>
+                        <div class="cash-error-msg" id="cashErrorMsg" style="display: none;">Nominal uang diterima kurang dari total pembayaran.</div>
+                    </div>
+
+                    <div class="verify-kembalian-row">
+                        <span>Kembalian</span>
+                        <strong id="tvKembalian">Rp 3.600</strong>
+                    </div>
+
+                    <div class="verify-modal-actions">
+                        <button type="button" class="btn-verify-primary" id="btnSubmitTunaiSuccess">Konfirmasi Pembayaran</button>
+                        <button type="button" class="btn-verify-outline" id="btnCancelTunaiModal">Batal</button>
+                        <button type="button" class="btn-simulasi-link" id="btnSubmitTunaiFail">Simulasikan gagal simpan (gangguan koneksi)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 2: VERIFIKASI PEMBAYARAN QRIS ==================== -->
+    <div class="modal-overlay" id="qrisVerifyModal">
+        <div class="verify-modal-box">
+            <div class="verify-modal-header">
+                <div>
+                    <h3 class="verify-modal-title">Verifikasi Pembayaran QRIS</h3>
+                    <p class="verify-modal-subtitle">Sinkronkan status pembayaran digital pelanggan.</p>
+                </div>
+                <button type="button" class="verify-modal-close" id="btnCloseQrisModal" aria-label="Tutup">&times;</button>
+            </div>
+
+            <div class="verify-modal-grid">
+                <!-- Kolom Kiri: Info Pesanan QRIS -->
+                <div class="verify-col-left">
+                    <div class="verify-order-title">ID Pesanan <span id="qvOrderId">#A1236</span></div>
+                    <div class="verify-info-list">
+                        <div class="verify-info-line" id="qvCustomer">Nadia Putri (0819-2233-4455)</div>
+                        <div class="verify-info-line">Nomor Meja: <span id="qvMeja">4</span></div>
+                        <div class="verify-info-line">Nama / Jumlah Item: <span id="qvItemSummary">Matcha Latte L, Cheesecake (2 item)</span></div>
+                        <div class="verify-info-line">Metode Pembayaran: <strong>QRIS</strong></div>
+                    </div>
+
+                    <div class="verify-badge-rows">
+                        <div class="verify-badge-row">
+                            <span>Status Pembayaran</span>
+                            <span class="badge-pill badge-belum-bayar">Belum Bayar</span>
+                        </div>
+                        <div class="verify-badge-row">
+                            <span>Status Pesanan</span>
+                            <span class="badge-pill badge-menunggu">Menunggu Pembayaran</span>
+                        </div>
+                    </div>
+
+                    <div class="verify-info-line verify-duration">Durasi Menunggu: <span id="qvDurasi">5 menit</span></div>
+                    <div class="verify-info-line verify-duration">Batas Waktu QRIS: <strong id="qvBatasBayar">11:42 WIB (15 menit)</strong></div>
+
+                    <div class="verify-divider"></div>
+
+                    <div class="verify-items-wrap" id="qvItemsList">
+                        <!-- Diisi dinamis oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Info Gateway QRIS (Tanpa Uang Diterima / Kembalian) -->
+                <div class="verify-col-right">
+                    <h4 class="verify-section-heading">Detail Tagihan QRIS</h4>
+                    <div class="verify-note-line">Catatan: <span id="qvCatatan">Es dipisah untuk Matcha Latte</span></div>
+
+                    <div class="qris-info-box">
+                        <div class="qris-info-title">Pembayaran Non-Tunai (Masa Aktif 15 Menit)</div>
+                        <div class="qris-info-desc">Sistem mengecek status dana. Jika melewati batas 15 menit tanpa pembayaran, status otomatis berubah menjadi Kedaluwarsa &amp; Batal.</div>
+                        <div class="qris-ref-code">ID Referensi: <strong id="qvRef">MID-QRIS-A1236</strong></div>
+                    </div>
+
+                    <div class="verify-summary-rows">
+                        <div class="verify-summary-row">
+                            <span>Subtotal</span>
+                            <span id="qvSubtotal">Rp 50.000</span>
+                        </div>
+                        <div class="verify-summary-row">
+                            <span>Pajak (10%)</span>
+                            <span id="qvPajak">Rp 5.000</span>
+                        </div>
+                    </div>
+
+                    <div class="verify-divider"></div>
+
+                    <div class="verify-total-row">
+                        <span>Total Tagihan QRIS</span>
+                        <span id="qvTotal">Rp 55.000</span>
+                    </div>
+
+                    <div class="verify-modal-actions" style="margin-top: 22px;">
+                        <button type="button" class="btn-verify-primary" id="btnSubmitQrisSuccess">Cek Status QRIS</button>
+                        <button type="button" class="btn-verify-outline" id="btnSubmitQrisPending">Simulasi Belum Dibayar</button>
+                        <button type="button" class="btn-simulasi-link" id="btnSubmitQrisExpire">Simulasikan Lewat 15 Menit (Kedaluwarsa / Otomatis Batal)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 3: CETAK STRUK (2 KOLOM SESUAI FIGMA, TANPA PDF/PRINT) ==================== -->
+    <div class="modal-overlay" id="strukModal">
+        <div class="verify-modal-box struk-modal-box">
+            <div class="verify-modal-header">
+                <div>
+                    <h3 class="verify-modal-title">Cetak Struk</h3>
+                </div>
+                <button type="button" class="verify-modal-close" id="btnCloseStrukModal" aria-label="Tutup">&times;</button>
+            </div>
+
+            <div class="verify-modal-grid">
+                <!-- Kolom Kiri: Info Pesanan & Daftar Menu -->
+                <div class="verify-col-left">
+                    <div class="verify-order-title">ID Pesanan <span id="smOrderId">#A1235</span></div>
+                    <div class="verify-info-list">
+                        <div class="verify-info-line">Nama: <span id="smCustomer">Siti Sarah (0821-9876-5432)</span></div>
+                        <div class="verify-info-line">Nomor Meja: <span id="smMeja">3</span></div>
+                        <div class="verify-info-line">Menu / Jumlah Item: <span id="smItemSummary">Caramel Frappe / 1 item</span></div>
+                        <div class="verify-info-line">Metode Pembayaran: <span id="smMetode">QRIS</span></div>
+                        <div class="verify-info-line">Total: <span id="smTotalLeft">Rp 20.900</span></div>
+                    </div>
+
+                    <div class="verify-badge-rows">
+                        <div class="verify-badge-row">
+                            <span>Status Pembayaran</span>
+                            <span class="badge-pill badge-lunas" id="smBadgeBayar">Lunas</span>
+                        </div>
+                        <div class="verify-badge-row">
+                            <span>Status Pesanan</span>
+                            <span class="badge-pill badge-selesai" id="smBadgeStatus">Selesai</span>
+                        </div>
+                    </div>
+
+                    <div class="verify-divider"></div>
+
+                    <div class="verify-items-wrap" id="smItemsList">
+                        <!-- Diisi dinamis oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Ringkasan Pembayaran & Tombol Cetak / Tutup -->
+                <div class="verify-col-right">
+                    <h4 class="verify-section-heading">Ringkasan Pembayaran</h4>
+                    <div class="verify-note-line">Catatan: <span id="smCatatan">Tidak ada</span></div>
+
+                    <div class="verify-summary-rows">
+                        <div class="verify-summary-row">
+                            <span>Subtotal</span>
+                            <span id="smSubtotal">Rp 19.000</span>
+                        </div>
+                        <div class="verify-summary-row">
+                            <span>Pajak (10%)</span>
+                            <span id="smPajak">Rp 1.900</span>
+                        </div>
+                    </div>
+
+                    <div class="verify-divider"></div>
+
+                    <div class="verify-total-row" style="margin-bottom: 18px;">
+                        <span>Total Pembayaran</span>
+                        <span id="smTotalRight">Rp 20.900</span>
+                    </div>
+
+                    <div class="verify-modal-actions" id="strukActionsConfirm">
+                        <button type="button" class="btn-verify-primary" id="btnConfirmCetakStruk">Cetak Struk</button>
+                        <button type="button" class="btn-verify-outline" id="btnCancelStrukModal">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== NOTIFIKASI TOAST CETAK STRUK (KANAN ATAS SESUAI FIGMA) ==================== -->
+    <div class="struk-toast" id="strukToast" role="status" aria-live="polite">
+        <span class="struk-toast-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </span>
+        <span class="struk-toast-text" id="strukToastText">Struk berhasil dicetak</span>
+    </div>
 
     <!-- ==================== MODAL KONFIRMASI SIAP ANTAR ==================== -->
     <div class="modal-overlay" id="confirmModal">
@@ -341,25 +632,12 @@
         </div>
     </div>
 
-    <!-- ==================== MODAL KONFIRMASI BAYAR (ANTREAN) ==================== -->
-    <div class="modal-overlay" id="payTableModal">
-        <div class="modal-box">
-            <div class="modal-icon-wrapper" style="background: #DCFCE7; color: #15803D;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="16 10 11 15 8 12"></polyline>
-                </svg>
-            </div>
-            <h3 class="modal-title">Konfirmasi Pembayaran?</h3>
-            <p class="modal-desc">Terima pembayaran untuk pesanan <strong id="modalPayOrderId">#A1234</strong> sebesar <strong id="modalPayTotal">Rp 22.000</strong>?</p>
-            <div class="modal-actions">
-                <button type="button" class="btn-modal-cancel" id="btnCancelPayTableModal">Batal</button>
-                <button type="button" class="btn-modal-confirm" id="btnConfirmPayTableModal">Terima Pembayaran</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Script -->
+    <!-- Data Pesanan untuk Modal Verifikasi -->
+    <script>
+        window.QUICKBREW_ORDERS = <?= json_encode($ordersList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        window.QUICKBREW_DETAIL_URL = <?= json_encode($detailBaseUrl, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        window.QUICKBREW_MENU_IMG_BASE = <?= json_encode($menuImgBase, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    </script>
     <script src="<?= e(asset('js/js-kasir/pesanan.js')) ?>"></script>
 
 </body>

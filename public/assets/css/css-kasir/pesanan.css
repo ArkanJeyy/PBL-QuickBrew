@@ -1,9 +1,9 @@
 /* ==========================================================================
    QuickBrew - Kasir Pesanan CSS
-   Tambahan khusus halaman Pesanan (di atas dashboard.css)
+   Tambahan khusus halaman Pesanan, Modal Verifikasi Pembayaran, & Detail Hasil
    ========================================================================== */
 
-/* Date filter di header pesanan: sedikit lebih menonjol dengan cursor pointer */
+/* Date filter di header pesanan */
 .pesanan-date-filter {
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
@@ -33,6 +33,31 @@
 .badge-selesai {
     background-color: #BBF7D0 !important;
     color: #15803D !important;
+}
+
+/* Kolom Metode Pembayaran di antara Item dan Total */
+.th-metode, .td-metode {
+    width: 100px;
+    text-align: center;
+}
+.metode-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: #F7EFE8;
+    color: #4A3525;
+}
+.metode-badge.metode-qris {
+    background-color: #EFE7DE;
+    color: #3D2B1F;
+    border: 1px solid #E2D3C1;
+}
+.metode-badge.metode-tunai {
+    background-color: #FBF6EE;
+    color: #6B4A2E;
+    border: 1px solid #EDE1D1;
 }
 
 /* Baris tabel pesanan: latar tetap bersih (tidak berubah warna saat kursor/klik) */
@@ -74,8 +99,424 @@
 }
 
 /* ==========================================================================
-   HALAMAN DETAIL PESANAN & PEMBAYARAN (pesanan-detail.php)
+   MODAL VERIFIKASI PEMBAYARAN 2 KOLOM (TUNAI & QRIS — SESUAI FIGMA)
    ========================================================================== */
+.verify-modal-box {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 820px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 18px;
+    padding: 28px 32px;
+    text-align: left;
+    box-shadow: 0 24px 48px -12px rgba(45, 35, 28, 0.22);
+    animation: modalScaleIn 0.2s ease-out forwards;
+}
+
+.verify-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.verify-modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 3px;
+}
+
+.verify-modal-subtitle {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+}
+
+.verify-modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s, color 0.18s;
+}
+.verify-modal-close:hover {
+    background: #F7EFE8;
+    color: var(--color-text-main);
+}
+
+.verify-modal-grid {
+    display: grid;
+    grid-template-columns: 1.12fr 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+.verify-order-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 12px;
+}
+
+.verify-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.verify-info-line {
+    font-size: 12.5px;
+    color: var(--color-text-main);
+    line-height: 1.45;
+}
+
+.verify-badge-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.verify-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: var(--color-text-main);
+}
+
+.verify-duration {
+    color: var(--color-text-muted);
+    margin-top: 2px;
+}
+
+.verify-divider {
+    height: 1px;
+    background-color: var(--color-border);
+    margin: 16px 0;
+}
+
+.verify-items-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.verify-item-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.verify-item-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.verify-item-thumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    object-fit: cover;
+    background-color: #F7EFE8;
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.verify-item-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.verify-item-price {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--color-text-main);
+    margin-top: 2px;
+}
+
+.verify-item-vars {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Kolom Kanan Modal */
+.verify-section-heading {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 12px;
+}
+
+.verify-note-line {
+    font-size: 12.5px;
+    color: var(--color-text-main);
+    margin-bottom: 14px;
+}
+
+.verify-summary-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.verify-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--color-text-main);
+}
+
+.verify-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-main);
+    margin-bottom: 14px;
+}
+
+/* Input Uang Tunai & Chip Cepat */
+.cash-input-group {
+    margin-bottom: 14px;
+}
+
+.cash-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.cash-input-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-main);
+}
+
+.cash-field-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1.5px solid #D5C8BD;
+    border-radius: 10px;
+    padding: 7px 12px;
+    background: #FFFFFF;
+    width: 155px;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+.cash-field-wrap:focus-within {
+    border-color: #4A3525;
+    box-shadow: 0 0 0 3px rgba(74, 53, 37, 0.08);
+}
+
+.cash-prefix {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.cash-field-input {
+    border: none;
+    outline: none;
+    width: 100%;
+    text-align: right;
+    font-family: var(--font-family);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--color-text-main);
+    background: transparent;
+}
+
+.cash-quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.cash-chip {
+    background: #FAF6F0;
+    border: 1px solid #E2D9D0;
+    color: #4A3525;
+    font-family: var(--font-family);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.cash-chip:hover {
+    background: #4A3525;
+    border-color: #4A3525;
+    color: #FFFFFF;
+}
+
+.cash-error-msg {
+    margin-top: 8px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #DC2626;
+    text-align: right;
+}
+
+.verify-kembalian-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13.5px;
+    color: var(--color-text-main);
+    padding: 10px 0 18px 0;
+    border-top: 1px dashed var(--color-border);
+}
+.verify-kembalian-row strong {
+    font-size: 15px;
+    font-weight: 700;
+    color: #15803D;
+}
+
+.verify-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-verify-primary {
+    width: 100%;
+    padding: 11px 16px;
+    border-radius: 9999px;
+    background-color: #4A3525;
+    border: 1.5px solid #4A3525;
+    color: #FFFFFF;
+    font-family: var(--font-family);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.15s;
+}
+.btn-verify-primary:hover:not(:disabled) {
+    background-color: #362417;
+    border-color: #362417;
+}
+.btn-verify-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-verify-outline {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 9999px;
+    background-color: #FFFFFF;
+    border: 1.5px solid #D5C8BD;
+    color: var(--color-text-main);
+    font-family: var(--font-family);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+.btn-verify-outline:hover {
+    border-color: #4A3525;
+    color: #4A3525;
+    background-color: #FAF6F0;
+}
+
+.btn-simulasi-link {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-family: var(--font-family);
+    font-size: 11.5px;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 2px;
+    padding: 4px;
+    text-align: center;
+    transition: color 0.18s;
+}
+.btn-simulasi-link:hover {
+    color: #B91C1C;
+}
+
+/* Kotak Info Khusus Modal QRIS */
+.qris-info-box {
+    background-color: #FAF6F0;
+    border: 1px solid #E8DCCB;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+.qris-info-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4A3525;
+    margin-bottom: 4px;
+}
+.qris-info-desc {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    margin-bottom: 8px;
+}
+.qris-ref-code {
+    font-size: 12px;
+    color: var(--color-text-main);
+}
+
+/* ==========================================================================
+   HALAMAN DETAIL PESANAN & HASIL PEMBAYARAN (pesanan-detail.php)
+   ========================================================================== */
+
+/* Tombol Back di Header Detail Pesanan */
+.detail-title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.btn-back-header {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #FFFFFF;
+    border: 1px solid #E2D9D0;
+    color: #4A3525;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: all 0.18s ease;
+    box-shadow: 0 1px 3px rgba(45, 35, 28, 0.04);
+}
+.btn-back-header:hover {
+    background-color: #4A3525;
+    border-color: #4A3525;
+    color: #FFFFFF;
+    transform: translateX(-2px);
+}
 
 /* Banner peringatan kuning di atas */
 .detail-alert-banner {
@@ -87,18 +528,16 @@
     border-radius: 10px;
     margin-bottom: 22px;
 }
-
 .detail-alert-banner.is-paid {
     background-color: #DCFCE7;
     color: #15803D;
 }
-
 .detail-alert-banner.is-cancelled {
     background-color: #FEE2E2;
     color: #DC2626;
 }
 
-/* Grid 2 kolom: Kiri lebih lebar (Detail Pesanan), Kanan (Tujuan & Riwayat) */
+/* Grid 2 kolom */
 .detail-grid {
     display: grid;
     grid-template-columns: 1.55fr 1fr;
@@ -127,7 +566,6 @@
     margin-bottom: 18px;
 }
 
-/* Baris ID Pesanan & Badge Meja Solid */
 .detail-order-head {
     display: flex;
     align-items: center;
@@ -150,7 +588,6 @@
     border-radius: 9999px;
 }
 
-/* Meta info Pelanggan / Telepon / Metode */
 .detail-meta-list {
     display: flex;
     flex-direction: column;
@@ -175,7 +612,6 @@
     font-weight: 500;
 }
 
-/* Badges status di Detail Pesanan */
 .detail-status-badges {
     display: flex;
     flex-wrap: wrap;
@@ -183,7 +619,6 @@
     margin-bottom: 22px;
 }
 
-/* Item Pesanan */
 .detail-items-section {
     display: flex;
     flex-direction: column;
@@ -248,7 +683,6 @@
     margin-bottom: 16px;
 }
 
-/* Ringkasan Harga */
 .detail-summary {
     display: flex;
     flex-direction: column;
@@ -274,7 +708,126 @@
     border-top: 1px solid var(--color-border);
 }
 
-/* Kolom Kanan: Tujuan Pengantaran */
+/* Callout Box pada Halaman Berhasil / Gangguan Koneksi / QRIS Pending */
+.status-callout {
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+}
+.status-callout.callout-success {
+    background-color: #EAFBF0;
+    border-left: 3.5px solid #16A34A;
+}
+.status-callout.callout-success .callout-title {
+    color: #15803D;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+.status-callout.callout-success .callout-desc {
+    color: #166534;
+    font-size: 12px;
+}
+
+.status-callout.callout-danger {
+    background-color: #FEF2F2;
+    border-left: 3.5px solid #DC2626;
+}
+.status-callout.callout-danger .callout-title {
+    color: #B91C1C;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.status-callout.callout-danger .callout-desc {
+    color: #7F1D1D;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.status-callout.callout-warning {
+    background-color: #FEF9E7;
+    border-left: 3.5px solid #D97706;
+}
+.status-callout.callout-warning .callout-title {
+    color: #B45309;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.status-callout.callout-warning .callout-desc {
+    color: #92400E;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.payment-result-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.payment-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--color-text-main);
+}
+.payment-result-row.is-highlight strong {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.payment-helper-caption {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+    margin-bottom: 14px;
+}
+
+.payment-confirmed-by {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    padding: 12px 0;
+    margin-bottom: 14px;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+}
+.payment-confirmed-by strong {
+    color: var(--color-text-main);
+    font-weight: 600;
+}
+
+.payment-retry-guide {
+    font-size: 12.5px;
+    color: var(--color-text-main);
+    line-height: 1.5;
+    margin: 12px 0 8px 0;
+}
+
+.payment-attempt-note {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+    margin-bottom: 16px;
+}
+
+.ketentuan-text {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+}
+
+.btn-link-center {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+}
+
+/* Kolom Kanan Default: Tujuan Pengantaran */
 .destination-table {
     font-size: 24px;
     font-weight: 700;
@@ -319,12 +872,10 @@
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
 }
-
 .btn-detail-primary:hover {
     background-color: #362417;
     border-color: #362417;
 }
-
 .btn-detail-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -343,29 +894,12 @@
     cursor: pointer;
     transition: background 0.2s;
 }
-
 .btn-detail-outline:hover {
     background-color: #F8F3ED;
 }
-
 .btn-detail-outline:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-}
-
-.btn-detail-back {
-    display: block;
-    text-align: center;
-    margin-top: 4px;
-    font-size: 12.5px;
-    color: var(--color-text-muted);
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.btn-detail-back:hover {
-    color: var(--color-brand-primary);
-    text-decoration: underline;
 }
 
 /* Riwayat Pesanan */
@@ -373,28 +907,31 @@
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
 .history-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 14px;
     font-size: 13px;
 }
 
 .history-time {
-    color: var(--color-text-main);
+    color: var(--color-text-muted);
     font-weight: 500;
     min-width: 42px;
+    font-size: 12px;
+    padding-top: 1px;
 }
 
 .history-dot {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background-color: #4A3525;
     flex-shrink: 0;
+    margin-top: 6px;
 }
 
 .history-text {
@@ -402,9 +939,125 @@
     font-weight: 400;
 }
 
+.history-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.history-main-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+.history-sub-text {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+}
+
+/* ==========================================================================
+   CETAK STRUK — TOAST NOTIFIKASI KANAN ATAS & PRATINJAU STRUK WEB (NON-PDF)
+   ========================================================================== */
+.struk-toast {
+    position: fixed;
+    top: 76px;
+    right: 36px;
+    z-index: 10500;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #CCA782;
+    color: #FFFFFF;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-family: var(--font-family);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 24px -6px rgba(74, 53, 37, 0.25);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+    pointer-events: none;
+}
+
+.struk-toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.struk-toast-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.struk-preview-paper {
+    background: #FDFAF6;
+    border: 1px dashed #D5C8BD;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+}
+
+.struk-paper-head {
+    text-align: center;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed #E2D9D0;
+}
+
+.struk-paper-brand {
+    font-size: 15px;
+    font-weight: 700;
+    color: #4A3525;
+}
+
+.struk-paper-sub {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+}
+
+.struk-paper-meta,
+.struk-paper-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--color-text-main);
+}
+
+.struk-paper-meta > div,
+.struk-paper-totals > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.struk-paper-divider {
+    height: 1px;
+    border-top: 1px dashed #E2D9D0;
+    margin: 12px 0;
+}
+
+.struk-paper-grand {
+    font-size: 14px;
+    font-weight: 700;
+    padding-top: 6px;
+    color: #4A3525;
+}
+
 @media (max-width: 992px) {
     .detail-grid {
         grid-template-columns: 1fr;
     }
+    .verify-modal-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
 }
-
