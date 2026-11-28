@@ -60,6 +60,7 @@
   grid-template-columns: repeat(4, 1fr);
   margin-top: 16px;
   list-style: none;
+  --step-icon: 40px; /* diameter lingkaran ikon; dipakai juga untuk panjang garis penghubung */
 }
 
 .status-step {
@@ -71,13 +72,14 @@
   min-width: 0;
 }
 
-/* Garis penghubung ke langkah sebelumnya (di belakang lingkaran) */
+/* Garis penghubung ke langkah sebelumnya: hanya di celah antar-lingkaran, dari tepi kanan ikon
+   sebelumnya sampai tepi kiri ikon langkah ini (jarak antar-tengah ikon = 100% lebar satu kolom). */
 .status-step + .status-step::before {
   content: "";
   position: absolute;
-  top: 19px;
-  right: 50%;
-  width: 100%;
+  top: calc(var(--step-icon) / 2 - 1px);
+  right: calc(50% + var(--step-icon) / 2);
+  width: calc(100% - var(--step-icon));
   height: 2px;
   background: var(--color-disabled);
 }
@@ -86,11 +88,12 @@
 .status-step + .status-step--current::before { background: var(--color-brand-dark); }
 
 .status-step__icon {
-  position: relative; /* di atas garis */
+  position: relative;
+  z-index: 1; /* tetap di atas garis bila ada pembulatan subpiksel */
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: var(--step-icon);
+  height: var(--step-icon);
   border: 1.5px solid var(--color-disabled);
   border-radius: 50%;
   background: var(--color-white);
