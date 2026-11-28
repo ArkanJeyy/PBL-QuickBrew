@@ -1,5 +1,6 @@
 <?php
 require_once APP_ROOT . '/app/Services/PembayaranService.php';
+require_once APP_ROOT . '/app/Services/InvoiceEmailService.php';
 
 /**
  * Model pesanan pelanggan (tabel: pemesanan, detail_pemesanan, pembayaran).
@@ -573,9 +574,22 @@ final class PemesananModel
         }
 
         $berhasil = ($service ?? new PembayaranService())->tandaiLunas($id, 'tunai', $kasirId);
+        
         if ($berhasil) {
-            error_log(sprintf('[AUDIT TUNAI] pemesanan_id=%d status=menunggu_pembayaran->diproses pengguna_id=%d', $id, $kasirId));
-            return ['ok' => true, 'kode' => 'lunas', 'pesan' => 'Pembayaran tunai berhasil dikonfirmasi.'];
+            error_log(sprintf(
+                '[AUDIT TUNAI] pemesanan_id=%d status=menunggu_pembayaran->diproses pengguna_id=%d',
+                $id,
+                $kasirId
+            ));
+
+            // Kirim invoice setelah pelunasan berhasil
+            InvoiceEmailService::kirim($id);
+
+            return [
+                'ok' => true,
+                'kode' => 'lunas',
+                'pesan' => 'Pembayaran tunai berhasil dikonfirmasi.'
+            ];
         }
 
         // Cek ulang bila terjadi balapan (race condition)

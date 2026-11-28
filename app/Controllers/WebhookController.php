@@ -1,5 +1,6 @@
 <?php
 require_once APP_ROOT . '/app/Services/PembayaranService.php';
+require_once APP_ROOT . '/app/Services/InvoiceEmailService.php';
 
 /**
  * WebhookController — menerima HTTP Notification (Webhook) resmi dari Midtrans
@@ -68,6 +69,14 @@ final class WebhookController
             }
 
             $hasil = $service->terapkanStatus($payload);
+
+            // Kirim invoice hanya ketika pelunasan baru berhasil diterapkan
+            if ($hasil === 'paid') {
+                InvoiceEmailService::kirim(
+                    (int) $this->getPemesananId($payload['order_id'])
+                );
+            }
+
             return $this->respond(200, 'ok', $hasil);
         } catch (Throwable $e) {
             // Pastikan transaksi dibatalkan bila masih terbuka saat terjadi error tak terduga
@@ -83,6 +92,19 @@ final class WebhookController
             $this->logError("Kesalahan tak terduga pada midtrans_order_id={$orderId}: " . $e->getMessage());
             return $this->respond(500, 'error', 'Terjadi kesalahan internal.');
         }
+    }
+
+    private function getPemesananId(string $midtransOrderId): int
+    {
+        $stmt = db()->prepare("
+            SELECT pemesanan_id
+            FROM pembayaran
+            WHERE midtrans_order_id = ?
+        ");
+
+        $stmt->execute([$midtransOrderId]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     /** Catat kegagalan webhook ke error_log tanpa pernah menyertakan Server Key / data sensitif. */
