@@ -1,6 +1,7 @@
 <?php
 require_once APP_ROOT . '/app/Helpers/QrSvg.php';
 require_once APP_ROOT . '/app/Services/PembayaranService.php';
+require_once APP_ROOT . '/app/Services/CheckoutService.php';
 
 /**
  * Controller halaman pelanggan: beranda, menu, keranjang, checkout, pembayaran, status pesanan, QR meja.
@@ -50,32 +51,10 @@ final class PelangganController
         return ($id > 0 && hash_equals(tok($id), $token)) ? PemesananModel::find($id) : null;
     }
 
-    /** Jumlah maksimal pesanan yang diingat session (kartu "Pesanan Saya"). */
-    private const MY_ORDERS_MAX = 5;
-
-    /**
-     * Daftar id pesanan pelanggan di session, terbaru di depan. Sesi lama yang baru punya
-     * 'pesanan_terakhir' (sebelum daftar ini ada) ikut dimasukkan agar pesanannya tidak hilang.
-     * @return int[]
-     */
+    /** Daftar id pesanan pelanggan di session, terbaru di depan (lihat CheckoutService::pesananSayaIds()). */
     private function myOrderIds(): array
     {
-        $ids = array_map('intval', is_array($_SESSION['pesanan_saya'] ?? null) ? $_SESSION['pesanan_saya'] : []);
-        $last = (int) ($_SESSION['pesanan_terakhir'] ?? 0);
-        if ($last > 0 && !in_array($last, $ids, true)) array_unshift($ids, $last);
-        return array_slice(array_values(array_filter($ids, static fn (int $id): bool => $id > 0)), 0, self::MY_ORDERS_MAX);
-    }
-
-    /**
-     * Ingat pesanan di session agar bisa dibuka lagi dari kartu "Pesanan Saya" (Beranda & Menu).
-     * Pesanan sebelumnya TIDAK tertimpa: disimpan sebagai daftar (maks. MY_ORDERS_MAX, terbaru di depan).
-     */
-    private function rememberOrder(int $id): void
-    {
-        $ids = array_values(array_diff($this->myOrderIds(), [$id]));
-        array_unshift($ids, $id);
-        $_SESSION['pesanan_saya']     = array_slice($ids, 0, self::MY_ORDERS_MAX);
-        $_SESSION['pesanan_terakhir'] = $id;
+        return CheckoutService::pesananSayaIds();
     }
 
     /** Tautan halaman Status Pesanan untuk sebuah pesanan. */
@@ -168,31 +147,12 @@ final class PelangganController
     }
 
     /**
-     * Catat nonce idempotensi (maksimal 20 entri terbaru), rotasi csrf_token,
-     * lalu alihkan pelanggan ke halaman pembayaran pesanan yang baru dibuat.
-     */
-    private function selesaikanCheckoutBerhasil(string $tokenForm, int $id): void
-    {
-        $_SESSION['pesanan_baru'] = $id; // halaman Pembayaran mengosongkan keranjang satu kali
-        if ($tokenForm !== '') {
-            if (!isset($_SESSION['checkout_idempotensi']) || !is_array($_SESSION['checkout_idempotensi'])) {
-                $_SESSION['checkout_idempotensi'] = [];
-            }
-            $_SESSION['checkout_idempotensi'][$tokenForm] = $id;
-            if (count($_SESSION['checkout_idempotensi']) > 20) {
-                $_SESSION['checkout_idempotensi'] = array_slice($_SESSION['checkout_idempotensi'], -20, 20, true);
-            }
-        }
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        $this->redirectTo(url('pembayaran', ['id' => $id, 't' => tok($id)]));
-    }
-
-    /**
      * Checkout. GET: form (ringkasan diisi checkout.js dari keranjang).
-     * POST: validasi, hitung ulang harga & stok di server, simpan pesanan, lalu:
-     *   - Tunai: langsung redirect ke halaman pembayaran (tanpa memanggil Midtrans).
-     *   - QRIS : panggil Core API Midtrans di luar transaksi DB; jika gagal -> tandai pesanan 'batal'
-     *            dan pembayaran 'failure', tampilkan pesan error tanpa mengosongkan keranjang.
+     * Pesanan dikirim checkout.js lewat API POST /api/pelanggan/pemesanan.php (PemesananController::store).
+     * POST ke halaman ini tetap didukung sebagai cadangan (tanpa JavaScript); logikanya sama persis
+     * karena keduanya memakai CheckoutService::proses():
+     *   - berhasil (atau token form sudah pernah berhasil): redirect ke halaman pembayaran.
+     *   - gagal: tampilkan form lagi beserta pesan error, keranjang tidak dikosongkan.
      */
     public function checkout(): void
     {
@@ -200,119 +160,28 @@ final class PelangganController
         $errors = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->meja) {
-            $old = [
-                'nama'    => trim((string) ($_POST['nama'] ?? '')),
-                'email'   => trim((string) ($_POST['email'] ?? '')),
-                'metode'  => (string) ($_POST['metode'] ?? ''),
-                'catatan' => trim((string) ($_POST['catatan'] ?? '')),
-            ];
-
-            $tokenForm = is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '';
-
-            // Idempotensi: jika token form sudah pernah berhasil membuat pesanan, alihkan ke pesanan tersebut
-            if ($tokenForm !== '' && isset($_SESSION['checkout_idempotensi'][$tokenForm])) {
-                $idLama = (int) $_SESSION['checkout_idempotensi'][$tokenForm];
-                if ($idLama > 0) {
-                    $this->redirectTo(url('pembayaran', ['id' => $idLama, 't' => tok($idLama)]));
-                    return;
-                }
+            $hasil = (new CheckoutService($this->pembayaranService))->proses($_POST, $this->meja);
+            if ($hasil['id'] !== null) {
+                $this->redirectTo(url('pembayaran', ['id' => $hasil['id'], 't' => tok($hasil['id'])]));
+                return;
             }
-
-            // Pembatasan laju: default 10 percobaan per 10 menit (600 detik) per IP klien
-            $maksCheckout = max(1, (int) env('CHECKOUT_RATE_MAX', '10'));
-            if (!batasi_laju('checkout:' . ip_klien(), $maksCheckout, 600)) {
+            if ($hasil['status'] === 429) {
                 http_response_code(429);
-                $errors['form'] = 'Terlalu banyak percobaan pemesanan. Silakan tunggu beberapa menit lalu coba lagi.';
-            } else {
-                if (!csrf_check($tokenForm)) {
-                    $errors['form'] = 'Sesi formulir sudah kedaluwarsa. Silakan coba lagi.';
-                }
-                if ($old['nama'] === '' || text_length($old['nama']) > 100) {
-                    $errors['nama'] = 'Nama wajib diisi (maksimal 100 karakter).';
-                }
-                if (!filter_var($old['email'], FILTER_VALIDATE_EMAIL) || text_length($old['email']) > 150) {
-                    $errors['email'] = 'Masukkan alamat email yang valid.';
-                }
-                if (!isset(PemesananModel::METODE[$old['metode']])) {
-                    $errors['metode'] = 'Pilih metode pembayaran.';
-                }
-                if (text_length($old['catatan']) > PemesananModel::NOTE_MAX) {
-                    $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
-                }
             }
-
-            // Aturan: pesanan sebelumnya di sesi ini harus dibayar dulu sebelum membuat pesanan baru
-            if (!$errors) {
-                $unpaid = array_filter($this->myOrders(), static fn (array $o): bool => $o['unpaid']);
-                if ($unpaid) {
-                    $errors['form'] = 'Pesanan ' . implode(', ', array_column($unpaid, 'number'))
-                        . ' belum dibayar. Selesaikan pembayarannya terlebih dahulu sebelum membuat pesanan baru.';
-                }
-            }
-
-            if (!$errors) {
-                $priced = PemesananModel::price(json_decode((string) ($_POST['items'] ?? ''), true));
-                if ($priced['error'] !== null) {
-                    $errors['form'] = $priced['error'];
-                } else {
-                    $id = PemesananModel::create([
-                        'meja_id' => (int) $this->meja['id'],
-                        'nama'    => $old['nama'],
-                        'email'   => $old['email'],
-                        'catatan' => $old['catatan'] !== '' ? $old['catatan'] : null,
-                        'metode'  => $old['metode'],
-                        'total'   => $priced['total'],
-                        'lines'   => $priced['lines'],
-                    ]);
-                    $this->rememberOrder($id); // kartu "Pesanan Saya" di Beranda
-
-                    if ($old['metode'] === 'tunai') {
-                        $this->selesaikanCheckoutBerhasil($tokenForm, $id);
-                        return;
-                    }
-
-                    // Metode QRIS: panggil Midtrans Core API di luar transaksi database
-                    try {
-                        $service = $this->pembayaranService ??= new PembayaranService();
-                        $qris    = $service->buatQris([
-                            'id'              => $id,
-                            'nama_pelanggan'  => $old['nama'],
-                            'email_pelanggan' => $old['email'],
-                            'total_harga'     => $priced['total'],
-                            'pajak'           => $priced['tax'],
-                        ], $priced['lines']);
-
-                        $qrisJson = (string) json_encode([
-                            'qr_string' => $qris['qr_string'],
-                            'qr_url'    => $qris['qr_url'] ?? '',
-                        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-                        PemesananModel::simpanQris($id, $qris['midtrans_order_id'], $qrisJson);
-
-                        $this->selesaikanCheckoutBerhasil($tokenForm, $id);
-                        return;
-                    } catch (Throwable $e) {
-                        try {
-                            PemesananModel::tandaiGagalQris($id);
-                        } catch (Throwable $dbErr) {
-                            error_log(sprintf('[QuickBrew Checkout QRIS] Gagal menandai batal pemesanan_id=%d: %s', $id, $dbErr->getMessage()));
-                        }
-                        error_log(sprintf('[QuickBrew Checkout QRIS] pemesanan_id=%d gagal: %s', $id, $e->getMessage()));
-                        $errors['form'] = 'Pembayaran QRIS sedang bermasalah, coba lagi atau pilih Tunai';
-                    }
-                }
-            }
+            $old    = $hasil['old'];
+            $errors = $hasil['errors'];
         }
 
         view('pelanggan/public/checkout', [
-            'tableNumber' => $this->tableNumber(),
-            'hasTable'    => $this->meja !== null,
-            'old'         => $old,
-            'errors'      => $errors,
-            'metodeList'  => PemesananModel::METODE,
-            'taxRate'     => PemesananModel::TAX_RATE,
-            'noteMax'     => PemesananModel::NOTE_MAX,
-            'csrfToken'   => csrf_token(),
+            'tableNumber'     => $this->tableNumber(),
+            'hasTable'        => $this->meja !== null,
+            'old'             => $old,
+            'errors'          => $errors,
+            'metodeList'      => PemesananModel::METODE,
+            'taxRate'         => PemesananModel::TAX_RATE,
+            'noteMax'         => PemesananModel::NOTE_MAX,
+            'csrfToken'       => csrf_token(),
+            'pemesananApiUrl' => BASE_URL . '/api/pelanggan/pemesanan.php',
         ]);
     }
 
@@ -332,7 +201,7 @@ final class PelangganController
         if (!$order) {
             http_response_code(404);
         } else {
-            $this->rememberOrder($id);
+            CheckoutService::ingatPesanan($id);
             if (PemesananModel::isPaid($order) || $order['status_pemesanan'] === 'batal') {
                 unset($_SESSION['pesanan_baru']);
                 $this->redirectTo($this->statusUrl($id));
@@ -465,7 +334,7 @@ final class PelangganController
         if (!$order) {
             http_response_code(404);
         } else {
-            $this->rememberOrder((int) $order['id']);
+            CheckoutService::ingatPesanan((int) $order['id']);
         }
         $id = $order ? (int) $order['id'] : 0;
 

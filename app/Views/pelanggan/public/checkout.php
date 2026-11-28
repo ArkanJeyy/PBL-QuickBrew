@@ -1,7 +1,8 @@
 <?php
 /**
  * Halaman Checkout pelanggan. Ringkasan pesanan diisi checkout.js dari keranjang (localStorage);
- * harga final dihitung ulang server (PemesananModel::price) saat form dikirim.
+ * pesanan dikirim checkout.js ke API POST /api/pelanggan/pemesanan.php ($pemesananApiUrl), lalu pindah ke halaman
+ * pembayaran. action="?page=checkout" tetap ada sebagai cadangan. Harga final dihitung ulang server.
  * Variabel dari PelangganController::checkout():
  *   $tableNumber string|null  Nomor meja dari QR
  *   $hasTable    bool         Sudah scan QR meja? (wajib untuk membuat pesanan)
@@ -11,6 +12,7 @@
  *   $taxRate     float        Tarif pajak (0.1)
  *   $noteMax     int          Panjang maksimal catatan (disimpan bersama catatan item pertama)
  *   $csrfToken   string       Token CSRF form
+ *   $pemesananApiUrl string   URL API pembuatan pesanan (mis. /public/api/pelanggan/pemesanan.php)
  */
 $pageTitle       = 'Checkout - ' . APP_NAME;
 $pageStyles      = ['cart', 'popup', 'checkout']; // popup.css: bottom sheet dialog Konfirmasi Pesanan
@@ -44,11 +46,10 @@ require __DIR__ . '/../component/cart-header.php';
       <a class="btn btn--block" href="<?= e(url('qr')) ?>">Pilih / Scan Meja</a>
     </section>
 <?php else: ?>
-<?php if (!empty($errors['form'])): ?>
-    <p class="checkout-alert" role="alert"><?= e($errors['form']) ?></p>
-<?php endif; ?>
+    <p class="checkout-alert" role="alert" data-checkout-alert<?= empty($errors['form']) ? ' hidden' : '' ?>><?= e($errors['form'] ?? '') ?></p>
 
-    <form class="checkout-form" method="post" action="<?= e(url('checkout')) ?>" data-checkout-form data-tax-rate="<?= e((string) $taxRate) ?>">
+    <form class="checkout-form" method="post" action="<?= e(url('checkout')) ?>" data-checkout-form data-tax-rate="<?= e((string) $taxRate) ?>"
+          data-api-url="<?= e($pemesananApiUrl) ?>">
       <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
       <input type="hidden" name="items" value="" data-checkout-items>
 

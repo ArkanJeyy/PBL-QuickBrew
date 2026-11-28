@@ -1,16 +1,24 @@
 <?php
+require_once APP_ROOT . '/app/Services/CheckoutService.php';
 
 /**
  * PemesananController - API untuk pemesanan (CRUD sederhana).
  *
  * Endpoint:
- *   POST /api/pemesanan                → store()   (buat pesanan baru)
- *   GET  /api/pemesanan?action=show&id=&t= → show() (detail satu pesanan, token dibutuhkan)
+ *   POST /api/pelanggan/pemesanan.php                     → store() (buat pesanan baru, dipakai checkout.js)
+ *   GET  /api/pelanggan/pemesanan.php?action=show&id=&t=  → show()  (detail satu pesanan, token dibutuhkan)
  *
  * Daftar semua pesanan dipindah ke endpoint kasir (kasir.php).
  */
 final class PemesananController
 {
+    private ?PembayaranService $pembayaranService;
+
+    public function __construct(?PembayaranService $pembayaranService = null)
+    {
+        $this->pembayaranService = $pembayaranService;
+    }
+
     /**
      * GET /api/pemesanan?action=show&id=<id>&t=<tok(id)>
      * Mengembalikan detail satu pesanan beserta item-nya.
@@ -75,28 +83,32 @@ final class PemesananController
     }
 
     /**
-     * POST /api/pemesanan
-     * Membuat pesanan baru dari keranjang pelanggan.
+     * POST /api/pelanggan/pemesanan.php
+     * Membuat pesanan baru dari keranjang pelanggan. Dipakai halaman Checkout (checkout.js).
+     * Logika sama dengan checkout form karena memakai CheckoutService::proses(): CSRF, pembatasan laju,
+     * idempotensi token form, cek pesanan belum dibayar, hitung ulang harga di server, dan QRIS Midtrans.
+     *
+     * Meja diambil dari session hasil scan QR (?meja=...). Bila session belum punya meja,
+     * kode QR boleh dikirim di body sebagai "meja".
      *
      * Body (JSON atau form-data):
      * {
-     *   "meja"    : "MEJA01",          // kode QR meja (kode_qr di tabel meja)
+     *   "csrf_token": "...",            // dari halaman Checkout
+     *   "meja"    : "MEJA01",          // opsional, hanya dipakai bila session belum punya meja
      *   "nama"    : "Budi",
      *   "email"   : "budi@email.com",
      *   "metode"  : "tunai" | "qris",
      *   "catatan" : "...",             // opsional
      *   "items"   : [                  // JSON string atau array
-     *     {
-     *       "id"       : 1,
-     *       "quantity" : 2,
-     *       "size"     : "M",
-     *       "type"     : "Ice",
-     *       "sugar"    : "Normal Sugar",
-     *       "ice"      : "Normal Ice",
-     *       "addons"   : []
-     *     }
+     *     { "id": 1, "quantity": 2, "size": "M", "type": "Ice",
+     *       "sugar": "Normal Sugar", "ice": "Normal Ice", "addons": [] }
      *   ]
      * }
+     *
+     * Respons berhasil: 201 (dibuat) atau 200 (token form sudah pernah berhasil -> pesanan yang sama),
+     *   data: id, nomor, token, metode, total, status_pemesanan, redirect (URL halaman pembayaran).
+     * Respons gagal: 400/403/409/422/429/502 dengan "errors" per field (nama, email, metode, catatan)
+     *   dan/atau "form" untuk pesan umum.
      */
     public function store(): void
     {
@@ -116,102 +128,45 @@ final class PemesananController
             // Dukung JSON body (Content-Type: application/json) maupun form-data
             $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
             if (str_contains($contentType, 'application/json')) {
-                $body = json_decode(file_get_contents('php://input'), true) ?? [];
+                $body = json_decode((string) file_get_contents('php://input'), true);
+                $body = is_array($body) ? $body : [];
             } else {
                 $body = $_POST;
             }
 
-            // --- Validasi input ---
-            $errors = [];
-
-            $kodeQr  = trim((string) ($body['meja']    ?? ''));
-            $nama    = trim((string) ($body['nama']    ?? ''));
-            $email   = trim((string) ($body['email']   ?? ''));
-            $metode  = (string)      ($body['metode']  ?? '');
-            $catatan = trim((string) ($body['catatan'] ?? ''));
-
-            // items bisa berupa array langsung (JSON body) atau JSON string (form-data)
-            $rawItems = $body['items'] ?? null;
-            if (is_string($rawItems)) {
-                $rawItems = json_decode($rawItems, true);
+            $meja = $_SESSION['meja'] ?? null;
+            if ($meja === null && is_string($body['meja'] ?? null) && trim($body['meja']) !== '') {
+                $meja = MejaModel::findByKode(trim($body['meja'])) ?: null;
             }
 
-            if ($kodeQr === '') {
-                $errors['meja'] = 'Kode meja wajib diisi.';
-            }
-            if ($nama === '' || text_length($nama) > 100) {
-                $errors['nama'] = 'Nama wajib diisi (maks. 100 karakter).';
-            }
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || text_length($email) > 150) {
-                $errors['email'] = 'Email tidak valid.';
-            }
-            if (!isset(PemesananModel::METODE[$metode])) {
-                $errors['metode'] = 'Metode pembayaran tidak valid. Pilih: tunai atau qris.';
-            }
-            if (text_length($catatan) > PemesananModel::NOTE_MAX) {
-                $errors['catatan'] = 'Catatan maksimal ' . PemesananModel::NOTE_MAX . ' karakter.';
-            }
+            $hasil = (new CheckoutService($this->pembayaranService))->proses($body, $meja);
 
-            if ($errors) {
-                http_response_code(422);
+            if ($hasil['id'] === null) {
+                http_response_code($hasil['status']);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Validasi gagal.',
-                    'errors'  => $errors,
+                    'message' => $hasil['errors']['form'] ?? 'Periksa kembali data pesanan.',
+                    'errors'  => $hasil['errors'],
                     'data'    => null,
-                ]);
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 return;
             }
 
-            // --- Cek meja ---
-            $meja = MejaModel::findByKode($kodeQr);
-            if (!$meja) {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Meja tidak ditemukan. Pastikan kode QR benar.',
-                    'data'    => null,
-                ]);
-                return;
-            }
+            $id    = $hasil['id'];
+            $order = PemesananModel::find($id);
 
-            // --- Hitung ulang harga di server ---
-            $priced = PemesananModel::price($rawItems);
-            if ($priced['error'] !== null) {
-                http_response_code(422);
-                echo json_encode([
-                    'success' => false,
-                    'message' => $priced['error'],
-                    'data'    => null,
-                ]);
-                return;
-            }
-
-            // --- Simpan pesanan ---
-            $id = PemesananModel::create([
-                'meja_id' => (int) $meja['id'],
-                'nama'    => $nama,
-                'email'   => $email,
-                'catatan' => $catatan !== '' ? $catatan : null,
-                'metode'  => $metode,
-                'total'   => $priced['total'],
-                'lines'   => $priced['lines'],
-            ]);
-
-            // --- Respons ---
-            http_response_code(201);
+            http_response_code($hasil['status']);
             echo json_encode([
                 'success' => true,
-                'message' => 'Pesanan berhasil dibuat.',
+                'message' => $hasil['status'] === 201 ? 'Pesanan berhasil dibuat.' : 'Pesanan sudah dibuat sebelumnya.',
                 'data'    => [
-                    'id'          => $id,
-                    'nomor'       => PemesananModel::displayNumber($id),
-                    'token'       => tok($id),   // token untuk akses GET show
-                    'subtotal'    => $priced['subtotal'],
-                    'pajak'       => $priced['tax'],
-                    'total'       => $priced['total'],
-                    'metode'      => $metode,
-                    'status'      => 'menunggu_pembayaran',
+                    'id'               => $id,
+                    'nomor'            => PemesananModel::displayNumber($id),
+                    'token'            => tok($id), // token untuk akses GET show
+                    'metode'           => $order['metode_pembayaran'] ?? $hasil['old']['metode'],
+                    'total'            => isset($order['total_harga']) ? (int) $order['total_harga'] : null,
+                    'status_pemesanan' => $order['status_pemesanan'] ?? 'menunggu_pembayaran',
+                    'redirect'         => self::halamanUrl('pembayaran', ['id' => $id, 't' => tok($id)]),
                 ],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         } catch (Throwable $e) {
@@ -219,10 +174,22 @@ final class PemesananController
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Terjadi kesalahan pada server.',
+                'message' => 'Terjadi kesalahan pada server. Silakan coba lagi.',
+                'errors'  => ['form' => 'Terjadi kesalahan pada server. Silakan coba lagi.'],
                 'data'    => null,
-            ]);
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
+    }
+
+    /**
+     * URL halaman front controller (public/index.php) dari dalam endpoint API.
+     * Di endpoint public/api/<folder>/<file>.php, BASE_URL berisi ".../public/api/<folder>" (dihitung dari SCRIPT_NAME),
+     * sehingga url() akan menunjuk folder API. Bagian "/api/..." dibuang agar kembali ke folder public/.
+     */
+    private static function halamanUrl(string $page, array $query = []): string
+    {
+        $publik = (string) preg_replace('#/api(/.*)?$#', '', BASE_URL);
+        return $publik . '/?' . http_build_query(['page' => $page] + $query);
     }
 
     /**

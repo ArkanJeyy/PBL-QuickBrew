@@ -83,12 +83,20 @@ curl -X GET "http://localhost:8000/public/api/pelanggan/menu.php?category=minuma
 `POST /pelanggan/pemesanan.php`
 
 #### Deskripsi
-Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harga & memvalidasi stok secara server-side (tidak percaya data harga dari client).
+Membuat pesanan baru dari keranjang pelanggan. Dipakai halaman Checkout (`checkout.js`) lewat `fetch`. Server akan menghitung ulang harga & memvalidasi stok secara server-side (tidak percaya data harga dari client).
+
+Aturan yang sama dengan checkout form (`CheckoutService::proses()`):
+- Wajib `csrf_token` dari halaman Checkout (sesi yang sama).
+- Maksimal `CHECKOUT_RATE_MAX` (default 10) percobaan per 10 menit per IP.
+- Mengirim ulang `csrf_token` yang sudah berhasil tidak membuat pesanan baru (dibalas pesanan yang sama, `200`).
+- Pesanan baru ditolak (`409`) selama masih ada pesanan di sesi ini yang belum dibayar.
+- Metode `qris` langsung membuat transaksi QRIS Midtrans; bila gagal, pesanan ditandai batal (`502`).
 
 #### Request Body (JSON)
 | Field | Tipe | Wajib | Keterangan |
 |-------|------|-------|------------|
-| `meja` | string | ✅ | Kode QR meja. Contoh: `"MEJA01"` s/d `"MEJA05"` |
+| `csrf_token` | string | ✅ | Token CSRF dari form Checkout (`input[name="csrf_token"]`) |
+| `meja` | string | ❌ | Kode QR meja, hanya dipakai bila session belum punya meja dari scan QR (`?meja=MEJA01`) |
 | `nama` | string | ✅ | Nama pelanggan (maks. 100 karakter) |
 | `email` | string | ✅ | Email pelanggan yang valid (maks. 150 karakter) |
 | `metode` | string | ✅ | Metode pembayaran: `"tunai"` atau `"qris"` |
@@ -113,7 +121,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 **Minuman (dengan kustomisasi):**
 ```json
 {
-  "meja"   : "MEJA01",
+  "csrf_token": "9f1c...e2",
   "nama"   : "Budi Santoso",
   "email"  : "budi@email.com",
   "metode" : "tunai",
@@ -135,6 +143,7 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 **Makanan/Dessert (tanpa kustomisasi):**
 ```json
 {
+  "csrf_token": "9f1c...e2",
   "meja"   : "MEJA02",
   "nama"   : "Siti",
   "email"  : "siti@email.com",
@@ -146,43 +155,49 @@ Membuat pesanan baru dari keranjang pelanggan. Server akan menghitung ulang harg
 }
 ```
 
-#### Respons Berhasil (201 Created)
+#### Respons Berhasil (201 Created, atau 200 bila `csrf_token` sudah pernah berhasil)
 ```json
 {
   "success": true,
   "message": "Pesanan berhasil dibuat.",
   "data": {
-    "id"      : 1,
-    "nomor"   : "#A0001",
-    "token"   : "abc123def456789a",
-    "subtotal": 46000,
-    "pajak"   : 4600,
-    "total"   : 50600,
-    "metode"  : "tunai",
-    "status"  : "menunggu_pembayaran"
+    "id"              : 1,
+    "nomor"           : "#A0001",
+    "token"           : "abc123def456789a",
+    "metode"          : "tunai",
+    "total"           : 50600,
+    "status_pemesanan": "menunggu_pembayaran",
+    "redirect"        : "/public/?page=pembayaran&id=1&t=abc123def456789a"
   }
 }
 ```
 
 > **Simpan `id` dan `token`** dari respons ini — keduanya dibutuhkan untuk memanggil endpoint detail pesanan (2.2).
+> Halaman Checkout langsung membuka URL `redirect` (halaman pembayaran).
 
 #### Respons Error
 | Kode | Kondisi | Keterangan |
 |------|---------|------------|
+| `400` | Meja belum diketahui | Session belum scan QR dan `meja` tidak dikirim / tidak ditemukan |
+| `403` | `csrf_token` tidak valid | Sesi formulir kedaluwarsa — muat ulang halaman Checkout |
 | `405` | Method bukan POST | Method tidak diizinkan |
+| `409` | Ada pesanan belum dibayar | Selesaikan pembayaran pesanan sebelumnya di sesi ini |
 | `422` | Validasi gagal | Field tidak lengkap / tidak valid — lihat field `errors` |
-| `422` | Item tidak valid | Stok habis, menu nonaktif, pilihan kustomisasi salah |
-| `404` | Kode meja tidak ditemukan | Pastikan `meja` sesuai seed DB (`MEJA01`–`MEJA05`) |
-| `500` | Kesalahan server | `{"success":false,"message":"Terjadi kesalahan pada server.","data":null}` |
+| `422` | Item tidak valid | Keranjang kosong, stok habis, menu nonaktif, pilihan kustomisasi salah |
+| `429` | Terlalu banyak percobaan | Melebihi batas checkout per IP |
+| `502` | QRIS Midtrans gagal | Pesanan ditandai batal; coba lagi atau pilih Tunai |
+| `500` | Kesalahan server | Lihat `errors.form` |
+
+Semua respons gagal memuat `errors`: kunci `nama`, `email`, `metode`, `catatan` untuk error per field, dan `form` untuk pesan umum.
 
 **Contoh respons validasi gagal (422):**
 ```json
 {
   "success": false,
-  "message": "Validasi gagal.",
+  "message": "Periksa kembali data pesanan.",
   "errors": {
-    "nama" : "Nama wajib diisi (maks. 100 karakter).",
-    "email": "Email tidak valid."
+    "nama" : "Nama wajib diisi (maksimal 100 karakter).",
+    "email": "Masukkan alamat email yang valid."
   },
   "data": null
 }
