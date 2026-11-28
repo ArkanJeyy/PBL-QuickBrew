@@ -28,10 +28,12 @@ $routes = [
     'qr'         => [PelangganController::class, 'qr'],
     'login'      => [AuthController::class, 'login'],
     'logout'     => [AuthController::class, 'logout'],
-    'kasir'      => [KasirController::class, 'index'],
-    'kasir-profil'=> [KasirController::class, 'profil'],
-    'kasir-menu' => [KasirMenuController::class, 'index'],
-    'kasir-stok' => [KasirController::class, 'stok'],
+    'kasir'                => [KasirController::class, 'index'],
+    'kasir-pesanan'        => [KasirController::class, 'pesanan'],
+    'kasir-pesanan-detail' => [KasirController::class, 'pesananDetail'],
+    'kasir-profil'         => [KasirController::class, 'profil'],
+    'kasir-menu'           => [KasirMenuController::class, 'index'],
+    'kasir-stok'           => [KasirController::class, 'stok'],
 ];
 
 $page = (string) ($_GET['page'] ?? 'home');
