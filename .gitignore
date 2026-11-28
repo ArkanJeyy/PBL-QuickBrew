@@ -9,3 +9,6 @@ config/.env
 .idea/
 .DS_Store
 Thumbs.db
+
+/vendor/
+/config/email.php
